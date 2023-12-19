@@ -59,3 +59,12 @@ dkms.conf
 *.ptx
 *.cubin
 *.fatbin
+
+# Folders #
+obj/
+data/
+doc/
+test/
+
+# Visual Studio Code #
+.vscode/
