@@ -35,39 +35,42 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "Nx =", 4) == 0) {
             sscanf(line + 5, "%d", &(parameters.Nx));
         } 
-        else if (strncmp(line, "Ny =", 4) == 0) {
+        if (strncmp(line, "Ny =", 4) == 0) {
             sscanf(line + 5, "%d", &(parameters.Ny));
         }
-        else if (strncmp(line, "Nz =", 4) == 0) {
+        if (strncmp(line, "Nz =", 4) == 0) {
             sscanf(line + 5, "%d", &(parameters.Nz));
         }
-        else if (strncmp(line, "Nt =", 4) == 0) {
+        if (strncmp(line, "Nt =", 4) == 0) {
             sscanf(line + 5, "%d", &(parameters.Nt));
         }
-        else if (strncmp(line, "x_min =", 7) == 0) {
+        if (strncmp(line, "x_min =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.x_min));
         }
-        else if (strncmp(line, "x_max =", 7) == 0) {
+        if (strncmp(line, "x_max =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.x_max));
         }
-        else if (strncmp(line, "y_min =", 7) == 0) {
+        if (strncmp(line, "y_min =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.y_min));
         }
-        else if (strncmp(line, "y_max =", 7) == 0) {
+        if (strncmp(line, "y_max =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.y_max));
         }
-        else if (strncmp(line, "z_min =", 7) == 0) {
+        if (strncmp(line, "z_min =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.z_min));
         }
-        else if (strncmp(line, "z_max =", 7) == 0) {
+        if (strncmp(line, "z_max =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.z_max));
         }
-        else if (strncmp(line, "t_min =", 7) == 0) {
+        if (strncmp(line, "t_min =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.t_min));
         }
-        else if (strncmp(line, "t_max =", 7) == 0) {
+        if (strncmp(line, "t_max =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.t_max));
-        }
+        } 
+        if (strncmp(line, "mu =", 4) == 0) {
+            sscanf(line + 5, "%lf", &(parameters.mu));
+        } 
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);

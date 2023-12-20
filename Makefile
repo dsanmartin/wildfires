@@ -8,7 +8,6 @@ CFLAGS = -Wall -Wextra
 
 all: project
 
-
 project: $(OBJ)/main.o $(OBJ)/parameters.o $(OBJ)/logs.o
 	$(CC) $(CFLAGS) -o $(BIN)/$(EXE) $(OBJ)/main.o $(OBJ)/parameters.o $(OBJ)/logs.o
 
