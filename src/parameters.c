@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include "../include/structures.h"
+#include "../include/parameters.h"
 
 #define MAX_LINE_LENGTH 512
 
@@ -71,6 +69,15 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "mu =", 4) == 0) {
             sscanf(line + 5, "%lf", &(parameters.mu));
         } 
+        if (strncmp(line, "u_r =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.u_r));
+        }
+        if (strncmp(line, "z_r =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.z_r));
+        }
+        if (strncmp(line, "alpha_u =", 9) == 0) {
+            sscanf(line + 10, "%lf", &(parameters.alpha_u));
+        }
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);

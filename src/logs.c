@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include "../include/structures.h"
-#include "../include/parameters.h"
 #include "../include/logs.h"
 
 void log_parameters(Parameters *parameters, int to_file) {

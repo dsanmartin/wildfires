@@ -1,24 +1,84 @@
-BIN  = ./bin
-SRC  = ./src
-OBJ  = ./obj
-EXE  = wildfires
+#
+# Folder structure
+#
 
-CC = gcc
-CFLAGS = -Wall -Wextra
+BIN     := ./bin/
+SRC     := ./src/
+DEST    := ./obj/
 
-all: project
+EXE    = wildfires
 
-project: $(OBJ)/main.o $(OBJ)/parameters.o $(OBJ)/logs.o
-	$(CC) $(CFLAGS) -o $(BIN)/$(EXE) $(OBJ)/main.o $(OBJ)/parameters.o $(OBJ)/logs.o
+#
+# Executables
+#
 
-$(OBJ)/main.o: $(SRC)/main.c
-	$(CC) $(CFLAGS) -c $(SRC)/main.c -o $(OBJ)/main.o
+CC     = gcc
+RM     = rm
+MKDIR  = mkdir -p
 
-$(OBJ)/parameters.o: $(SRC)/parameters.c
-	$(CC) $(CFLAGS) -c $(SRC)/parameters.c -o $(OBJ)/parameters.o
+#
+# C/C++ flags
+#
 
-$(OBJ)/logs.o: $(SRC)/logs.c
-	$(CC) $(CFLAGS) -c $(SRC)/logs.c -o $(OBJ)/logs.o
+CFLAGS    = -Wall -g -O3 -std=c99 -lm #-Wextra
+
+#
+# Files to compile: 
+#
+
+MAIN   = main.c
+CODC   = functions.c logs.c output.c parameters.c utils.c
+
+#
+# Formating the folder structure for compiling/linking/cleaning.
+#
+
+FC     = 
+
+#
+# Preparing variables for automated prerequisites
+#
+
+OBJC   = $(patsubst %.c,$(DEST)$(FC)%.o,$(CODC))
+
+SRCMAIN = $(patsubst %,$(SRC)%,$(MAIN))
+OBJMAIN = $(patsubst $(SRC)%.c,$(DEST)%.o,$(SRCMAIN))
+
+# .PHONY: directories
+
+#
+# The MAGIC
+#
+ all: directories $(BIN)$(EXE)
+
+.PHONY: clean
+
+$(BIN)$(EXE): $(OBJC) $(OBJMAIN)
+	$(CC) $^ -o $@ $(CFLAGS)
+
+$(OBJMAIN): $(SRCMAIN)
+	$(CC) $(CFLAGS) -c $? -o $@
+
+$(OBJC): $(DEST)%.o : $(SRC)%.c
+	$(CC) $(CFLAGS) -c $? -o $@
+
+
+directories:
+	$(MKDIR) $(BIN)
+	$(MKDIR) $(DEST)$(FC) 
+
+#
+# Makefile for cleaning
+# 
 
 clean:
-	rm -f project $(OBJ)/main.o $(OBJ)/parameters.o $(OBJ)/logs.o
+	$(RM) -rf $(DEST)*.o
+	$(RM) -rf $(DEST)
+
+fresh:
+	$(RM) -rf test/output/*
+
+distclean: clean
+	$(RM) -rf $(BIN)*
+
+

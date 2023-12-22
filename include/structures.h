@@ -42,11 +42,12 @@ typedef struct _parameters {
     double Y_D;
     double Y_f;
     double T_hot;
+    double Y_h;
     double T_min;
     double T_max;
     double Y_min;
     double Y_max;
-    char *U0;
+    char *U0_type;
     double u_z0;
     double d;
     double u_ast;
@@ -54,6 +55,24 @@ typedef struct _parameters {
     double u_r;
     double z_r;
     double alpha_u;
+    char *T0_shape;
+    double T0_x_start;
+    double T0_x_end;
+    double T0_x_center;
+    double T0_length;
+    double T0_y_start;
+    double T0_y_end;
+    double T0_y_center;
+    double T0_width;
+    double T0_z_start;
+    double T0_z_end;
+    double T0_height;
+    char *Z_shape;
+    double hill_center_x;
+    double hill_center_y;
+    double hill_length;
+    double hill_width;
+    double hill_height;
 } Parameters;
 
 #endif
