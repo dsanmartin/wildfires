@@ -78,6 +78,51 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "alpha_u =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.alpha_u));
         }
+        if (strncmp(line, "T_inf =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.T_inf));
+        }
+        if (strncmp(line, "T_hot =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.T_hot));
+        }
+        if (strncmp(line, "T0_shape =", 10) == 0) {
+            sscanf(line + 11, "%s", parameters.T0_shape);
+        }
+        if (strncmp(line, "T0_x_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.T0_x_start));
+        }
+        if (strncmp(line, "T0_x_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.T0_x_end));
+        }
+        if (strncmp(line, "T0_x_center =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.T0_x_center));
+        }
+        if (strncmp(line, "T0_length =", 11) == 0) {
+            sscanf(line + 12, "%lf", &(parameters.T0_length));
+        }
+        if (strncmp(line, "T0_y_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.T0_y_start));
+        }
+        if (strncmp(line, "T0_y_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.T0_y_end));
+        }
+        if (strncmp(line, "T0_y_center =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.T0_y_center));
+        }
+        if (strncmp(line, "T0_width =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.T0_width));
+        }
+        if (strncmp(line, "T0_z_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.T0_z_start));
+        }
+        if (strncmp(line, "T0_z_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.T0_z_end));
+        }
+        if (strncmp(line, "T0_z_center =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.T0_z_center));
+        }
+        if (strncmp(line, "T0_height =", 11) == 0) {
+            sscanf(line + 12, "%lf", &(parameters.T0_height));
+        }
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);

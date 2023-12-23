@@ -66,6 +66,7 @@ typedef struct _parameters {
     double T0_width;
     double T0_z_start;
     double T0_z_end;
+    double T0_z_center;
     double T0_height;
     char *Z_shape;
     double hill_center_x;
