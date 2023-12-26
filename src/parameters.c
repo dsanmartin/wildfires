@@ -93,42 +93,62 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "T0_x_end =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.T0_x_end));
         }
-        if (strncmp(line, "T0_x_center =", 13) == 0) {
-            sscanf(line + 14, "%lf", &(parameters.T0_x_center));
-        }
-        if (strncmp(line, "T0_length =", 11) == 0) {
-            sscanf(line + 12, "%lf", &(parameters.T0_length));
-        }
+        // if (strncmp(line, "T0_x_center =", 13) == 0) {
+        //     sscanf(line + 14, "%lf", &(parameters.T0_x_center));
+        // }
+        // if (strncmp(line, "T0_length =", 11) == 0) {
+        //     sscanf(line + 12, "%lf", &(parameters.T0_length));
+        // }
         if (strncmp(line, "T0_y_start =", 12) == 0) {
             sscanf(line + 13, "%lf", &(parameters.T0_y_start));
         }
         if (strncmp(line, "T0_y_end =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.T0_y_end));
         }
-        if (strncmp(line, "T0_y_center =", 13) == 0) {
-            sscanf(line + 14, "%lf", &(parameters.T0_y_center));
-        }
-        if (strncmp(line, "T0_width =", 10) == 0) {
-            sscanf(line + 11, "%lf", &(parameters.T0_width));
-        }
+        // if (strncmp(line, "T0_y_center =", 13) == 0) {
+        //     sscanf(line + 14, "%lf", &(parameters.T0_y_center));
+        // }
+        // if (strncmp(line, "T0_width =", 10) == 0) {
+        //     sscanf(line + 11, "%lf", &(parameters.T0_width));
+        // }
         if (strncmp(line, "T0_z_start =", 12) == 0) {
             sscanf(line + 13, "%lf", &(parameters.T0_z_start));
         }
         if (strncmp(line, "T0_z_end =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.T0_z_end));
         }
-        if (strncmp(line, "T0_z_center =", 13) == 0) {
-            sscanf(line + 14, "%lf", &(parameters.T0_z_center));
-        }
-        if (strncmp(line, "T0_height =", 11) == 0) {
-            sscanf(line + 12, "%lf", &(parameters.T0_height));
-        }
+        // if (strncmp(line, "T0_z_center =", 13) == 0) {
+        //     sscanf(line + 14, "%lf", &(parameters.T0_z_center));
+        // }
+        // if (strncmp(line, "T0_height =", 11) == 0) {
+        //     sscanf(line + 12, "%lf", &(parameters.T0_height));
+        // }
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
     parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
     parameters.dz = (parameters.z_max - parameters.z_min) / (parameters.Nz - 1);
     parameters.dt = (parameters.t_max - parameters.t_min) / (parameters.Nt - 1);
+    // Initialize x, y, z
+    parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
+    parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
+    parameters.z = (double *) malloc(parameters.Nz * sizeof(double));
+    for (int i = 0; i < parameters.Nx; i++) {
+        parameters.x[i] = parameters.x_min + i * parameters.dx;
+    }
+    for (int j = 0; j < parameters.Ny; j++) {
+        parameters.y[j] = parameters.y_min + j * parameters.dy;
+    }
+    for (int k = 0; k < parameters.Nz; k++) {
+        parameters.z[k] = parameters.z_min + k * parameters.dz;
+    }
+    // Computer T0 centers and dimensiones
+    parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;
+    parameters.T0_y_center = (parameters.T0_y_start + parameters.T0_y_end) / 2;
+    parameters.T0_z_center = 0.0;
+    parameters.T0_length = parameters.T0_x_end - parameters.T0_x_start;
+    parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
+    parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
     fclose(parameters_file);
     return parameters;
 }

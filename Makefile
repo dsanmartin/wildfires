@@ -27,7 +27,7 @@ CFLAGS    = -Wall -g -O3 -std=c99 -lm #-Wextra
 #
 
 MAIN   = main.c
-CODC   = functions.c logs.c output.c parameters.c utils.c
+CODC   = functions.c logs.c output.c parameters.c pde.c utils.c
 
 #
 # Formating the folder structure for compiling/linking/cleaning.
@@ -73,7 +73,6 @@ directories:
 
 clean:
 	$(RM) -rf $(DEST)*.o
-	$(RM) -rf $(DEST)
 
 fresh:
 	$(RM) -rf test/output/*
