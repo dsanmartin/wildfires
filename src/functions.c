@@ -26,8 +26,8 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
 
 void power_law_initial_condition(double *x, double *y, double *z, double *u, double *v, double *w, Parameters *parameters) {
     // Set u log wind, v and w as 0
-    int Nx = parameters->Nx;// - 1;
-    int Ny = parameters->Ny;// - 1;
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     double u_r = parameters->u_r;
     double z_r = parameters->z_r;
@@ -45,8 +45,8 @@ void power_law_initial_condition(double *x, double *y, double *z, double *u, dou
 
 void gaussian_temperature_initial_condition(double *x, double *y, double *z, double *T, Parameters *parameters) {
     // Set T as a gaussian
-    int Nx = parameters->Nx;// - 1;
-    int Ny = parameters->Ny;// - 1;
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     double x_0 = parameters->T0_x_center;
     double y_0 = parameters->T0_y_center;
