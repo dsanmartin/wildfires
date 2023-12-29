@@ -78,11 +78,11 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "z_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.z_r));
         }
-        if (strncmp(line, "alpha =", 7) == 0) {
-            sscanf(line + 8, "%lf", &(parameters.alpha));
-        }
         if (strncmp(line, "alpha_u =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.alpha_u));
+        }
+        if (strncmp(line, "alpha =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.alpha));
         }
         if (strncmp(line, "T_inf =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.T_inf));
@@ -129,6 +129,44 @@ Parameters read_parameters_file(const char *filePath) {
         // if (strncmp(line, "T0_height =", 11) == 0) {
         //     sscanf(line + 12, "%lf", &(parameters.T0_height));
         // }
+        if (strncmp(line, "Y_h =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.Y_h));
+        }
+        if (strncmp(line, "Y_f =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.Y_f));
+        }
+        // Read H_R 
+        if (strncmp(line, "H_R =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.H_R));
+        }
+        // Read A
+        if (strncmp(line, "A =", 3) == 0) {
+            sscanf(line + 4, "%lf", &(parameters.A));
+        }
+        // Read activation temperature T_a
+        if (strncmp(line, "T_a =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.T_a));
+        }
+        // Temperature phase-change T_pc
+        if (strncmp(line, "T_pc =", 6) == 0) {
+            sscanf(line + 7, "%lf", &(parameters.T_pc));
+        }
+        // Convective heat transfer coefficient h
+        if (strncmp(line, "h =", 3) == 0) {
+            sscanf(line + 4, "%lf", &(parameters.h));
+        }
+        // Volumetric heat capacity a_v
+        if (strncmp(line, "a_v =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.a_v));
+        }
+        // Heat capacity c_p
+        if (strncmp(line, "c_p =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.c_p));
+        }
+        // Density rho
+        if (strncmp(line, "rho =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.rho));
+        }
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
@@ -148,6 +186,10 @@ Parameters read_parameters_file(const char *filePath) {
     }
     for (int k = 0; k < parameters.Nz; k++) {
         parameters.z[k] = parameters.z_min + k * parameters.dz;
+        // Get the index of z where Y_h is located
+        if (parameters.z[k] <= parameters.Y_h) {
+            parameters.k_Y_h = k;
+        }
     }
     for (int n = 0; n < parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
@@ -159,6 +201,7 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.T0_length = parameters.T0_x_end - parameters.T0_x_start;
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
+
     fclose(parameters_file);
     return parameters;
 }

@@ -64,3 +64,18 @@ void gaussian_temperature_initial_condition(double *x, double *y, double *z, dou
         }
     }
 }
+
+void fuel_initial_condition(double *x, double *y, double *z, double *Y, Parameters *parameters) {
+    // Set Y to 1
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
+    int k_Y_h = parameters->k_Y_h;
+    int Nz_Y_h = k_Y_h + 1;
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int k = 0; k < Nz_Y_h; k++) {
+                Y[idx(i, j, k, Nx, Ny, Nz_Y_h)] = 1;
+            }
+        }
+    }
+}

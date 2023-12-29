@@ -47,6 +47,7 @@ typedef struct _parameters {
     double Y_f;
     double T_hot;
     double Y_h;
+    int k_Y_h;
     double T_min;
     double T_max;
     double Y_min;
