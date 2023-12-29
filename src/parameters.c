@@ -42,6 +42,9 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "Nt =", 4) == 0) {
             sscanf(line + 5, "%d", &(parameters.Nt));
         }
+        if (strncmp(line, "NT =", 4) == 0) {
+            sscanf(line + 5, "%d", &(parameters.NT));
+        }
         if (strncmp(line, "x_min =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.x_min));
         }
@@ -74,6 +77,9 @@ Parameters read_parameters_file(const char *filePath) {
         }
         if (strncmp(line, "z_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.z_r));
+        }
+        if (strncmp(line, "alpha =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.alpha));
         }
         if (strncmp(line, "alpha_u =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.alpha_u));
@@ -129,10 +135,11 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
     parameters.dz = (parameters.z_max - parameters.z_min) / (parameters.Nz - 1);
     parameters.dt = (parameters.t_max - parameters.t_min) / (parameters.Nt - 1);
-    // Initialize x, y, z
+    // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
     parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
     parameters.z = (double *) malloc(parameters.Nz * sizeof(double));
+    parameters.t = (double *) malloc(parameters.Nt * sizeof(double));
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
     }
@@ -141,6 +148,9 @@ Parameters read_parameters_file(const char *filePath) {
     }
     for (int k = 0; k < parameters.Nz; k++) {
         parameters.z[k] = parameters.z_min + k * parameters.dz;
+    }
+    for (int n = 0; n < parameters.Nt; n++) {
+        parameters.t[n] = parameters.t_min + n * parameters.dt;
     }
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;

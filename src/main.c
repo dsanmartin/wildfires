@@ -5,10 +5,12 @@
 #include "../include/functions.h"
 #include "../include/logs.h"
 #include "../include/output.h"
+#include "../include/pde.h"
 
 int main(int argc, char *argv[]) { 
     char *parameters_file_path;
     double *u, *v, *w, *T;
+    int size;
 
     // Get parameters input file path
     if (argc == 2) {
@@ -23,31 +25,30 @@ int main(int argc, char *argv[]) {
     // log_parameters(&parameters, 1);
 
     // Allocate memory for x, y, z, u, v, w
-    u = (double *) malloc((parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz * sizeof(double));
-    v = (double *) malloc((parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz * sizeof(double));
-    w = (double *) malloc((parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz * sizeof(double));
-    T = (double *) malloc((parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz * sizeof(double));
-    // u = (double *) malloc(parameters.Nx * parameters.Ny * parameters.Nz * sizeof(double));
-    // v = (double *) malloc(parameters.Nx * parameters.Ny * parameters.Nz * sizeof(double));
-    // w = (double *) malloc(parameters.Nx * parameters.Ny * parameters.Nz * sizeof(double));
-    // T = (double *) malloc(parameters.Nx * parameters.Ny * parameters.Nz * sizeof(double));
+    // size = (parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz;
+    size = parameters.Nx * parameters.Ny * parameters.Nz;
+    u = (double *) malloc(size * sizeof(double));
+    v = (double *) malloc(size * sizeof(double));
+    w = (double *) malloc(size * sizeof(double));
+    T = (double *) malloc(size * sizeof(double));
 
     // Initialize u, v, w
     power_law_initial_condition(parameters.x, parameters.y, parameters.z, u, v, w, &parameters);
     
     // Initialize T
-    gaussian_temperature_initial_condition(parameters.x, parameters.y, parameters.z, T, parameters);
+    gaussian_temperature_initial_condition(parameters.x, parameters.y, parameters.z, T, &parameters);
 
-    // Save data
-    // save_data("data/output/u.csv", x, y, z, u, parameters.Nx, parameters.Ny, parameters.Nz);
-    // save_data("data/output/v.csv", x, y, z, v, parameters.Nx, parameters.Ny, parameters.Nz);
-    // save_data("data/output/w.csv", x, y, z, w, parameters.Nx, parameters.Ny, parameters.Nz);
-    save_data_periodic_xy("data/output/T.csv", parameters.x, parameters.y, parameters.z, T, parameters.Nx, parameters.Ny, parameters.Nz);
+    // Save initial data
+    save_data("data/output/T.csv.0", parameters.x, parameters.y, parameters.z, T, parameters.Nx, parameters.Ny, parameters.Nz);
+
+    // Solve PDE
+    solve_PDE(T, &parameters);
 
     // Free memory
     free(u);
     free(v);
     free(w);
+    free(T);
 
     return 0;
 }

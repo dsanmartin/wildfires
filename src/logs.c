@@ -13,7 +13,9 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "Grid size:\n");
     fprintf(output, "  Nx: %d, Ny: %d, Nz: %d, Nt: %d\n", parameters->Nx, parameters->Ny, parameters->Nz, parameters->Nt);
     fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters->dx, parameters->dy, parameters->dz, parameters->dt);
-    fprintf(output, "mu: %lf\n", parameters->mu);
+    fprintf(output, "  NT: %d\n", parameters->NT);
+    fprintf(output, "Fluid parameters:\n");
+    fprintf(output, "  mu: %lf, alpha: %lf\n", parameters->mu, parameters->alpha);
     fprintf(output, "Temperature initial condition:\n");
     fprintf(output, "  T_inf: %lf, T_hot: %lf\n", parameters->T_inf, parameters->T_hot);
     fprintf(output, "  T0_shape: %s\n", parameters->T0_shape);

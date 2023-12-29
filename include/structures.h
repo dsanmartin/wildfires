@@ -22,6 +22,7 @@ typedef struct _parameters {
     double *x;
     double *y;
     double *z;
+    double *t;
     double c_p;
     double c_v;
     double rho;
