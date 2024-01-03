@@ -35,8 +35,8 @@ void Phi(double t, double *R_old, double *R_new, Parameters *parameters) {
     double Y_ijk;
     double Tx, Ty, Tz, Txx, Tyy, Tzz;
     double T_RHS, Y_RHS, S = 0.0;    
-    u_ijk = 0;
-    v_ijk = 0;
+    u_ijk = 1;
+    v_ijk = 1;
     w_ijk = 0;
     // Loop over interior nodes
     for (int i = 1; i < Nx - 1; i++) {
@@ -61,15 +61,11 @@ void Phi(double t, double *R_old, double *R_new, Parameters *parameters) {
                     Y_ijk = R_old[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)];
                     S = source(T_ijk, Y_ijk, H_R, A, T_a, h, a_v, T_inf, c_p, rho);
                     Y_RHS = -Y_f * Y_ijk * K(T_ijk, A, T_a) * H(T_ijk - T_pc);
-                    if (Y_RHS < 0) {
-                        Y_RHS = 0;
-                    }
                     R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
                 }
                 T_RHS = alpha * (Txx + Tyy + Tzz) - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[T_index + idx(i, j, k, Nx, Ny, Nz)] = T_RHS;
-                
             }
         }
     }
@@ -89,7 +85,9 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
     int Nz_Y = parameters->k_Y_h + 1;
     int T_index = 0;
     int Y_index = Nx * Ny * Nz;
+    double T_inf = parameters->T_inf;
     double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
+    double Y_ijkp1, Y_ijkm1, Y_ijkm2, Y_ijkp2;
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
@@ -123,17 +121,36 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
                     }
                 }
                 // dT/dz = 0 at z = z_min and z = z_max using a second order approximation
+                // dY/dz = 0 at z = z_min and z = Y_height using a second order approximation
                 // Bottom boundary
                 if (k == 0) {
-                    T_ijkp1 = R_old[T_index + idx(i, j, 1, Nx, Ny, Nz)];
-                    T_ijkp2 = R_old[T_index + idx(i, j, 2, Nx, Ny, Nz)];
-                    R_new[T_index + idx(i, j, 0, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3;
+                    T_ijkp1 = R_old[T_index + idx(i, j, 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+                    T_ijkp2 = R_old[T_index + idx(i, j, 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
+                    Y_ijkp1 = R_old[Y_index + idx(i, j, 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
+                    Y_ijkp2 = R_old[Y_index + idx(i, j, 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
+                    R_new[T_index + idx(i, j, 0, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
+                    R_new[Y_index + idx(i, j, 0, Nx, Ny, Nz_Y)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
                 }
                 // Top boundary
                 if (k == Nz - 1) {
-                    T_ijkm1 = R_old[T_index + idx(i, j, Nz - 2, Nx, Ny, Nz)];
-                    T_ijkm2 = R_old[T_index + idx(i, j, Nz - 3, Nx, Ny, Nz)];
-                    R_new[T_index + idx(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3;
+                    T_ijkm1 = R_old[T_index + idx(i, j, Nz - 2, Nx, Ny, Nz)]; // T_{i,j,k-1}
+                    T_ijkm2 = R_old[T_index + idx(i, j, Nz - 3, Nx, Ny, Nz)]; // T_{i,j,k-2}
+                    R_new[T_index + idx(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0
+                    if (k < Nz_Y) {
+                        Y_ijkm1 = R_old[Y_index + idx(i, j, Nz - 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k-1}
+                        Y_ijkm2 = R_old[Y_index + idx(i, j, Nz - 3, Nx, Ny, Nz_Y)]; // Y_{i,j,k-2}
+                        R_new[Y_index + idx(i, j, Nz - 1, Nx, Ny, Nz_Y)] = (4 * Y_ijkm1 - Y_ijkm2) / 3; // dY/dz = 0
+                    }
+                }
+                // Check if Y_ijk is negative
+                if (k < Nz_Y) {
+                    if (R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] < 0) {
+                        R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] = 0;
+                    }
+                }
+                // Check if T_ijk is less than T_inf
+                if (R_new[T_index + idx(i, j, k, Nx, Ny, Nz)] < T_inf) {
+                    R_new[T_index + idx(i, j, k, Nx, Ny, Nz)] = T_inf;
                 }
             }        
         }
