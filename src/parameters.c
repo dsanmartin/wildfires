@@ -69,8 +69,8 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "t_max =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.t_max));
         } 
-        if (strncmp(line, "mu =", 4) == 0) {
-            sscanf(line + 5, "%lf", &(parameters.mu));
+        if (strncmp(line, "nu =", 4) == 0) {
+            sscanf(line + 5, "%lf", &(parameters.nu));
         } 
         if (strncmp(line, "u_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.u_r));
@@ -135,6 +135,10 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "Y_f =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.Y_f));
         }
+        // Fuel drag Y_D
+        if (strncmp(line, "Y_D =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.Y_D));
+        }
         // Read H_R 
         if (strncmp(line, "H_R =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.H_R));
@@ -166,6 +170,26 @@ Parameters read_parameters_file(const char *filePath) {
         // Density rho
         if (strncmp(line, "rho =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.rho));
+        }
+        // U0 Type
+        if (strncmp(line, "U0_type =", 9) == 0) {
+            sscanf(line + 10, "%s", &(parameters.U0_type));
+        }
+        // T0 Shape
+        if (strncmp(line, "T0_shape =", 10) == 0) {
+            sscanf(line + 11, "%s", &(parameters.T0_shape));
+        }
+        // Acceleration due to gravity g
+        if (strncmp(line, "g =", 3) == 0) {
+            sscanf(line + 4, "%lf", &(parameters.g));
+        }
+        // Smagorinsky constant C_s
+        if (strncmp(line, "C_s =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.C_s));
+        }
+        // Prandtl number Pr
+        if (strncmp(line, "Pr =", 4) == 0) {
+            sscanf(line + 5, "%lf", &(parameters.Pr));
         }
     }
     // Compute dx, dy, dz, dts

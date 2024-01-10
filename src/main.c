@@ -51,20 +51,20 @@ int main(int argc, char *argv[]) {
     
     printf("OK0\n");
 
-    // Create y_0 using T and Y
-    create_y_0(T, Y, y_0, &parameters);
+    // // Create y_0 using T and Y
+    // create_y_0(T, Y, y_0, &parameters);
 
-    printf("OK1\n");
+    // printf("OK1\n");
 
-    // Save initial data
-    save_data("data/output/", y_0, 0, &parameters);
+    // // Save initial data
+    // save_data("data/output/", y_0, 0, &parameters);
 
-    printf("OK2\n");
+    // printf("OK2\n");
 
-    // Solve PDE
-    solve_PDE(y_0, &parameters);
+    // // Solve PDE
+    // solve_PDE(y_0, &parameters);
 
-    printf("OK3\n");
+    // printf("OK3\n");
 
     // Free memory
     free(u);

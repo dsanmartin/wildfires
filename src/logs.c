@@ -15,16 +15,31 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters->dx, parameters->dy, parameters->dz, parameters->dt);
     fprintf(output, "  NT: %d\n", parameters->NT);
     fprintf(output, "Fluid parameters:\n");
-    fprintf(output, "  mu: %lf, alpha: %lf\n", parameters->mu, parameters->alpha);
+    fprintf(output, "  rho: %lf, nu: %e, alpha: %e, T_inf: %lf,  g: %lf\n", parameters->rho, parameters->nu, parameters->alpha, parameters->T_inf, parameters->g);
+    fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters->C_s, parameters->Pr);
+    fprintf(output, "Fuel parameters:\n");
+    fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, a_v: %lf\n", parameters->H_R, parameters->c_p, parameters->h, parameters->a_v);
+    fprintf(output, "  Y_D: %lf, Y_f: %lf\n", parameters->Y_D, parameters->Y_f);
+    fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf\n", parameters->A, parameters->T_pc, parameters->T_a);
+    fprintf(output, "Wind initial condition:\n");
+    fprintf(output, "  U0_type: %s\n", parameters->U0_type);    
+    if (strcmp(parameters->U0_type, "constant") == 0)
+        fprintf(output, "  u_r: %lf\n", parameters->u_r);
+    else if (strcmp(parameters->U0_type, "log") == 0)
+        fprintf(output, "  u_z0: %lf, kappa: %lf, d: %lf, u_ast: %lf\n", parameters->u_z0, parameters->kappa, parameters->d, parameters->u_ast);
+    else if (strcmp(parameters->U0_type, "power_law") == 0)
+        fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters->u_r, parameters->z_r, parameters->alpha_u);
     fprintf(output, "Temperature initial condition:\n");
-    fprintf(output, "  T_inf: %lf, T_hot: %lf\n", parameters->T_inf, parameters->T_hot);
     fprintf(output, "  T0_shape: %s\n", parameters->T0_shape);
+    fprintf(output, "  T_hot: %lf\n", parameters->T_hot);
     fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
         parameters->T0_x_start, parameters->T0_x_end, parameters->T0_x_center, parameters->T0_length);
     fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
         parameters->T0_y_start, parameters->T0_y_end, parameters->T0_y_center, parameters->T0_width);
     fprintf(output, "  T0_z_start: %lf, T0_z_end: %lf, T0_z_center: %lf, T0_height: %lf\n",
         parameters->T0_z_start, parameters->T0_z_end, parameters->T0_z_center, parameters->T0_height);
+    fprintf(output, "Fuel initial condition:\n");
+    fprintf(output, "  Y_h: %lf\n", parameters->Y_h);
     if (to_file)
         fclose(output);
 }
