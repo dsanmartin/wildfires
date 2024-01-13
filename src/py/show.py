@@ -51,7 +51,7 @@ if len(sys.argv) < 2:
 # Read the data
 data_dir = 'data/output/'
 
-Nx, Ny, Nz, Nt = 128, 128, 64, 5
+Nx, Ny, Nz, Nt = 128, 128, 64, 10
 Nz_Y = 4
 
 # data = data.reshape((Ny, Nx, Nz), order='C')
@@ -93,17 +93,17 @@ T_lims = [T.min(), T.max()]
 Y_lims = [Y.min(), Y.max()]
 lims = [u_lims, v_lims, w_lims, T_lims, Y_lims]
 
-for n in range(Nt):
+for n in range(0, Nt, 1):
     if axes == 'xy':
         label_coor = "(x, y, {})".format(round(z[:,:,k].min(), 2))
         variables = [u[n, :, :, k], v[n, :, :, k], w[n, :, :, k], T[n, :, :, k], Y[n, :, :, k]]
         domain = [x[:, :, k], y[:, :, k]]
     elif axes == 'xz':
         label_coor = "(x, {}, z)".format(round(y[:,j,:].min(), 2))
-        variables = [u[n, :, j, :], w[n, :, j, :], T[n, :, j, :], Y[n, :, j, :]]
+        variables = [u[n, :, j, :], v[n, :, j, :], w[n, :, j, :], T[n, :, j, :], Y[n, :, j, :]]
         domain = [x[:, j, :], z[:, j, :]]
     elif axes == 'yz':
         label_coor = "({}, y, z)".format(round(x[i,:,:].min(), 2))
-        variables = [v[n, i, :, :], w[n, i, :, :], T[n, i, :, :], Y[n, i, :, :]]
+        variables = [v[n, i, :, :], v[n, i, :, :], w[n, i, :, :], T[n, i, :, :], Y[n, i, :, :]]
         domain = [y[i, :, :], z[i, :, :]]
     plot(domain, variables, lims, label_coor, axes)

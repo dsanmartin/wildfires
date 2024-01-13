@@ -163,34 +163,7 @@ void Phi(double t, double *R_old, double *R_new, Parameters *parameters) {
                     v_kp = (3 * v_ijk - 4 * v_ijkp1 + v_ijkp2) / (2 * dz);
                     w_kp = (3 * w_ijk - 4 * w_ijkp1 + w_ijkp2) / (2 * dz);
                 }
-                // u_ip = (3 * u_ijk - 4 * u_ip1jk + u_ip2jk) / (2 * dx);
-                // u_im = (-3 * u_ijk + 4 * u_im1jk - u_im2jk) / (2 * dx);
-                // u_jp = (3 * u_ijk - 4 * u_ijp1k + u_ijp2k) / (2 * dy);
-                // u_jm = (-3 * u_ijk + 4 * u_ijm1k - u_ijm2k) / (2 * dy);
-                // u_kp = (3 * u_ijk - 4 * u_ijkp1 + u_ijkp2) / (2 * dz);
-                // u_km = (-3 * u_ijk + 4 * u_ijkm1 - u_ijkm2) / (2 * dz);
-                // v_ip = (3 * v_ijk - 4 * v_ip1jk + v_ip2jk) / (2 * dx);
-                // v_im = (-3 * v_ijk + 4 * v_im1jk - v_im2jk) / (2 * dx);
-                // v_jp = (3 * v_ijk - 4 * v_ijp1k + v_ijp2k) / (2 * dy);
-                // v_jm = (-3 * v_ijk + 4 * v_ijm1k - v_ijm2k) / (2 * dy);
-                // v_kp = (3 * v_ijk - 4 * v_ijkp1 + v_ijkp2) / (2 * dz);
-                // v_km = (-3 * v_ijk + 4 * v_ijkm1 - v_ijkm2) / (2 * dz);
-                // w_ip = (3 * w_ijk - 4 * w_ip1jk + w_ip2jk) / (2 * dx);
-                // w_im = (-3 * w_ijk + 4 * w_im1jk - w_im2jk) / (2 * dx);
-                // w_jp = (3 * w_ijk - 4 * w_ijp1k + w_ijp2k) / (2 * dy);
-                // w_jm = (-3 * w_ijk + 4 * w_ijm1k - w_ijm2k) / (2 * dy);
-                // w_kp = (3 * w_ijk - 4 * w_ijkp1 + w_ijkp2) / (2 * dz);
-                // w_km = (-3 * w_ijk + 4 * w_ijkm1 - w_ijkm2) / (2 * dz);
-                // Get derivatives
-                // ux  = (u_ip1jk - u_im1jk) / (2 * dx); // du/dx
-                // uy  = (u_ijp1k - u_ijm1k) / (2 * dy); // du/dy
-                // uz  = (u_ijkp1 - u_ijkm1) / (2 * dz); // du/dz
-                // vx  = (v_ip1jk - v_im1jk) / (2 * dx); // dv/dx
-                // vy  = (v_ijp1k - v_ijm1k) / (2 * dy); // dv/dy
-                // vz  = (v_ijkp1 - v_ijkm1) / (2 * dz); // dv/dz
-                // wx  = (w_ip1jk - w_im1jk) / (2 * dx); // dw/dx
-                // wy  = (w_ijp1k - w_ijm1k) / (2 * dy); // dw/dy
-                // wz  = (w_ijkp1 - w_ijkm1) / (2 * dz); // dw/dz
+                // Compute first partial derivatives
                 ux = u_plu * u_im + u_min * u_ip; // du/dx
                 uy = u_plu * u_jm + u_min * u_jp; // du/dy
                 uz = u_plu * u_km + u_min * u_kp; // du/dz
@@ -203,6 +176,7 @@ void Phi(double t, double *R_old, double *R_new, Parameters *parameters) {
                 Tx  = (T_ip1jk - T_im1jk) / (2 * dx); // dT/dx
                 Ty  = (T_ijp1k - T_ijm1k) / (2 * dy); // dT/dy
                 Tz  = (T_ijkp1 - T_ijkm1) / (2 * dz); // dT/dz
+                // Compute second partial derivatives
                 uxx = (u_ip1jk - 2 * u_ijk + u_im1jk) / (dx * dx); // d^2u/dx^2
                 uyy = (u_ijp1k - 2 * u_ijk + u_ijm1k) / (dy * dy); // d^2u/dy^2
                 uzz = (u_ijkp1 - 2 * u_ijk + u_ijkm1) / (dz * dz); // d^2u/dz^2
@@ -221,9 +195,10 @@ void Phi(double t, double *R_old, double *R_new, Parameters *parameters) {
                     Y_RHS = -Y_f * Y_ijk * K(T_ijk, A, T_a) * H(T_ijk - T_pc);
                     R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
                 }
-                u_RHS = nu * (uxx + uyy + uzz);// - (u_ijk * ux + v_ijk * uy + w_ijk * uz) + fx;
-                v_RHS = nu * (vxx + vyy + vzz);// - (u_ijk * vx + v_ijk * vy + w_ijk * vz) + fy;
-                w_RHS = nu * (wxx + wyy + wzz);// - (u_ijk * wx + v_ijk * wy + w_ijk * wz) + fz;
+                // Compute RHS
+                u_RHS = nu * (uxx + uyy + uzz) + fx; // - (u_ijk * ux + v_ijk * uy + w_ijk * uz) + fx;
+                v_RHS = nu * (vxx + vyy + vzz) + fy; // - (u_ijk * vx + v_ijk * vy + w_ijk * vz) + fy;
+                w_RHS = nu * (wxx + wyy + wzz) + fz; // - (u_ijk * wx + v_ijk * wy + w_ijk * wz) + fz;
                 T_RHS = alpha * (Txx + Tyy + Tzz) - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[u_index + idx(i, j, k, Nx, Ny, Nz)] = u_RHS;
@@ -336,10 +311,13 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
                         R_new[Y_index + idx(i, j, Nz - 1, Nx, Ny, Nz_Y)] = (4 * Y_ijkm1 - Y_ijkm2) / 3; // dY/dz = 0
                     }
                 }
-                // Check if Y_ijk is negative
+                // Check if Y_ijk is not valid
                 if (k < Nz_Y) {
                     if (R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] < 0) {
                         R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] = 0;
+                    }
+                    if (R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] > 1) {
+                        R_new[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)] = 1;
                     }
                 }
                 // Check if T_ijk is less than T_inf
