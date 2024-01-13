@@ -65,7 +65,7 @@ obj/
 data/
 doc/
 test/
-src/py/
+src/py/test2.py
 
 # Visual Studio Code #
 .vscode/
