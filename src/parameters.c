@@ -226,6 +226,54 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
 
+    // Fill turbulence indexes
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    parameters.turbulence_indexes.ux_index = 0;
+    parameters.turbulence_indexes.uy_index = Nx * Ny * Nz;
+    parameters.turbulence_indexes.uz_index = 2 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vx_index = 3 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vy_index = 4 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vz_index = 5 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wx_index = 6 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wy_index = 7 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wz_index = 8 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Tx_index = 9 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Ty_index = 10 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Tz_index = 11 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uxx_index = 12 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uyy_index = 13 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uzz_index = 14 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vxx_index = 15 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vyy_index = 16 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vzz_index = 17 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wxx_index = 18 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wyy_index = 19 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wzz_index = 20 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Txx_index = 21 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Tyy_index = 22 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.Tzz_index = 23 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uyx_index = 24 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uzx_index = 25 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uxy_index = 26 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uzy_index = 27 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uxz_index = 28 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.uyz_index = 29 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vyx_index = 30 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vzx_index = 31 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vxy_index = 32 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vzy_index = 33 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vxz_index = 34 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.vyz_index = 35 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wyx_index = 36 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wzx_index = 37 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wxy_index = 38 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wzy_index = 39 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wxz_index = 40 * Nx * Ny * Nz;
+    parameters.turbulence_indexes.wyz_index = 41 * Nx * Ny * Nz;
+    
+
     fclose(parameters_file);
     return parameters;
 }

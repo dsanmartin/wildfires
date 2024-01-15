@@ -35,9 +35,9 @@ void power_law_initial_condition(double *x, double *y, double *z, double *u, dou
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
-                u[idx(i, j, k, Nx, Ny, Nz)] = power_law(z[k], u_r, z_r, alpha_u);
-                v[idx(i, j, k, Nx, Ny, Nz)] = 0;
-                w[idx(i, j, k, Nx, Ny, Nz)] = 0;
+                u[IDX(i, j, k, Nx, Ny, Nz)] = power_law(z[k], u_r, z_r, alpha_u);
+                v[IDX(i, j, k, Nx, Ny, Nz)] = 0;
+                w[IDX(i, j, k, Nx, Ny, Nz)] = 0;
             }
         }
     }
@@ -59,7 +59,7 @@ void gaussian_temperature_initial_condition(double *x, double *y, double *z, dou
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
-                T[idx(i, j, k, Nx, Ny, Nz)] = T_inf + (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf + (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
             }
         }
     }
@@ -74,7 +74,7 @@ void fuel_initial_condition(double *x, double *y, double *z, double *Y, Paramete
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz_Y_h; k++) {
-                Y[idx(i, j, k, Nx, Ny, Nz_Y_h)] = 1;
+                Y[IDX(i, j, k, Nx, Ny, Nz_Y_h)] = 1;
             }
         }
     }

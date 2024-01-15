@@ -79,6 +79,63 @@ typedef struct _parameters {
     double hill_length;
     double hill_width;
     double hill_height;
+    TurbulenceIndexes turbulence_indexes;
+    PressureIndexes pressure_indexes;
 } Parameters;
+
+typedef struct _turbulence_indexes {
+    int ux_index;
+    int uy_index;
+    int uz_index;
+    int vx_index;
+    int vy_index;
+    int vz_index;
+    int wx_index;
+    int wy_index;
+    int wz_index;
+    int Tx_index;
+    int Ty_index;
+    int Tz_index;
+    int uxx_index;
+    int uyy_index;
+    int uzz_index;
+    int vxx_index;
+    int vyy_index;
+    int vzz_index;
+    int wxx_index;
+    int wyy_index;
+    int wzz_index;
+    int Txx_index;
+    int Tyy_index;
+    int Tzz_index;
+    int uyx_index;
+    int uzx_index;
+    int uxy_index;
+    int uzy_index;
+    int uxz_index;
+    int uyz_index;
+    int vyx_index;
+    int vzx_index;
+    int vxy_index;
+    int vzy_index;
+    int vxz_index;
+    int vyz_index;
+    int wyx_index;
+    int wzx_index;
+    int wxy_index;
+    int wzy_index;
+    int wxz_index;
+    int wyz_index;
+    int fwx_index;
+    int fwy_index;
+    int fwz_index;
+} TurbulenceIndexes;
+
+typedef struct _pressure_indexes  {
+    int ux;
+    int vy;
+    int wz;
+} PressureIndexes;
+
 
 #endif

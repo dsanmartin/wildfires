@@ -6,7 +6,7 @@ void save_scalar(char *path, double *x, double *y, double *z, double *f, int Nx,
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
-                fprintf(output, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], f[idx(i, j, k, Nx, Ny, Nz)]);
+                fprintf(output, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], f[IDX(i, j, k, Nx, Ny, Nz)]);
             }
         }
     }
@@ -51,16 +51,16 @@ void save_data(char *save_path, double *data, int n, Parameters *parameters) {
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
-                u = data[u_index + idx(i, j, k, Nx, Ny, Nz)];
-                v = data[v_index + idx(i, j, k, Nx, Ny, Nz)];
-                w = data[w_index + idx(i, j, k, Nx, Ny, Nz)];
-                T = data[T_index + idx(i, j, k, Nx, Ny, Nz)];
+                u = data[u_index + IDX(i, j, k, Nx, Ny, Nz)];
+                v = data[v_index + IDX(i, j, k, Nx, Ny, Nz)];
+                w = data[w_index + IDX(i, j, k, Nx, Ny, Nz)];
+                T = data[T_index + IDX(i, j, k, Nx, Ny, Nz)];
                 fprintf(output_u, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], u);
                 fprintf(output_v, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], v);
                 fprintf(output_w, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], w);
                 fprintf(output_T, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], T);
                 if (k < Nz_Y) {
-                    Y = data[Y_index + idx(i, j, k, Nx, Ny, Nz_Y)];
+                    Y = data[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
                     fprintf(output_Y, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], Y);
                 }
             }
