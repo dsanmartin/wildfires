@@ -65,27 +65,33 @@ typedef struct _field_indexes {
 } FieldIndexes;
 
 typedef struct _parameters {
-    int Nx;
-    int Ny;
-    int Nz;
-    int Nt;
-    int NT;
-    double x_min;
-    double x_max;
-    double y_min;
-    double y_max;
-    double z_min;
-    double z_max;
-    double t_min;
-    double t_max;
-    double dx;
-    double dy;
-    double dz;
-    double dt;
-    double *x;
-    double *y;
-    double *z;
-    double *t;
+    /* Mesh nodes */
+    int Nx; // Number of grid points in x
+    int Ny; // Number of grid points in y
+    int Nz; // Number of grid points in z
+    int Nt; // Number of grid points in t
+    int NT; // Number of time steps to be saved
+    /* Domain */
+    double x_min; // Minimum x value
+    double x_max; // Maximum x value
+    double y_min; // Minimum y value
+    double y_max; // Maximum y value
+    double z_min; // Minimum z value
+    double z_max; // Maximum z value
+    double t_min; // Minimum t value
+    double t_max; // Maximum t value
+    double dx; // Grid spacing in x
+    double dy; // Grid spacing in y
+    double dz; // Grid spacing in z
+    double dt; // Grid spacing in t
+    double *x; // x domain
+    double *y; // y domain
+    double *z; // z domain
+    double *t; // t domain
+    double *r; // Indexes in frequency space (x direction)
+    double *s; // Indexes in frequency space (y direction)
+    double *kx; // Domain in frequency space (x direction)
+    double *ky; // Domain in frequency space (y direction)
     double c_p;
     double c_v;
     double rho;

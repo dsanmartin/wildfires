@@ -203,11 +203,25 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
     parameters.z = (double *) malloc(parameters.Nz * sizeof(double));
     parameters.t = (double *) malloc(parameters.Nt * sizeof(double));
+    // Initialize r, s
+    parameters.r = (double *) malloc((parameters.Nx - 1) * sizeof(double));
+    parameters.s = (double *) malloc((parameters.Ny - 1) * sizeof(double));
+    parameters.kx = (double *) malloc((parameters.Nx - 1) * sizeof(double));
+    parameters.ky = (double *) malloc((parameters.Ny - 1) * sizeof(double));
+    fft_freq(parameters.r, parameters.Nx - 1, 1 / (parameters.Nx - 1));
+    fft_freq(parameters.s, parameters.Ny - 1, 1 / (parameters.Ny - 1));
+    // Physical domain and frequency domain
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
+        if (i < parameters.Nx - 1) {
+            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / parameters.x_max;
+        }
     }
     for (int j = 0; j < parameters.Ny; j++) {
         parameters.y[j] = parameters.y_min + j * parameters.dy;
+        if (j < parameters.Ny - 1) {
+            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / parameters.y_max;
+        }
     }
     for (int k = 0; k < parameters.Nz; k++) {
         parameters.z[k] = parameters.z_min + k * parameters.dz;
@@ -219,6 +233,8 @@ Parameters read_parameters_file(const char *filePath) {
     for (int n = 0; n < parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
     }
+    // Frequency domain
+    
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;
     parameters.T0_y_center = (parameters.T0_y_start + parameters.T0_y_end) / 2;
