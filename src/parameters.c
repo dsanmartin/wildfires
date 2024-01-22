@@ -26,8 +26,9 @@
 Parameters read_parameters_file(const char *filePath) {
     FILE *parameters_file = fopen(filePath, "r"); // Open file
     Parameters parameters; // Create parameters struct
-    memset(&parameters, 0, sizeof(Parameters)); // Initialize parameters struct
     char line[MAX_LINE_LENGTH]; // Create line buffer
+    int size; // Size of the fields
+    memset(&parameters, 0, sizeof(Parameters)); // Initialize parameters struct
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -226,54 +227,64 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
 
-    // Fill turbulence indexes
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    parameters.turbulence_indexes.ux_index = 0;
-    parameters.turbulence_indexes.uy_index = Nx * Ny * Nz;
-    parameters.turbulence_indexes.uz_index = 2 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vx_index = 3 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vy_index = 4 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vz_index = 5 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wx_index = 6 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wy_index = 7 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wz_index = 8 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Tx_index = 9 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Ty_index = 10 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Tz_index = 11 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uxx_index = 12 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uyy_index = 13 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uzz_index = 14 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vxx_index = 15 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vyy_index = 16 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vzz_index = 17 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wxx_index = 18 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wyy_index = 19 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wzz_index = 20 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Txx_index = 21 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Tyy_index = 22 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.Tzz_index = 23 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uyx_index = 24 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uzx_index = 25 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uxy_index = 26 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uzy_index = 27 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uxz_index = 28 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.uyz_index = 29 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vyx_index = 30 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vzx_index = 31 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vxy_index = 32 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vzy_index = 33 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vxz_index = 34 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.vyz_index = 35 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wyx_index = 36 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wzx_index = 37 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wxy_index = 38 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wzy_index = 39 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wxz_index = 40 * Nx * Ny * Nz;
-    parameters.turbulence_indexes.wyz_index = 41 * Nx * Ny * Nz;
-    
+    // Sizes
+    size = parameters.Nx * parameters.Ny * parameters.Nz;
 
+    // Fill field indexes
+    parameters.field_indexes.u = 0;
+    parameters.field_indexes.v = size;
+    parameters.field_indexes.w = 2 * size;
+    parameters.field_indexes.T = 3 * size;
+    parameters.field_indexes.Y = 4 * size;
+
+    // Fill turbulence indexes
+    parameters.turbulence_indexes.ux = 0;
+    parameters.turbulence_indexes.uy = size;
+    parameters.turbulence_indexes.uz = 2 * size;
+    parameters.turbulence_indexes.vx = 3 * size;
+    parameters.turbulence_indexes.vy = 4 * size;
+    parameters.turbulence_indexes.vz = 5 * size;
+    parameters.turbulence_indexes.wx = 6 * size;
+    parameters.turbulence_indexes.wy = 7 * size;
+    parameters.turbulence_indexes.wz = 8 * size;
+    parameters.turbulence_indexes.Tx = 9 * size;
+    parameters.turbulence_indexes.Ty = 10 * size;
+    parameters.turbulence_indexes.Tz = 11 * size;
+    parameters.turbulence_indexes.uxx = 12 * size;
+    parameters.turbulence_indexes.uyy = 13 * size;
+    parameters.turbulence_indexes.uzz = 14 * size;
+    parameters.turbulence_indexes.vxx = 15 * size;
+    parameters.turbulence_indexes.vyy = 16 * size;
+    parameters.turbulence_indexes.vzz = 17 * size;
+    parameters.turbulence_indexes.wxx = 18 * size;
+    parameters.turbulence_indexes.wyy = 19 * size;
+    parameters.turbulence_indexes.wzz = 20 * size;
+    parameters.turbulence_indexes.Txx = 21 * size;
+    parameters.turbulence_indexes.Tyy = 22 * size;
+    parameters.turbulence_indexes.Tzz = 23 * size;
+    // parameters.turbulence_indexes.uyx = 24 * size;
+    // parameters.turbulence_indexes.uzx = 25 * size;
+    // parameters.turbulence_indexes.uxy = 26 * size;
+    // parameters.turbulence_indexes.uzy = 27 * size;
+    // parameters.turbulence_indexes.uxz = 28 * size;
+    // parameters.turbulence_indexes.uyz = 29 * size;
+    // parameters.turbulence_indexes.vyx = 30 * size;
+    // parameters.turbulence_indexes.vzx = 31 * size;
+    // parameters.turbulence_indexes.vxy = 32 * size;
+    // parameters.turbulence_indexes.vzy = 33 * size;
+    // parameters.turbulence_indexes.vxz = 34 * size;
+    // parameters.turbulence_indexes.vyz = 35 * size;
+    // parameters.turbulence_indexes.wyx = 36 * size;
+    // parameters.turbulence_indexes.wzx = 37 * size;
+    // parameters.turbulence_indexes.wxy = 38 * size;
+    // parameters.turbulence_indexes.wzy = 39 * size;
+    // parameters.turbulence_indexes.wxz = 40 * size;
+    // parameters.turbulence_indexes.wyz = 41 * size;
+    parameters.turbulence_indexes.fw = 24 * size;
+    parameters.turbulence_indexes.fwx = 25 * size;
+    parameters.turbulence_indexes.fwy = 26 * size;
+    parameters.turbulence_indexes.fwz = 27 * size;
+    
     fclose(parameters_file);
     return parameters;
 }

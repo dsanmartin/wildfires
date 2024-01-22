@@ -51,7 +51,7 @@ if len(sys.argv) < 2:
 # Read the data
 data_dir = 'data/output/'
 
-Nx, Ny, Nz, Nt = 128, 128, 64, 10
+Nx, Ny, Nz, Nt = 128, 128, 64, 6
 Nz_Y = 4
 
 # data = data.reshape((Ny, Nx, Nz), order='C')

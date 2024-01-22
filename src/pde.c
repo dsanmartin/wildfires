@@ -1,7 +1,6 @@
 #include "../include/pde.h"
-#include "../include/poisson.h"
 
-void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P_RHS, Parameters *parameters) {
+void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *P_RHS, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -12,7 +11,7 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
     double dt = parameters->dt;
     // double *x = parameters->x;
     // double *y = parameters->y;
-    // double *z = parameters->z;
+    double *z = parameters->z;
     double nu = parameters->nu;
     double alpha = parameters->alpha;
     // double Y_h = parameters->Y_h;
@@ -27,17 +26,17 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
     double c_p = parameters->c_p;
     double rho = parameters->rho;
     // Fields indexes
-    int u_index = 0;
-    int v_index = Nx * Ny * Nz;
-    int w_index = 2 * Nx * Ny * Nz;
-    int T_index = 3 * Nx * Ny * Nz;
-    int Y_index = 4 * Nx * Ny * Nz;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
+    int T_index = parameters->field_indexes.T;
+    int Y_index = parameters->field_indexes.Y;
     // Fields nodes
     double u_ijk, u_ip1jk, u_im1jk, u_ip2jk, u_im2jk, u_ijp1k, u_ijm1k, u_ijp2k, u_ijm2k, u_ijkp1, u_ijkm1, u_ijkp2, u_ijkm2;
     double v_ijk, v_ip1jk, v_im1jk, v_ip2jk, v_im2jk, v_ijp1k, v_ijm1k, v_ijp2k, v_ijm2k, v_ijkp1, v_ijkm1, v_ijkp2, v_ijkm2;
     double w_ijk, w_ip1jk, w_im1jk, w_ip2jk, w_im2jk, w_ijp1k, w_ijm1k, w_ijp2k, w_ijm2k, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;
-    double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1;
-    double Y_ijk;
+    double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1, T_ijkp2, T_ijkm2;
+    double Y_ijk, Y_ijkp1, Y_ijkp2, Y_ijkm1, Y_ijkm2;
     // Upwind scheme terms
     double u_plu, u_min, v_plu, v_min, w_plu, w_min;
     double u_ip, u_im, u_jp, u_jm, u_kp, u_km;
@@ -49,6 +48,7 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
     // Second partial derivatives
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
     double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, S = 0.0;    
+    double u_tau, tau_p, fw;
     double fx = 0.0, fy = 0.0, fz = 0.0;
     // u_ijk = 1;
     // v_ijk = 1;
@@ -57,6 +57,9 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
     for (int i = 1; i < Nx - 1; i++) {
         for (int j = 1; j < Ny - 1; j++) {
             for (int k = 1; k < Nz - 1; k++) {
+    // for (int i = 0; i < Nx; i++) {
+    //     for (int j = 0; j < Ny; j++) {
+    //         for (int k = 0; k < Nz; k++) {               
                 /* Get fields nodes */
                 u_ijk   = R_old[u_index + IDX(i, j, k, Nx, Ny, Nz)]; // u_{i,j,k}
                 u_ip1jk = R_old[u_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // u_{i+1,j,k}
@@ -209,6 +212,36 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
                 Txx = (T_ip1jk - 2 * T_ijk + T_im1jk) / (dx * dx); // d^2T/dx^2 
                 Tyy = (T_ijp1k - 2 * T_ijk + T_ijm1k) / (dy * dy); // d^2T/dy^2
                 Tzz = (T_ijkp1 - 2 * T_ijk + T_ijkm1) / (dz * dz); // d^2T/dz^2
+                // Damping function
+                tau_p = sqrt((nu * 0.5 * (uz + wx)) * (nu * 0.5 * (uz + wx)) + (nu * 0.5 * (vz + wy)) * (nu * 0.5 * (vz + wy)));
+                u_tau = sqrt(tau_p);
+                fw = f_damping(z[k], u_tau, nu);
+                // Copy to turbulence array
+                R_turbulence[parameters->turbulence_indexes.ux  + IDX(i, j, k, Nx, Ny, Nz)] = ux;
+                R_turbulence[parameters->turbulence_indexes.uy  + IDX(i, j, k, Nx, Ny, Nz)] = uy;
+                R_turbulence[parameters->turbulence_indexes.uz  + IDX(i, j, k, Nx, Ny, Nz)] = uz;
+                R_turbulence[parameters->turbulence_indexes.vx  + IDX(i, j, k, Nx, Ny, Nz)] = vx;
+                R_turbulence[parameters->turbulence_indexes.vy  + IDX(i, j, k, Nx, Ny, Nz)] = vy;
+                R_turbulence[parameters->turbulence_indexes.vz  + IDX(i, j, k, Nx, Ny, Nz)] = vz;
+                R_turbulence[parameters->turbulence_indexes.wx  + IDX(i, j, k, Nx, Ny, Nz)] = wx;
+                R_turbulence[parameters->turbulence_indexes.wy  + IDX(i, j, k, Nx, Ny, Nz)] = wy;
+                R_turbulence[parameters->turbulence_indexes.wz  + IDX(i, j, k, Nx, Ny, Nz)] = wz;
+                R_turbulence[parameters->turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;
+                R_turbulence[parameters->turbulence_indexes.Ty  + IDX(i, j, k, Nx, Ny, Nz)] = Ty;
+                R_turbulence[parameters->turbulence_indexes.Tz  + IDX(i, j, k, Nx, Ny, Nz)] = Tz;
+                R_turbulence[parameters->turbulence_indexes.uxx + IDX(i, j, k, Nx, Ny, Nz)] = uxx;
+                R_turbulence[parameters->turbulence_indexes.uyy + IDX(i, j, k, Nx, Ny, Nz)] = uyy;
+                R_turbulence[parameters->turbulence_indexes.uzz + IDX(i, j, k, Nx, Ny, Nz)] = uzz;
+                R_turbulence[parameters->turbulence_indexes.vxx + IDX(i, j, k, Nx, Ny, Nz)] = vxx;
+                R_turbulence[parameters->turbulence_indexes.vyy + IDX(i, j, k, Nx, Ny, Nz)] = vyy;
+                R_turbulence[parameters->turbulence_indexes.vzz + IDX(i, j, k, Nx, Ny, Nz)] = vzz;
+                R_turbulence[parameters->turbulence_indexes.wxx + IDX(i, j, k, Nx, Ny, Nz)] = wxx;
+                R_turbulence[parameters->turbulence_indexes.wyy + IDX(i, j, k, Nx, Ny, Nz)] = wyy;
+                R_turbulence[parameters->turbulence_indexes.wzz + IDX(i, j, k, Nx, Ny, Nz)] = wzz;
+                R_turbulence[parameters->turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)] = Txx;
+                R_turbulence[parameters->turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)] = Tyy;
+                R_turbulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)] = Tzz;
+                R_turbulence[parameters->turbulence_indexes.fw  + IDX(i, j, k, Nx, Ny, Nz)] = fw;
                 /* Compute fuel and source term */
                 if (k < Nz_Y) {
                     Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
@@ -217,18 +250,20 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *P
                     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
                 }
                 // Compute RHS for velocity and temperature
-                u_RHS = nu * (uxx + uyy + uzz) + fx; // - (u_ijk * ux + v_ijk * uy + w_ijk * uz) + fx;
-                v_RHS = nu * (vxx + vyy + vzz) + fy; // - (u_ijk * vx + v_ijk * vy + w_ijk * vz) + fy;
-                w_RHS = nu * (wxx + wyy + wzz) + fz; // - (u_ijk * wx + v_ijk * wy + w_ijk * wz) + fz;
+                u_RHS = nu * (uxx + uyy + uzz) - (u_ijk * ux + v_ijk * uy + w_ijk * uz) * 0 + fx;
+                v_RHS = nu * (vxx + vyy + vzz) - (u_ijk * vx + v_ijk * vy + w_ijk * vz) * 0 + fy;
+                w_RHS = nu * (wxx + wyy + wzz) - (u_ijk * wx + v_ijk * wy + w_ijk * wz) * 0 + fz;
                 T_RHS = alpha * (Txx + Tyy + Tzz) - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
                 R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
                 R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_RHS;
-                R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;
+                R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;                
             }
         }
     }
+    // Add turbulence terms
+    // turbulence(R_turbulence, R_new, parameters);
 }
 
 void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *P_RHS, double dt, int size, Parameters *parameters) {
@@ -243,11 +278,11 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     int Nz_Y = parameters->k_Y_h + 1;
-    int u_index = 0;
-    int v_index = Nx * Ny * Nz;
-    int w_index = 2 * Nx * Ny * Nz;
-    int T_index = 3 * Nx * Ny * Nz;
-    int Y_index = 4 * Nx * Ny * Nz;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
+    int T_index = parameters->field_indexes.T;
+    int Y_index = parameters->field_indexes.Y;
     double T_inf = parameters->T_inf;
     double u_ijkm1, u_ijkm2;
     double v_ijkm1, v_ijkm2;
@@ -341,9 +376,12 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
                         R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = 1;
                     }
                 }
-                // Check if T_ijk is less than T_inf
+                // Check if T_ijk is less than T_inf and higher than 1500
                 if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] < T_inf) {
                     R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_inf;
+                }
+                if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > 1500) {
+                    R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = 1500;
                 }
             }        
         }
@@ -369,12 +407,12 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
     int size = Nx * Ny * Nz;
     int size_Y = Nx * Ny * Nz_Y;
     for (int i = 0; i < size; i++) {
-        y_0[i] = u[i];
-        y_0[size + i] = v[i];
-        y_0[2 * size + i] = w[i];
-        y_0[3 * size + i] = T[i];
+        y_0[parameters->field_indexes.u + i] = u[i];
+        y_0[parameters->field_indexes.v + i] = v[i];
+        y_0[parameters->field_indexes.w + i] = w[i];
+        y_0[parameters->field_indexes.T + i] = T[i];
         if (i < size_Y) {
-            y_0[4 * size + i] = Y[i];
+            y_0[parameters->field_indexes.Y + i] = Y[i];
         }
     }
 }
@@ -392,7 +430,7 @@ void solve_PDE(double *y_n, Parameters *parameters) {
     double dt = parameters->dt;
     double *y_np1 = (double *) malloc(size * sizeof(double));
     double *F = (double *) malloc(size * sizeof(double));
-    double *U_turbulence = (double *) malloc(45 * Nx * Ny * Nz * sizeof(double));
+    double *R_turbulence = (double *) malloc(28 * Nx * Ny * Nz * sizeof(double));
     // Pressure RHS for Poisson Problem
     double *P_RHS = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
     char *save_path = "data/output/";
@@ -400,7 +438,7 @@ void solve_PDE(double *y_n, Parameters *parameters) {
     // Time integration
     for (int n = 0; n < Nt; n++) { 
         // Euler step to compute U^*, T^{n+1}, Y^{n+1}
-        euler(t[n], y_n, y_np1, F, U_turbulence, P_RHS, dt, size, parameters);
+        euler(t[n], y_n, y_np1, F, R_turbulence, P_RHS, dt, size, parameters);
 
         // Solve Poisson problem for pressure (it only uses U^*)
         solve_pressure(y_np1, P_RHS, parameters);
@@ -426,6 +464,6 @@ void solve_PDE(double *y_n, Parameters *parameters) {
     free(t);
     free(y_np1);
     free(F);
-    free(U_turbulence);
+    free(R_turbulence);
     free(P_RHS);
 }

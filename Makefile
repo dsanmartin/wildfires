@@ -20,14 +20,14 @@ MKDIR  = mkdir -p
 # C/C++ flags
 #
 
-CFLAGS    = -Wall -g -O3 -std=c99 -lm #-Wextra
+CFLAGS    = -Wall -g -O3 -std=c99 -lm -lfftw3#-Wextra
 
 #
 # Files to compile: 
 #
 
 MAIN   = main.c
-CODC   = functions.c logs.c output.c parameters.c pde.c utils.c
+CODC   = functions.c logs.c output.c parameters.c pde.c poisson.c turbulence.c utils.c
 
 #
 # Formating the folder structure for compiling/linking/cleaning.
