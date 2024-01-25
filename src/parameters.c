@@ -192,6 +192,10 @@ Parameters read_parameters_file(const char *filePath) {
         if (strncmp(line, "Pr =", 4) == 0) {
             sscanf(line + 5, "%lf", &(parameters.Pr));
         }
+        // p_top
+        if (strncmp(line, "p_top =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.p_top));
+        }
     }
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
@@ -214,13 +218,13 @@ Parameters read_parameters_file(const char *filePath) {
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
         if (i < parameters.Nx - 1) {
-            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / parameters.x_max;
+            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / (parameters.x_max - parameters.x_min);
         }
     }
     for (int j = 0; j < parameters.Ny; j++) {
         parameters.y[j] = parameters.y_min + j * parameters.dy;
         if (j < parameters.Ny - 1) {
-            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / parameters.y_max;
+            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / (parameters.y_max - parameters.y_min);
         }
     }
     for (int k = 0; k < parameters.Nz; k++) {
@@ -228,12 +232,12 @@ Parameters read_parameters_file(const char *filePath) {
         // Get the index of z where Y_h is located
         if (parameters.z[k] <= parameters.Y_h) {
             parameters.k_Y_h = k;
+            parameters.Nz_Y = k + 1;
         }
     }
     for (int n = 0; n < parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
     }
-    // Frequency domain
     
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;

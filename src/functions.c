@@ -83,3 +83,43 @@ void fuel_initial_condition(double *x, double *y, double *z, double *Y, Paramete
         }
     }
 }
+
+void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters) {
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
+    int Nz = parameters->Nz;
+    int Nz_Y = parameters->Nz_Y;
+    /* Velocity parameters */
+    double u_r = parameters->u_r;
+    double z_r = parameters->z_r;
+    double alpha_u = parameters->alpha_u;
+    /* Temperature parameters */
+    double x_0 = parameters->T0_x_center;
+    double y_0 = parameters->T0_y_center;
+    double z_0 = parameters->T0_z_center;
+    double sx = parameters->T0_length;
+    double sy = parameters->T0_width;
+    double sz = parameters->T0_height;
+    double T_hot = parameters->T_hot;
+    double T_inf = parameters->T_inf;
+    /* Pressure paramenters */
+    double p_top = parameters->p_top;
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int k = 0; k < Nz; k++) {
+                u[IDX(i, j, k, Nx, Ny, Nz)] = power_law(z[k], u_r, z_r, alpha_u);
+                v[IDX(i, j, k, Nx, Ny, Nz)] = 0;
+                w[IDX(i, j, k, Nx, Ny, Nz)] = 0;
+                T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf + (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                if (k == Nz - 1) {
+                    p[IDX(i, j, k, Nx, Ny, Nz)] = p_top;
+                } else {
+                    p[IDX(i, j, k, Nx, Ny, Nz)] = 0;
+                }
+                if (k < Nz_Y) {
+                    Y[IDX(i, j, k, Nx, Ny, Nz_Y)] = 1;
+                }
+            }
+        }
+    }
+}

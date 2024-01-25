@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     // Allocate memory for x, y, z, u, v, w
     // size = (parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz;
     size = parameters.Nx * parameters.Ny * parameters.Nz;
-    size_Y = parameters.Nx * parameters.Ny * (parameters.k_Y_h + 1);
+    size_Y = parameters.Nx * parameters.Ny * (parameters.Nz_Y);
     u = (double *) malloc(size * sizeof(double));
     v = (double *) malloc(size * sizeof(double));
     w = (double *) malloc(size * sizeof(double));
@@ -36,14 +36,19 @@ int main(int argc, char *argv[]) {
     Y = (double *) malloc(size_Y * sizeof(double));
     y_0 = (double *) malloc((4 * size + size_Y) * sizeof(double));
 
-    // Initialize u, v, w
-    power_law_initial_condition(parameters.x, parameters.y, parameters.z, u, v, w, &parameters);
-    
-    // Initialize T
-    gaussian_temperature_initial_condition(parameters.x, parameters.y, parameters.z, T, &parameters);
+    printf("Filling initial conditions...\n")
 
-    // Initialize Y
-    fuel_initial_condition(parameters.x, parameters.y, parameters.z, Y, &parameters);
+    // Initialize u, v, w, T, Y, p
+    initial_conditions(parameters.x, parameters.y, parameters.z, u, v, w, T, Y, p, &parameters);
+
+    // Initialize u, v, w
+    // power_law_initial_condition(parameters.x, parameters.y, parameters.z, u, v, w, &parameters);
+    
+    // // Initialize T
+    // gaussian_temperature_initial_condition(parameters.x, parameters.y, parameters.z, T, &parameters);
+
+    // // Initialize Y
+    // fuel_initial_condition(parameters.x, parameters.y, parameters.z, Y, &parameters);
 
     // Save initial data
     // save_data("data/output/T.csv.0", parameters.x, parameters.y, parameters.z, T, parameters.Nx, parameters.Ny, parameters.Nz);
@@ -57,12 +62,12 @@ int main(int argc, char *argv[]) {
     printf("OK1\n");
 
     // Save initial data
-    save_data("data/output/", y_0, 0, &parameters);
+    // save_data("data/output/", y_0, p, 0, &parameters);
 
     printf("OK2\n");
 
     // Solve PDE
-    solve_PDE(y_0, &parameters);
+    solve_PDE(y_0, p, &parameters);
 
     printf("OK3\n");
 
@@ -73,7 +78,15 @@ int main(int argc, char *argv[]) {
     free(T);
     free(p);
     free(Y);
-    free(y_0);
+    // free(y_0);
+    free(parameters.x);
+    free(parameters.y);
+    free(parameters.z);
+    free(parameters.t);
+    free(parameters.r);
+    free(parameters.s);
+    free(parameters.kx);
+    free(parameters.ky);
 
     return 0;
 }

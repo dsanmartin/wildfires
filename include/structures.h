@@ -117,6 +117,7 @@ typedef struct _parameters {
     double T_hot;
     double Y_h;
     int k_Y_h;
+    int Nz_Y;
     double T_min;
     double T_max;
     double Y_min;
@@ -148,6 +149,7 @@ typedef struct _parameters {
     double hill_length;
     double hill_width;
     double hill_height;
+    double p_top;
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;

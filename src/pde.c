@@ -1,10 +1,10 @@
 #include "../include/pde.h"
 
-void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *P_RHS, Parameters *parameters) {
+void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->k_Y_h + 1;
+    int Nz_Y = parameters->Nz_Y;
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
@@ -250,9 +250,9 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *P
                     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
                 }
                 // Compute RHS for velocity and temperature
-                u_RHS = nu * (uxx + uyy + uzz) - (u_ijk * ux + v_ijk * uy + w_ijk * uz) * 0 + fx;
-                v_RHS = nu * (vxx + vyy + vzz) - (u_ijk * vx + v_ijk * vy + w_ijk * vz) * 0 + fy;
-                w_RHS = nu * (wxx + wyy + wzz) - (u_ijk * wx + v_ijk * wy + w_ijk * wz) * 0 + fz;
+                u_RHS = nu * (uxx + uyy + uzz) - (u_ijk * ux + v_ijk * uy + w_ijk * uz) + fx;
+                v_RHS = nu * (vxx + vyy + vzz) - (u_ijk * vx + v_ijk * vy + w_ijk * vz) + fy;
+                w_RHS = nu * (wxx + wyy + wzz) - (u_ijk * wx + v_ijk * wy + w_ijk * wz) + fz;
                 T_RHS = alpha * (Txx + Tyy + Tzz) - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
@@ -263,21 +263,14 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *P
         }
     }
     // Add turbulence terms
-    // turbulence(R_turbulence, R_new, parameters);
-}
-
-void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *P_RHS, double dt, int size, Parameters *parameters) {
-    Phi(t_n, y_n, F, U_turbulence, P_RHS, parameters);
-    for (int i = 0; i < size; i++) {        
-        y_np1[i] = y_n[i] + dt * F[i];
-    }
+    turbulence(R_turbulence, R_new, parameters);
 }
 
 void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->k_Y_h + 1;
+    int Nz_Y = parameters->Nz_Y;
     int u_index = parameters->field_indexes.u;
     int v_index = parameters->field_indexes.v;
     int w_index = parameters->field_indexes.w;
@@ -388,22 +381,35 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
     }
 }
 
-// void rk4(float t_n, float *y_n, float *y_np1, float *k1, float *k2, float *k3, float *k4, float dt, int size, Parameters *parameters) {
-//     Phi(t_n, y_n, k1, parameters);
-//     axpy(k2, )
-//     Phi(t_n + dt / 2, y_n + dt / 2 * k1, k2, parameters);
-//     Phi(t_n + dt / 2, y_n + dt / 2 * k2, k3, parameters);
-//     Phi(t_n + dt, y_n + dt * k3, k4, parameters);
-//     for (int i = 0; i < size; i++) {
-//         y_np1[i] = y_n[i] + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
-//     }
-// }
+void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters *parameters) {
+    Phi(t_n, y_n, F, U_turbulence, parameters);
+    for (int i = 0; i < size; i++) {        
+        y_np1[i] = y_n[i] + dt * F[i];
+    }
+}
+
+void rk4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence,double dt, int size, Parameters *parameters) {
+    int k1_index = 0;
+    int k2_index = size;
+    int k3_index = 2 * size;
+    int k4_index = 3 * size;
+    Phi(t_n, y_n, k + k1_index, U_turbulence, parameters);
+    caxpy(F, k + k1_index, y_n, dt * 0.5, size);
+    Phi(t_n + 0.5 * dt, F, k + k2_index, U_turbulence, parameters);
+    caxpy(F, k + k2_index, y_n, dt * 0.5, size);
+    Phi(t_n + 0.5 * dt, F, k + k3_index, U_turbulence, parameters);
+    caxpy(F, k + k3_index, y_n, dt, size);
+    Phi(t_n + dt, F, k + k4_index, U_turbulence, parameters);
+    for (int i = 0; i < size; i++) {
+        y_np1[i] = y_n[i] + dt / 6 * (k[k1_index + i] + 2 * k[k2_index + i] + 2 * k[k3_index + i] + k[k4_index + i]);
+    }
+}
 
 void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->k_Y_h + 1;
+    int Nz_Y = parameters->Nz_Y;
     int size = Nx * Ny * Nz;
     int size_Y = Nx * Ny * Nz_Y;
     for (int i = 0; i < size; i++) {
@@ -417,42 +423,53 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
     }
 }
 
-void solve_PDE(double *y_n, Parameters *parameters) {
+void solve_PDE(double *y_n, double *p_0, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     int Nt = parameters->Nt;
     int NT = parameters->NT;
-    int Nz_Y = parameters->k_Y_h + 1;
+    int Nz_Y = parameters->Nz_Y;
     int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y;
     int n_save;
     double *t = parameters->t;
     double dt = parameters->dt;
     double *y_np1 = (double *) malloc(size * sizeof(double));
     double *F = (double *) malloc(size * sizeof(double));
+    double *k = (double *) malloc(4 * size * sizeof(double));
     double *R_turbulence = (double *) malloc(28 * Nx * Ny * Nz * sizeof(double));
-    // Pressure RHS for Poisson Problem
-    double *P_RHS = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
+    // Arrays for pressure Poisson Problem
+    double *p = (double *) malloc(Nx * Ny * Nz * sizeof(double));
+    // double *p_top = (double *) malloc(Nx * Ny * Nz * sizeof(double));
+    // double *f = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
     char *save_path = "data/output/";
+    clock_t start, end;
+    // copy_slice(p_top, p_0, Nz - 1, Nx, Ny, Nz);
 
     // Time integration
     for (int n = 0; n < Nt; n++) { 
+        start = clock();
         // Euler step to compute U^*, T^{n+1}, Y^{n+1}
-        euler(t[n], y_n, y_np1, F, R_turbulence, P_RHS, dt, size, parameters);
+        // euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters);
+
+        // RK4 step to compute U^{n+1}, T^{n+1}, Y^{n+1}
+        rk4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
 
         // Solve Poisson problem for pressure (it only uses U^*)
-        solve_pressure(y_np1, P_RHS, parameters);
+        solve_pressure(y_np1, p, parameters);
 
         // Boundary conditions
         boundary_conditions(y_n, y_np1, parameters);
         
+        end = clock();
+        
         // Save data each NT steps and at the last step
         if (n > 0 && (n % NT == 0 || n == Nt - 1)) {  
             n_save = n / NT;
-            printf("n = %d, t_n = %lf\n", n, t[n]);          
-            printf("Saving files...\n");
+            printf("n = %d, t_n = %lf\n", n, t[n]);      
+            printf("Time per iteration: %lf s\n", (double) (end - start) / CLOCKS_PER_SEC);
             // save_data(filename, parameters->x, parameters->y, parameters->z, y_np1, Nx, Ny, Nz);   
-            save_data(save_path, y_np1, n_save, parameters);
+            // save_data(save_path, y_np1, p, n_save, parameters);
         }
 
         // Update y_n
@@ -462,8 +479,11 @@ void solve_PDE(double *y_n, Parameters *parameters) {
 
     // Free memory
     free(t);
+    free(y_n);
     free(y_np1);
     free(F);
     free(R_turbulence);
-    free(P_RHS);
+    free(p);
+    // free(p_top);
+    // free(f);
 }

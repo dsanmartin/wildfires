@@ -6,11 +6,27 @@ void axpy(double *y, double *x, double a, int size) {
     }
 }
 
+void caxpy(double *c, double *x, double *y, double a, int size) {
+    for (int i = 0; i < size; i++) {
+        c[i] = a * x[i] + y[i];
+    }
+}
+
 void copy(double *destination, double *source, int size) {
     for (int i = 0; i < size; i++) {
         destination[i] = source[i];
     }
 }
+
+void copy_slice(double *destination, double *source, int Nx, int Ny, int Nz, int slice) {
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            destination[IDX(i, j, 0, Nx, Ny, 1)] = source[IDX(i, j, slice, Nx, Ny, Nz)];
+        }
+    }
+}
+
+
 
 /*
 DFT sample frequencies

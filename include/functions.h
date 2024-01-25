@@ -14,6 +14,7 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
 void power_law_initial_condition(double *x, double *y, double *z, double *u, double *v, double *w, Parameters *parameters);
 void gaussian_temperature_initial_condition(double *x, double *y, double *z, double *T, Parameters *parameters);
 void fuel_initial_condition(double *x, double *y, double *z, double *Y, Parameters *parameters);
+void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters);
 
 
 #endif
