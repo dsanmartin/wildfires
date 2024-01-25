@@ -195,15 +195,16 @@ void solve_pressure(double *U, double *p, Parameters *parameters) {
         }
     }
 
-    // Prepare data for FFT
     // Plan for FFT2(f) for each z slice
     f_plan = fftw_plan_many_dft(2, n, howmany, f_in, inembed, istride, idist, f_out, onembed, ostride, odist, FFTW_FORWARD, FFTW_ESTIMATE);
     // Plan for FFT2(p_top)
     p_top_plan = fftw_plan_dft_2d(Nx - 1, Ny - 1, p_top_in, p_top_out, FFTW_FORWARD, FFTW_ESTIMATE);
-
     // Compute FFT
     fftw_execute(p_top_plan); // FFT2(p_top)
     fftw_execute(f_plan); // FFT2(f) for each z slice
+    // Destroy plans
+    fftw_destroy_plan(p_top_plan);
+    fftw_destroy_plan(f_plan);
     
     // Compute r,s systems of equations
     for (int r = 0; r < Nx - 1; r++) {
@@ -227,10 +228,9 @@ void solve_pressure(double *U, double *p, Parameters *parameters) {
             // Fix first coefficient of b and c
             b[0] =  -1 / dz;
             c[0] = (2 + 0.5 * gamma_rs) /dz;
+
             // Solve tridiagonal system
-            // thomas_algorithm(a, b, c, d, p_in + IDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1), p_out + IDX(r, s, 0, Nx, Ny, Nz), a, b, c, Nz - 1);
             thomas_algorithm(a, b, c, d, pk, l, u, y, Nz - 1);
-            // thomas_algorithm(a, b, c, f + IDX(r, s, 0, Nx, Ny, Nz), pk_in + IDX(r, s, 0, Nx, Ny, Nz), a, b, c, Nz - 1);
 
             // Fill p_in with solution
             for (int k = 0; k < Nz - 1; k++) {
@@ -239,12 +239,12 @@ void solve_pressure(double *U, double *p, Parameters *parameters) {
         }
     }
 
-    /*
     // Plan for IFFT2(p) for each z slice
     p_plan = fftw_plan_many_dft(2, n, howmany, p_in, inembed, istride, idist, p_out, onembed, ostride, odist, FFTW_BACKWARD, FFTW_ESTIMATE);
-    
     // Compute IFFT
     fftw_execute(p_plan);
+    // Destroy plan
+    fftw_destroy_plan(p_plan);
 
     // Restore data shape, compute real part and fill boundary conditions
     for (int i = 0; i < Nx; i++) {
@@ -260,19 +260,18 @@ void solve_pressure(double *U, double *p, Parameters *parameters) {
                 if (j == Ny - 1) { // Front boundary
                     p[IDX(i, j, k, Nx, Ny, Nz)] = p[IDX(i, 0, k, Nx, Ny, Nz)];
                 }
-                // p_top on z = z_max
-                if (k == Nz - 1) {
-                    p[IDX(i, j, k, Nx, Ny, Nz)] = p[IDX(i, j, k, Nx, Ny, Nz)];
-                }
+                // // p_top on z = z_max
+                // if (k == Nz - 1) {
+                //     p[IDX(i, j, k, Nx, Ny, Nz)] = p[IDX(i, j, k, Nx, Ny, Nz)];
+                // }
             }
         }
     }
-    */
 
     // Destroy plans
-    fftw_destroy_plan(p_top_plan);
-    fftw_destroy_plan(f_plan);
-    fftw_destroy_plan(p_plan);
+    // fftw_destroy_plan(p_top_plan);
+    // fftw_destroy_plan(f_plan);
+    // fftw_destroy_plan(p_plan);
     // Free memory
     // fftw_free(p_top_in);
     // fftw_free(p_in);

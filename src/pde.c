@@ -423,7 +423,7 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
     }
 }
 
-void solve_PDE(double *y_n, double *p_0, Parameters *parameters) {
+void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -439,7 +439,7 @@ void solve_PDE(double *y_n, double *p_0, Parameters *parameters) {
     double *k = (double *) malloc(4 * size * sizeof(double));
     double *R_turbulence = (double *) malloc(28 * Nx * Ny * Nz * sizeof(double));
     // Arrays for pressure Poisson Problem
-    double *p = (double *) malloc(Nx * Ny * Nz * sizeof(double));
+    // double *p = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *p_top = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *f = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
     char *save_path = "data/output/";
@@ -467,14 +467,13 @@ void solve_PDE(double *y_n, double *p_0, Parameters *parameters) {
         if (n > 0 && (n % NT == 0 || n == Nt - 1)) {  
             n_save = n / NT;
             printf("n = %d, t_n = %lf\n", n, t[n]);      
-            printf("Time per iteration: %lf s\n", (double) (end - start) / CLOCKS_PER_SEC);
-            // save_data(filename, parameters->x, parameters->y, parameters->z, y_np1, Nx, Ny, Nz);   
-            // save_data(save_path, y_np1, p, n_save, parameters);
+            printf("Time per iteration: %lf s\n", (double) (end - start) / CLOCKS_PER_SEC); 
+            printf("Saving data...\n");
+            save_data(save_path, y_np1, p, n_save, parameters);
         }
 
         // Update y_n
         copy(y_n, y_np1, size);
-
     }
 
     // Free memory
@@ -483,7 +482,7 @@ void solve_PDE(double *y_n, double *p_0, Parameters *parameters) {
     free(y_np1);
     free(F);
     free(R_turbulence);
-    free(p);
+    // free(p);
     // free(p_top);
     // free(f);
 }

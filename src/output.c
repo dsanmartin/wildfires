@@ -52,7 +52,6 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
     fprintf(output_T, "x, y, z, T\n");
     fprintf(output_Y, "x, y, z, Y\n");
     fprintf(output_p, "x, y, z, p\n");
-    printf("Saving files...\n");
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {

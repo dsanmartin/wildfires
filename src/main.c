@@ -36,57 +36,47 @@ int main(int argc, char *argv[]) {
     Y = (double *) malloc(size_Y * sizeof(double));
     y_0 = (double *) malloc((4 * size + size_Y) * sizeof(double));
 
-    printf("Filling initial conditions...\n")
+    
 
     // Initialize u, v, w, T, Y, p
+    printf("Initial conditions...\n");
     initial_conditions(parameters.x, parameters.y, parameters.z, u, v, w, T, Y, p, &parameters);
+    printf("Initial conditions... OK!\n");
 
-    // Initialize u, v, w
-    // power_law_initial_condition(parameters.x, parameters.y, parameters.z, u, v, w, &parameters);
     
-    // // Initialize T
-    // gaussian_temperature_initial_condition(parameters.x, parameters.y, parameters.z, T, &parameters);
-
-    // // Initialize Y
-    // fuel_initial_condition(parameters.x, parameters.y, parameters.z, Y, &parameters);
-
-    // Save initial data
-    // save_data("data/output/T.csv.0", parameters.x, parameters.y, parameters.z, T, parameters.Nx, parameters.Ny, parameters.Nz);
-    // save_data("data/output/Y.csv.0", parameters.x, parameters.y, parameters.z, Y, parameters.Nx, parameters.Ny, parameters.k_Y_h + 1);
-    
-    printf("OK0\n");
-
     // Create y_0 using T and Y
+    printf("Create y_0...\n");
     create_y_0(u, v, w, T, Y, y_0, &parameters);
-
-    printf("OK1\n");
+    printf("Create y_0... OK!\n");
 
     // Save initial data
-    // save_data("data/output/", y_0, p, 0, &parameters);
-
-    printf("OK2\n");
+    printf("Saving initial data...\n");
+    save_data("data/output/", y_0, p, 0, &parameters);
+    printf("Initial data saved!\n");
 
     // Solve PDE
+    printf("Solving PDE...\n");
     solve_PDE(y_0, p, &parameters);
-
-    printf("OK3\n");
+    printf("PDE solved!\n");
 
     // Free memory
+    printf("Freeing memory...\n");
     free(u);
     free(v);
     free(w);
     free(T);
     free(p);
-    free(Y);
-    // free(y_0);
-    free(parameters.x);
-    free(parameters.y);
-    free(parameters.z);
-    free(parameters.t);
-    free(parameters.r);
-    free(parameters.s);
-    free(parameters.kx);
-    free(parameters.ky);
+    // free(Y);
+    // printf("Memory freed 1!\n");
+    // free(parameters.x);
+    // free(parameters.y);
+    // free(parameters.z);
+    // free(parameters.t);
+    // free(parameters.r);
+    // free(parameters.s);
+    // free(parameters.kx);
+    // free(parameters.ky);
+    printf("Memory freed!\n");
 
     return 0;
 }
