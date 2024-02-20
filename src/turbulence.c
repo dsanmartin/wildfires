@@ -10,7 +10,7 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
     double Delta = pow(dx * dy * dz, 1.0 / 3.0);
     double C_s = parameters->C_s;
     double Pr = parameters->Pr;
-    double nu = parameters->nu;
+    // double nu = parameters->nu;
     double l = C_s * Delta;
     double ux, uy, uz, vx, vy, vz, wx, wy, wz, Tx, Ty, Tz;
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
@@ -26,8 +26,8 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
     double sgs_x_no_damp, sgs_y_no_damp, sgs_z_no_damp, sgs_q_no_damp;
     double sgs_x_damp, sgs_y_damp, sgs_z_damp, sgs_q_damp;
     double fw, fwx, fwy, fwz;
-    double u_tau, tau_p;
-    double *z = parameters->z;
+    // double u_tau, tau_p;
+    // double *z = parameters->z;
 
     for (int i = 1; i < Nx - 1; i++) {
         for (int j = 1; j < Ny - 1; j++) {
@@ -111,9 +111,9 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
     
                 // |S| = sqrt(2 * S_ij * S_ij)
                 mod_S = sqrt(2.0 * (ux * ux + vy * vy + wz * wz + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz))) + 1e-16;
-                psi_x = 4 * (ux * uxx + vy * vyx + wz * wzx) + 2 * (uz + wx) * (uzx + wxx) + 2 * (vx + uy) * (vxx + uyx) + 2 * (wy + vz) * (wzx + vzy);
-                psi_y = 4 * (ux * uxy + vy * vyy + wz * wzy) + 2 * (uz + wx) * (uzy + vzx) + 2 * (vx + uy) * (vxy + vyy) + 2 * (wy + vz) * (wzy + vzz);
-                psi_z = 4 * (ux * uxz + vy * vyz + wz * wzz) + 2 * (uz + wx) * (uzz + wzz) + 2 * (vx + uy) * (vxz + uyz) + 2 * (wy + vz) * (wzz + vzz);
+                psi_x = 4 * (ux * uxx + vy * vyx + wz * wzx) + 2 * (uz + wx) * (uzx + wxx) + 2 * (vx + uy) * (vxx + uyx) + 2 * (wy + vz) * (wyx + vzx);
+                psi_y = 4 * (ux * uxy + vy * vyy + wz * wzy) + 2 * (uz + wx) * (uzy + wxy) + 2 * (vx + uy) * (vxy + uyy) + 2 * (wy + vz) * (wyy + vzy);
+                psi_z = 4 * (ux * uxz + vy * vyz + wz * wzz) + 2 * (uz + wx) * (uzz + wxz) + 2 * (vx + uy) * (vxz + uyz) + 2 * (wy + vz) * (wyz + vzz);
 
                 // SGS model
                 sgs_x_damp = 2 * mod_S * fw * (fwx * ux + 0.5 * fwy * (vx + uy) + 0.5 * fwz * (wx + uz));
@@ -130,10 +130,10 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
                 sgs_q = -l * l / Pr * (sgs_q_no_damp * fw * fw + sgs_q_damp);
 
                 // Add SGS model to R
-                R[parameters->field_indexes.u + IDX(i, j, k, Nx, Ny, Nz)] += sgs_x;
-                R[parameters->field_indexes.v + IDX(i, j, k, Nx, Ny, Nz)] += sgs_y;
-                R[parameters->field_indexes.w + IDX(i, j, k, Nx, Ny, Nz)] += sgs_z;
-                R[parameters->field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] += sgs_q;
+                R[parameters->field_indexes.u + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_x;
+                R[parameters->field_indexes.v + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_y;
+                R[parameters->field_indexes.w + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_z;
+                R[parameters->field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_q;
             }
         }
     }

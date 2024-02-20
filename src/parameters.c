@@ -174,11 +174,11 @@ Parameters read_parameters_file(const char *filePath) {
         }
         // U0 Type
         if (strncmp(line, "U0_type =", 9) == 0) {
-            sscanf(line + 10, "%s", &(parameters.U0_type));
+            sscanf(line + 10, "%s", (char *) &(parameters.U0_type));
         }
         // T0 Shape
         if (strncmp(line, "T0_shape =", 10) == 0) {
-            sscanf(line + 11, "%s", &(parameters.T0_shape));
+            sscanf(line + 11, "%s", (char *) &(parameters.T0_shape));
         }
         // Acceleration due to gravity g
         if (strncmp(line, "g =", 3) == 0) {
@@ -197,6 +197,7 @@ Parameters read_parameters_file(const char *filePath) {
             sscanf(line + 8, "%lf", &(parameters.p_top));
         }
     }
+    parameters.alpha_u = 1.0 / 7.0;
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
     parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
@@ -212,8 +213,8 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.s = (double *) malloc((parameters.Ny - 1) * sizeof(double));
     parameters.kx = (double *) malloc((parameters.Nx - 1) * sizeof(double));
     parameters.ky = (double *) malloc((parameters.Ny - 1) * sizeof(double));
-    fft_freq(parameters.r, parameters.Nx - 1, 1 / (parameters.Nx - 1));
-    fft_freq(parameters.s, parameters.Ny - 1, 1 / (parameters.Ny - 1));
+    fft_freq(parameters.r, parameters.Nx - 1, 1.0 / (parameters.Nx - 1));
+    fft_freq(parameters.s, parameters.Ny - 1, 1.0 / (parameters.Ny - 1));
     // Physical domain and frequency domain
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;

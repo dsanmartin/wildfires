@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     Parameters parameters = read_parameters_file(parameters_file_path);
     log_parameters(&parameters, 0);
-    // log_parameters(&parameters, 1);
+    log_parameters(&parameters, 1);
 
     // Allocate memory for x, y, z, u, v, w
     // size = (parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz;
@@ -36,14 +36,11 @@ int main(int argc, char *argv[]) {
     Y = (double *) malloc(size_Y * sizeof(double));
     y_0 = (double *) malloc((4 * size + size_Y) * sizeof(double));
 
-    
-
     // Initialize u, v, w, T, Y, p
     printf("Initial conditions...\n");
     initial_conditions(parameters.x, parameters.y, parameters.z, u, v, w, T, Y, p, &parameters);
     printf("Initial conditions... OK!\n");
 
-    
     // Create y_0 using T and Y
     printf("Create y_0...\n");
     create_y_0(u, v, w, T, Y, y_0, &parameters);
@@ -66,7 +63,7 @@ int main(int argc, char *argv[]) {
     free(w);
     free(T);
     free(p);
-    // free(Y);
+    free(Y);
     // printf("Memory freed 1!\n");
     // free(parameters.x);
     // free(parameters.y);

@@ -59,14 +59,14 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
                 v = data[v_index + IDX(i, j, k, Nx, Ny, Nz)];
                 w = data[w_index + IDX(i, j, k, Nx, Ny, Nz)];
                 T = data[T_index + IDX(i, j, k, Nx, Ny, Nz)];
-                fprintf(output_u, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], u);
-                fprintf(output_v, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], v);
-                fprintf(output_w, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], w);
-                fprintf(output_T, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], T);
-                fprintf(output_p, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], p[IDX(i, j, k, Nx, Ny, Nz)]);
+                fprintf(output_u, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], u);
+                fprintf(output_v, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], v);
+                fprintf(output_w, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], w);
+                fprintf(output_T, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], T);
+                fprintf(output_p, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], p[IDX(i, j, k, Nx, Ny, Nz)]);
                 if (k < Nz_Y) {
                     Y = data[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
-                    fprintf(output_Y, "%lf, %lf, %lf, %lf\n", x[i], y[j], z[k], Y);
+                    fprintf(output_Y, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], Y);
                 }
             }
         }

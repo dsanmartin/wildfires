@@ -8,7 +8,7 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
-    double dt = parameters->dt;
+    // double dt = parameters->dt;
     // double *x = parameters->x;
     // double *y = parameters->y;
     double *z = parameters->z;
@@ -25,6 +25,8 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double T_inf = parameters->T_inf;
     double c_p = parameters->c_p;
     double rho = parameters->rho;
+    double Y_D = parameters->Y_D;
+    double g = parameters->g;
     // Fields indexes
     int u_index = parameters->field_indexes.u;
     int v_index = parameters->field_indexes.v;
@@ -35,8 +37,8 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double u_ijk, u_ip1jk, u_im1jk, u_ip2jk, u_im2jk, u_ijp1k, u_ijm1k, u_ijp2k, u_ijm2k, u_ijkp1, u_ijkm1, u_ijkp2, u_ijkm2;
     double v_ijk, v_ip1jk, v_im1jk, v_ip2jk, v_im2jk, v_ijp1k, v_ijm1k, v_ijp2k, v_ijm2k, v_ijkp1, v_ijkm1, v_ijkp2, v_ijkm2;
     double w_ijk, w_ip1jk, w_im1jk, w_ip2jk, w_im2jk, w_ijp1k, w_ijm1k, w_ijp2k, w_ijm2k, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;
-    double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1, T_ijkp2, T_ijkm2;
-    double Y_ijk, Y_ijkp1, Y_ijkp2, Y_ijkm1, Y_ijkm2;
+    double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1;
+    double Y_ijk;
     // Upwind scheme terms
     double u_plu, u_min, v_plu, v_min, w_plu, w_min;
     double u_ip, u_im, u_jp, u_jm, u_kp, u_km;
@@ -49,64 +51,190 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
     double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, S = 0.0;    
     double u_tau, tau_p, fw;
-    double fx = 0.0, fy = 0.0, fz = 0.0;
-    // u_ijk = 1;
-    // v_ijk = 1;
-    // w_ijk = 0;
+    double mod_U;
+    double F_x = 0.0, F_y = 0.0, F_z = 0.0;
+
     // Loop over interior nodes
-    for (int i = 1; i < Nx - 1; i++) {
-        for (int j = 1; j < Ny - 1; j++) {
-            for (int k = 1; k < Nz - 1; k++) {
-    // for (int i = 0; i < Nx; i++) {
-    //     for (int j = 0; j < Ny; j++) {
-    //         for (int k = 0; k < Nz; k++) {               
+    // for (int i = 1; i < Nx - 1; i++) {
+    //     for (int j = 1; j < Ny - 1; j++) {
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int k = 1; k < Nz - 1; k++) {            
                 /* Get fields nodes */
                 u_ijk   = R_old[u_index + IDX(i, j, k, Nx, Ny, Nz)]; // u_{i,j,k}
-                u_ip1jk = R_old[u_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // u_{i+1,j,k}
-                u_im1jk = R_old[u_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // u_{i-1,j,k}
-                u_ip2jk = R_old[u_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // u_{i+2,j,k}
-                u_im2jk = R_old[u_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // u_{i-2,j,k}
-                u_ijp1k = R_old[u_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // u_{i,j+1,k}
-                u_ijm1k = R_old[u_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // u_{i,j-1,k}
-                u_ijp2k = R_old[u_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // u_{i,j+2,k}
-                u_ijm2k = R_old[u_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // u_{i,j-2,k}
-                u_ijkp1 = R_old[u_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // u_{i,j,k+1}
-                u_ijkm1 = R_old[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
-                u_ijkp2 = R_old[u_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // u_{i,j,k+2}
-                u_ijkm2 = R_old[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
                 v_ijk   = R_old[v_index + IDX(i, j, k, Nx, Ny, Nz)]; // v_{i,j,k}
-                v_ip1jk = R_old[v_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // v_{i+1,j,k}
-                v_im1jk = R_old[v_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // v_{i-1,j,k}
-                v_ip2jk = R_old[v_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // v_{i+2,j,k}
-                v_im2jk = R_old[v_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // v_{i-2,j,k}
-                v_ijp1k = R_old[v_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // v_{i,j+1,k}
-                v_ijm1k = R_old[v_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // v_{i,j-1,k}
-                v_ijp2k = R_old[v_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // v_{i,j+2,k}
-                v_ijm2k = R_old[v_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // v_{i,j-2,k}
-                v_ijkp1 = R_old[v_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // v_{i,j,k+1}
-                v_ijkm1 = R_old[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
-                v_ijkp2 = R_old[v_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // v_{i,j,k+2}
-                v_ijkm2 = R_old[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
                 w_ijk   = R_old[w_index + IDX(i, j, k, Nx, Ny, Nz)]; // w_{i,j,k}
-                w_ip1jk = R_old[w_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // w_{i+1,j,k}
-                w_im1jk = R_old[w_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // w_{i-1,j,k}
-                w_ip2jk = R_old[w_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // w_{i+2,j,k}
-                w_im2jk = R_old[w_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // w_{i-2,j,k}
-                w_ijp1k = R_old[w_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // w_{i,j+1,k}
-                w_ijm1k = R_old[w_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // w_{i,j-1,k}
-                w_ijp2k = R_old[w_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // w_{i,j+2,k}
-                w_ijm2k = R_old[w_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // w_{i,j-2,k}
-                w_ijkp1 = R_old[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // w_{i,j,k+1}
-                w_ijkm1 = R_old[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
-                w_ijkp2 = R_old[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // w_{i,j,k+2}
-                w_ijkm2 = R_old[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2} 
                 T_ijk   = R_old[T_index + IDX(i, j, k, Nx, Ny, Nz)]; // T_{i,j,k}
-                T_ip1jk = R_old[T_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // T_{i+1,j,k}
-                T_im1jk = R_old[T_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // T_{i-1,j,k}
-                T_ijp1k = R_old[T_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // T_{i,j+1,k}
-                T_ijm1k = R_old[T_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // T_{i,j-1,k}
-                T_ijkp1 = R_old[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
-                T_ijkm1 = R_old[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
+                if (i == 0) {
+                    u_im1jk = R_old[u_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    u_im2jk = R_old[u_index + IDX(Nx - 3, j, k, Nx, Ny, Nz)];
+                    v_im1jk = R_old[v_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    v_im2jk = R_old[v_index + IDX(Nx - 3, j, k, Nx, Ny, Nz)];
+                    w_im1jk = R_old[w_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    w_im2jk = R_old[w_index + IDX(Nx - 3, j, k, Nx, Ny, Nz)];
+                    T_im1jk = R_old[T_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                } else if (i == 1) {
+                    u_im1jk = R_old[u_index + IDX(0, j, k, Nx, Ny, Nz)];
+                    u_im2jk = R_old[u_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    v_im1jk = R_old[v_index + IDX(0, j, k, Nx, Ny, Nz)];
+                    v_im2jk = R_old[v_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    w_im1jk = R_old[w_index + IDX(0, j, k, Nx, Ny, Nz)];
+                    w_im2jk = R_old[w_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
+                    T_im1jk = R_old[T_index + IDX(0, j, k, Nx, Ny, Nz)];
+                } else {
+                    u_im1jk = R_old[u_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // u_{i-1,j,k}
+                    u_im2jk = R_old[u_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // u_{i-2,j,k}
+                    v_im1jk = R_old[v_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // v_{i-1,j,k}
+                    v_im2jk = R_old[v_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // v_{i-2,j,k}
+                    w_im1jk = R_old[w_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // w_{i-1,j,k}
+                    w_im2jk = R_old[w_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // w_{i-2,j,k}
+                    T_im1jk = R_old[T_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // T_{i-1,j,k}
+                }
+                if (i == Nx - 1) {
+                    u_ip1jk = R_old[u_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    u_ip2jk = R_old[u_index + IDX(2, j, k, Nx, Ny, Nz)];
+                    v_ip1jk = R_old[v_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    v_ip2jk = R_old[v_index + IDX(2, j, k, Nx, Ny, Nz)];
+                    w_ip1jk = R_old[w_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    w_ip2jk = R_old[w_index + IDX(2, j, k, Nx, Ny, Nz)];
+                    T_ip1jk = R_old[T_index + IDX(1, j, k, Nx, Ny, Nz)];
+                } else if (i == Nx - 2) {
+                    u_ip1jk = R_old[u_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)];
+                    u_ip2jk = R_old[u_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    v_ip1jk = R_old[v_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)];
+                    v_ip2jk = R_old[v_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    w_ip1jk = R_old[w_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)];
+                    w_ip2jk = R_old[w_index + IDX(1, j, k, Nx, Ny, Nz)];
+                    T_ip1jk = R_old[T_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)];
+                } else {
+                    u_ip1jk = R_old[u_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // u_{i+1,j,k}
+                    u_ip2jk = R_old[u_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // u_{i+2,j,k}
+                    v_ip1jk = R_old[v_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // v_{i+1,j,k}
+                    v_ip2jk = R_old[v_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // v_{i+2,j,k}
+                    w_ip1jk = R_old[w_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // w_{i+1,j,k}
+                    w_ip2jk = R_old[w_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // w_{i+2,j,k}
+                    T_ip1jk = R_old[T_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // T_{i+1,j,k}
+                }
+                if (j == 0) {
+                    u_ijm1k = R_old[u_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    u_ijm2k = R_old[u_index + IDX(i, Ny - 3, k, Nx, Ny, Nz)];
+                    v_ijm1k = R_old[v_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    v_ijm2k = R_old[v_index + IDX(i, Ny - 3, k, Nx, Ny, Nz)];
+                    w_ijm1k = R_old[w_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    w_ijm2k = R_old[w_index + IDX(i, Ny - 3, k, Nx, Ny, Nz)];
+                    T_ijm1k = R_old[T_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                } else if (j == 1) {
+                    u_ijm1k = R_old[u_index + IDX(i, 0, k, Nx, Ny, Nz)];
+                    u_ijm2k = R_old[u_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    v_ijm1k = R_old[v_index + IDX(i, 0, k, Nx, Ny, Nz)];
+                    v_ijm2k = R_old[v_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    w_ijm1k = R_old[w_index + IDX(i, 0, k, Nx, Ny, Nz)];
+                    w_ijm2k = R_old[w_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
+                    T_ijm1k = R_old[T_index + IDX(i, 0, k, Nx, Ny, Nz)];
+                } else {
+                    u_ijm1k = R_old[u_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // u_{i,j-1,k}
+                    u_ijm2k = R_old[u_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // u_{i,j-2,k}
+                    v_ijm1k = R_old[v_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // v_{i,j-1,k}
+                    v_ijm2k = R_old[v_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // v_{i,j-2,k}
+                    w_ijm1k = R_old[w_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // w_{i,j-1,k}
+                    w_ijm2k = R_old[w_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // w_{i,j-2,k}
+                    T_ijm1k = R_old[T_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // T_{i,j-1,k}
+                }
+                if (k == 0) {
+                    u_ijkp1 = R_old[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    u_ijkp2 = R_old[u_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)];
+                    v_ijkp1 = R_old[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    v_ijkp2 = R_old[v_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)];
+                    w_ijkp1 = R_old[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    w_ijkp2 = R_old[w_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)];
+                    T_ijkp1 = R_old[T_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                } else if (k == 1) {
+                    u_ijkp1 = R_old[u_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    u_ijkp2 = R_old[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    v_ijkp1 = R_old[v_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    v_ijkp2 = R_old[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    w_ijkp1 = R_old[w_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    w_ijkp2 = R_old[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)];
+                    T_ijkp1 = R_old[T_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                } else {
+                    u_ijkp1 = R_old[u_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // u_{i,j,k+1}
+                    u_ijkp2 = R_old[u_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // u_{i,j,k+2}
+                    v_ijkp1 = R_old[v_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // v_{i,j,k+1}
+                    v_ijkp2 = R_old[v_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // v_{i,j,k+2}
+                    w_ijkp1 = R_old[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // w_{i,j,k+1}
+                    w_ijkp2 = R_old[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // w_{i,j,k+2}
+                    T_ijkp1 = R_old[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+                }
+                if (k == Nz - 1) {
+                    u_ijkm1 = R_old[u_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    u_ijkm2 = R_old[u_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    v_ijkm1 = R_old[v_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    v_ijkm2 = R_old[v_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    w_ijkm1 = R_old[w_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    w_ijkm2 = R_old[w_index + IDX(i, j, 0, Nx, Ny, Nz)];
+                    T_ijkm1 = R_old[T_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                } else if (k == Nz - 2) {
+                    u_ijkm1 = R_old[u_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)];
+                    u_ijkm2 = R_old[u_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    v_ijkm1 = R_old[v_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)];
+                    v_ijkm2 = R_old[v_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    w_ijkm1 = R_old[w_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)];
+                    w_ijkm2 = R_old[w_index + IDX(i, j, 1, Nx, Ny, Nz)];
+                    T_ijkm1 = R_old[T_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)];
+                } else {
+                    u_ijkm1 = R_old[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
+                    u_ijkm2 = R_old[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
+                    v_ijkm1 = R_old[v_index + IDX(i, j, k - 1, Nx, Ny ,Nz)]; // v_{i,j,k-1}
+                    v_ijkm2 = R_old[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
+                    w_ijkm1 = R_old[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
+                    w_ijkm2 = R_old[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
+                    T_ijkm1 = R_old[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
+                }
+                // u_ip1jk = R_old[u_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // u_{i+1,j,k}
+                // u_im1jk = R_old[u_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // u_{i-1,j,k}
+                // u_ip2jk = R_old[u_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // u_{i+2,j,k}
+                // u_im2jk = R_old[u_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // u_{i-2,j,k}
+                // u_ijp1k = R_old[u_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // u_{i,j+1,k}
+                // u_ijm1k = R_old[u_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // u_{i,j-1,k}
+                // u_ijp2k = R_old[u_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // u_{i,j+2,k}
+                // u_ijm2k = R_old[u_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // u_{i,j-2,k}
+                // u_ijkp1 = R_old[u_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // u_{i,j,k+1}
+                // u_ijkm1 = R_old[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
+                // u_ijkp2 = R_old[u_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // u_{i,j,k+2}
+                // u_ijkm2 = R_old[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
+                
+                // v_ip1jk = R_old[v_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // v_{i+1,j,k}
+                // v_im1jk = R_old[v_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // v_{i-1,j,k}
+                // v_ip2jk = R_old[v_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // v_{i+2,j,k}
+                // v_im2jk = R_old[v_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // v_{i-2,j,k}
+                // v_ijp1k = R_old[v_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // v_{i,j+1,k}
+                // v_ijm1k = R_old[v_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // v_{i,j-1,k}
+                // v_ijp2k = R_old[v_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // v_{i,j+2,k}
+                // v_ijm2k = R_old[v_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // v_{i,j-2,k}
+                // v_ijkp1 = R_old[v_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // v_{i,j,k+1}
+                // v_ijkm1 = R_old[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
+                // v_ijkp2 = R_old[v_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // v_{i,j,k+2}
+                // v_ijkm2 = R_old[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
+                
+                // w_ip1jk = R_old[w_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // w_{i+1,j,k}
+                // w_im1jk = R_old[w_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // w_{i-1,j,k}
+                // w_ip2jk = R_old[w_index + IDX(i + 2, j, k, Nx, Ny, Nz)]; // w_{i+2,j,k}
+                // w_im2jk = R_old[w_index + IDX(i - 2, j, k, Nx, Ny, Nz)]; // w_{i-2,j,k}
+                // w_ijp1k = R_old[w_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // w_{i,j+1,k}
+                // w_ijm1k = R_old[w_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // w_{i,j-1,k}
+                // w_ijp2k = R_old[w_index + IDX(i, j + 2, k, Nx, Ny, Nz)]; // w_{i,j+2,k}
+                // w_ijm2k = R_old[w_index + IDX(i, j - 2, k, Nx, Ny, Nz)]; // w_{i,j-2,k}
+                // w_ijkp1 = R_old[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // w_{i,j,k+1}
+                // w_ijkm1 = R_old[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
+                // w_ijkp2 = R_old[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // w_{i,j,k+2}
+                // w_ijkm2 = R_old[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2} 
+                
+                // T_ip1jk = R_old[T_index + IDX(i + 1, j, k, Nx, Ny, Nz)]; // T_{i+1,j,k}
+                // T_im1jk = R_old[T_index + IDX(i - 1, j, k, Nx, Ny, Nz)]; // T_{i-1,j,k}
+                // T_ijp1k = R_old[T_index + IDX(i, j + 1, k, Nx, Ny, Nz)]; // T_{i,j+1,k}
+                // T_ijm1k = R_old[T_index + IDX(i, j - 1, k, Nx, Ny, Nz)]; // T_{i,j-1,k}
+                // T_ijkp1 = R_old[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+                // T_ijkm1 = R_old[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
                 /* Computing upwind scheme terms */
                 u_plu = MAX(u_ijk, 0.0);
                 u_min = MIN(u_ijk, 0.0);
@@ -115,44 +243,44 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 w_plu = MAX(w_ijk, 0.0);
                 w_min = MIN(w_ijk, 0.0);
                 // Second order forward difference at i=1
-                if (i == 1) {
+                if (i == 0) {
                     u_im = (-3 * u_ijk + 4 * u_ip1jk - u_ip2jk) / (2 * dx);
                     v_im = (-3 * v_ijk + 4 * v_ip1jk - v_ip2jk) / (2 * dx);
                     w_im = (-3 * w_ijk + 4 * w_ip1jk - w_ip2jk) / (2 * dx);
                 } else {
-                    u_im = (-3 * u_ijk + 4 * u_im1jk - u_im2jk) / (2 * dx);
-                    v_im = (-3 * v_ijk + 4 * v_im1jk - v_im2jk) / (2 * dx);
-                    w_im = (-3 * w_ijk + 4 * w_im1jk - w_im2jk) / (2 * dx);
+                    u_im = (3 * u_ijk - 4 * u_im1jk + u_im2jk) / (2 * dx);
+                    v_im = (3 * v_ijk - 4 * v_im1jk + v_im2jk) / (2 * dx);
+                    w_im = (3 * w_ijk - 4 * w_im1jk + w_im2jk) / (2 * dx);
                 }
                 // Second order backward difference at i=Nx-2
-                if (i == Nx - 2) {
+                if (i == Nx - 1) {
                     u_ip = (3 * u_ijk - 4 * u_im1jk + u_im2jk) / (2 * dx);
                     v_ip = (3 * v_ijk - 4 * v_im1jk + v_im2jk) / (2 * dx);
                     w_ip = (3 * w_ijk - 4 * w_im1jk + w_im2jk) / (2 * dx);
                 } else {
-                    u_ip = (3 * u_ijk - 4 * u_ip1jk + u_ip2jk) / (2 * dx);
-                    v_ip = (3 * v_ijk - 4 * v_ip1jk + v_ip2jk) / (2 * dx);
-                    w_ip = (3 * w_ijk - 4 * w_ip1jk + w_ip2jk) / (2 * dx);
+                    u_ip = (-3 * u_ijk + 4 * u_ip1jk - u_ip2jk) / (2 * dx);
+                    v_ip = (-3 * v_ijk + 4 * v_ip1jk - v_ip2jk) / (2 * dx);
+                    w_ip = (-3 * w_ijk + 4 * w_ip1jk - w_ip2jk) / (2 * dx);
                 }
                 // Second order forward difference at j=1
-                if (j == 1) {
+                if (j == 0) {
                     u_jm = (-3 * u_ijk + 4 * u_ijp1k - u_ijp2k) / (2 * dy);
                     v_jm = (-3 * v_ijk + 4 * v_ijp1k - v_ijp2k) / (2 * dy);
                     w_jm = (-3 * w_ijk + 4 * w_ijp1k - w_ijp2k) / (2 * dy);
                 } else {
-                    u_jm = (-3 * u_ijk + 4 * u_ijm1k - u_ijm2k) / (2 * dy);
-                    v_jm = (-3 * v_ijk + 4 * v_ijm1k - v_ijm2k) / (2 * dy);
-                    w_jm = (-3 * w_ijk + 4 * w_ijm1k - w_ijm2k) / (2 * dy);
+                    u_jm = (3 * u_ijk - 4 * u_ijm1k + u_ijm2k) / (2 * dy);
+                    v_jm = (3 * v_ijk - 4 * v_ijm1k + v_ijm2k) / (2 * dy);
+                    w_jm = (3 * w_ijk - 4 * w_ijm1k + w_ijm2k) / (2 * dy);
                 }
                 // Second order backward difference at j=Ny-2
-                if (j == Ny - 2) {
+                if (j == Ny - 1) {
                     u_jp = (3 * u_ijk - 4 * u_ijm1k + u_ijm2k) / (2 * dy);
                     v_jp = (3 * v_ijk - 4 * v_ijm1k + v_ijm2k) / (2 * dy);
                     w_jp = (3 * w_ijk - 4 * w_ijm1k + w_ijm2k) / (2 * dy);
                 } else {
-                    u_jp = (3 * u_ijk - 4 * u_ijp1k + u_ijp2k) / (2 * dy);
-                    v_jp = (3 * v_ijk - 4 * v_ijp1k + v_ijp2k) / (2 * dy);
-                    w_jp = (3 * w_ijk - 4 * w_ijp1k + w_ijp2k) / (2 * dy);
+                    u_jp = (-3 * u_ijk + 4 * u_ijp1k - u_ijp2k) / (2 * dy);
+                    v_jp = (-3 * v_ijk + 4 * v_ijp1k - v_ijp2k) / (2 * dy);
+                    w_jp = (-3 * w_ijk + 4 * w_ijp1k - w_ijp2k) / (2 * dy);
                 }
                 // Second order forward difference at k=1
                 if (k == 1) {
@@ -160,9 +288,9 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                     v_km = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
                     w_km = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
                 } else {
-                    u_km = (-3 * u_ijk + 4 * u_ijkm1 - u_ijkm2) / (2 * dz);
-                    v_km = (-3 * v_ijk + 4 * v_ijkm1 - v_ijkm2) / (2 * dz);
-                    w_km = (-3 * w_ijk + 4 * w_ijkm1 - w_ijkm2) / (2 * dz);
+                    u_km = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz);
+                    v_km = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
+                    w_km = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
                 }
                 // Second order backward difference at k=Nz-2
                 if (k == Nz - 2) {
@@ -170,9 +298,9 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                     v_kp = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
                     w_kp = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
                 } else {
-                    u_kp = (3 * u_ijk - 4 * u_ijkp1 + u_ijkp2) / (2 * dz);
-                    v_kp = (3 * v_ijk - 4 * v_ijkp1 + v_ijkp2) / (2 * dz);
-                    w_kp = (3 * w_ijk - 4 * w_ijkp1 + w_ijkp2) / (2 * dz);
+                    u_kp = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz);
+                    v_kp = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
+                    w_kp = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
                 }
                 /* Compute first partial derivatives */
                 // Upwind scheme for velocity
@@ -248,22 +376,28 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                     S = source(T_ijk, Y_ijk, H_R, A, T_a, h, a_v, T_inf, c_p, rho);
                     Y_RHS = -Y_f * Y_ijk * K(T_ijk, A, T_a) * H(T_ijk - T_pc);
                     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
+                    // Compute force terms
+                    mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
+                    F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
+                    F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;                             
+                    F_z = -g * (T_ijk - T_inf) / T_ijk - Y_D * a_v * Y_ijk * mod_U * w_ijk;
                 }
                 // Compute RHS for velocity and temperature
-                u_RHS = nu * (uxx + uyy + uzz) - (u_ijk * ux + v_ijk * uy + w_ijk * uz) + fx;
-                v_RHS = nu * (vxx + vyy + vzz) - (u_ijk * vx + v_ijk * vy + w_ijk * vz) + fy;
-                w_RHS = nu * (wxx + wyy + wzz) - (u_ijk * wx + v_ijk * wy + w_ijk * wz) + fz;
+                u_RHS = nu * (uxx + uyy + uzz);// - (u_ijk * ux_uw + v_ijk * uy_uw + w_ijk * uz_uw) + F_x;
+                v_RHS = nu * (vxx + vyy + vzz);// - (u_ijk * vx_uw + v_ijk * vy_uw + w_ijk * vz_uw) + F_y;
+                w_RHS = nu * (wxx + wyy + wzz);// - (u_ijk * wx_uw + v_ijk * wy_uw + w_ijk * wz_uw) + F_z;
                 T_RHS = alpha * (Txx + Tyy + Tzz) - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
                 R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
                 R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_RHS;
-                R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;                
+                R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;  
+                // printf("u[%d,%d,%d] = %e\n", i, j, k, u_RHS);              
             }
         }
     }
     // Add turbulence terms
-    turbulence(R_turbulence, R_new, parameters);
+    // turbulence(R_turbulence, R_new, parameters);
 }
 
 void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
@@ -442,6 +576,21 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     // double *p = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *p_top = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *f = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
+    double complex *a = malloc((Nz - 2) * sizeof(double complex));
+    double complex *b = malloc((Nz - 1) * sizeof(double complex));
+    double complex *c = malloc((Nz - 2) * sizeof(double complex));
+    double complex *d = malloc((Nz - 1) * sizeof(double complex));
+    double complex *l = malloc((Nz - 2) * sizeof(double complex));
+    double complex *u = malloc((Nz - 1) * sizeof(double complex));
+    double complex *y = malloc((Nz - 1) * sizeof(double complex));
+    double complex *pk = malloc((Nz - 1) * sizeof(double complex));
+    fftw_complex *f_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    fftw_complex *f_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    fftw_complex *p_top_in = fftw_alloc_complex((Nx - 1) * (Ny - 1));
+    fftw_complex *p_top_out = fftw_alloc_complex((Nx - 1) * (Ny - 1));
+    fftw_complex *p_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    fftw_complex *p_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    fftw_plan p_plan, f_plan, p_top_plan;
     char *save_path = "data/output/";
     clock_t start, end;
     // copy_slice(p_top, p_0, Nz - 1, Nx, Ny, Nz);
@@ -450,13 +599,19 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     for (int n = 0; n < Nt; n++) { 
         start = clock();
         // Euler step to compute U^*, T^{n+1}, Y^{n+1}
-        // euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters);
+        euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters);
 
         // RK4 step to compute U^{n+1}, T^{n+1}, Y^{n+1}
-        rk4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
+        // rk4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
+
+        // Boundary conditions
+        // boundary_conditions(y_n, y_np1, parameters);
 
         // Solve Poisson problem for pressure (it only uses U^*)
-        solve_pressure(y_np1, p, parameters);
+        // solve_pressure_v1(y_np1, p, parameters);
+        // solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
+        // solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, parameters);
+        solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
 
         // Boundary conditions
         boundary_conditions(y_n, y_np1, parameters);
@@ -485,4 +640,21 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     // free(p);
     // free(p_top);
     // free(f);
+    // Free memory
+    fftw_destroy_plan(p_top_plan);
+    fftw_destroy_plan(f_plan);
+    fftw_destroy_plan(p_plan);
+    fftw_free(p_top_in);
+    fftw_free(p_in);
+    fftw_free(f_in);
+    fftw_free(p_top_out);
+    fftw_free(f_out);
+    fftw_free(p_out);
+    free(a);
+    free(b);
+    free(c);
+    free(d);
+    free(l);
+    free(u);
+    free(y);
 }
