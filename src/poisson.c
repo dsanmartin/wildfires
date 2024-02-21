@@ -247,6 +247,7 @@ void solve_pressure_v1(double *U, double *p, double complex *a, double complex *
 
 
 void solve_pressure(double *U, double *p, double complex *a, double complex *b, double complex *c, double complex *d, double complex *l, double complex *u, double complex *y, double complex *pk, fftw_plan p_plan, fftw_plan f_plan, fftw_plan p_top_plan, fftw_complex *f_in, fftw_complex *f_out, fftw_complex *p_top_in, fftw_complex *p_top_out, fftw_complex *p_in, fftw_complex *p_out, Parameters *parameters) {
+// void solve_pressure(double *U, double *p, double complex *a, double complex *b, double complex *c, double complex *d, double complex *l, double complex *u, double complex *y, double complex *pk, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -338,17 +339,17 @@ void solve_pressure(double *U, double *p, double complex *a, double complex *b, 
                 // Fill p with zeros
                 if (i < Nx - 1 && j < Ny - 1 && k < Nz - 1) {
                     // Compute rho / dt * div(U) and store it for many DFT (contiguous z slices)
-                    if (i > -1 && j > -1 && k > -1) {
-                        printf("u[%d,%d,%d]: %.14f\n", i, j, k, U[u_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                        printf("u_ip1jk= %.14f, u_im1jk= %.14f\n", u_ip1jk, u_im1jk);
-                        printf("ux[%d,%d,%d]: %.14f\n", i, j, k, ux);
-                        // printf("v[%d,%d,%d]: %.14f\n", i, j, k, U[v_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                        // printf("v_ijp1k= %.14f, v_ijm1k= %.14f\n", v_ijp1k, v_ijm1k);
-                        // printf("vy[%d,%d,%d]: %.14f\n", i, j, k, vy);
-                        // printf("w[%d,%d,%d]: %.14f\n", i, j, k, U[w_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                        // printf("w_ijkp1= %.14f, w_ijkm1= %.14f\n", w_ijkp1, w_ijkm1);
-                        // printf("wz[%d,%d,%d]: %.14f\n", i, j, k, wz);
-                    }
+                    // if (i > 0 && j > 0 && k > 0) {
+                    //     printf("u[%d,%d,%d]: %.14f\n", i, j, k, U[u_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                    //     printf("u_ip1jk= %.14f, u_im1jk= %.14f\n", u_ip1jk, u_im1jk);
+                    //     printf("ux[%d,%d,%d]: %.14f\n", i, j, k, ux);
+                    //     // printf("v[%d,%d,%d]: %.14f\n", i, j, k, U[v_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                    //     // printf("v_ijp1k= %.14f, v_ijm1k= %.14f\n", v_ijp1k, v_ijm1k);
+                    //     // printf("vy[%d,%d,%d]: %.14f\n", i, j, k, vy);
+                    //     // printf("w[%d,%d,%d]: %.14f\n", i, j, k, U[w_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                    //     // printf("w_ijkp1= %.14f, w_ijkm1= %.14f\n", w_ijkp1, w_ijkm1);
+                    //     // printf("wz[%d,%d,%d]: %.14f\n", i, j, k, wz);
+                    // }
                     f_in[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k] = rho * (ux + vy + wz) / dt; //f[IDX(i, j, k, Nx, Ny, Nz)] + I * 0.0;
                     f_out[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k] = 0.0;
                     p[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = 0.0;
@@ -459,6 +460,9 @@ void solve_pressure(double *U, double *p, double complex *a, double complex *b, 
         }
     }
 
+    // fftw_destroy_plan(p_top_plan);
+    // fftw_destroy_plan(f_plan);
+    // fftw_destroy_plan(p_plan);
     // fftw_free(p_top_in);
     // fftw_free(p_in);
     // fftw_free(f_in);
