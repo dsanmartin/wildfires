@@ -8,5 +8,6 @@
 
 void save_scalar(char *path, double *x, double *y, double *z, double *f, int Nx, int Ny, int Nz);
 void save_data(char *path, double *data, double *p, int n, Parameters *parameters);
+void save_time(char *save_path, double *t, int Nt, int NT);
 
 #endif

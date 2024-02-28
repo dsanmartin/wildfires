@@ -84,3 +84,18 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
     fclose(output_Y);
     fclose(output_p);
 }
+
+void save_time(char *save_path, double *t, int Nt, int NT) {
+    char *filename = (char *) malloc(100 * sizeof(char));
+    FILE *output;
+    sprintf(filename, "%st.csv", save_path);
+    output = fopen(filename, "w");
+    fprintf(output, "t\n");
+    for (int n = 0; n < Nt; n++) {
+        if (n % NT == 0 || n == Nt - 1) {
+            fprintf(output, "%.14f\n", t[n]);
+        }
+    }
+    free(filename);
+    fclose(output);
+}

@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
     // Save initial data
     printf("Saving initial data...\n");
     save_data("data/output/", y_0, p, 0, &parameters);
+    save_time("data/output/", parameters.t, parameters.Nt, parameters.NT);
     printf("Initial data saved!\n");
 
     // Solve PDE
