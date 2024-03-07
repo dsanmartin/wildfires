@@ -1,6 +1,6 @@
 #include "../include/turbulence.h"
 
-void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
+void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -28,35 +28,45 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
     double fw, fwx, fwy, fwz;
     // double u_tau, tau_p;
     // double *z = parameters->z;
-
-    for (int i = 1; i < Nx - 1; i++) {
-        for (int j = 1; j < Ny - 1; j++) {
+    int im1, ip1, jm1, jp1;
+    // int im2, ip2, jm2, jp2;
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
             for (int k = 1; k < Nz - 1; k++) {
-                uy_ip1jk = R_tubulence[parameters->turbulence_indexes.uy + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                uy_im1jk = R_tubulence[parameters->turbulence_indexes.uy + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                uz_ip1jk = R_tubulence[parameters->turbulence_indexes.uz + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                uz_im1jk = R_tubulence[parameters->turbulence_indexes.uz + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                uz_ijp1k = R_tubulence[parameters->turbulence_indexes.uz + IDX(i, j + 1, k, Nx, Ny, Nz)];
-                uz_ijm1k = R_tubulence[parameters->turbulence_indexes.uz + IDX(i, j - 1, k, Nx, Ny, Nz)];
-                vy_ip1jk = R_tubulence[parameters->turbulence_indexes.vy + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                vy_im1jk = R_tubulence[parameters->turbulence_indexes.vy + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                vz_ip1jk = R_tubulence[parameters->turbulence_indexes.vz + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                vz_im1jk = R_tubulence[parameters->turbulence_indexes.vz + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                vz_ijp1k = R_tubulence[parameters->turbulence_indexes.vz + IDX(i, j + 1, k, Nx, Ny, Nz)];
-                vz_ijm1k = R_tubulence[parameters->turbulence_indexes.vz + IDX(i, j - 1, k, Nx, Ny, Nz)];
-                wy_ip1jk = R_tubulence[parameters->turbulence_indexes.wy + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                wy_im1jk = R_tubulence[parameters->turbulence_indexes.wy + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                wz_ip1jk = R_tubulence[parameters->turbulence_indexes.wz + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                wz_im1jk = R_tubulence[parameters->turbulence_indexes.wz + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                wz_ijp1k = R_tubulence[parameters->turbulence_indexes.wz + IDX(i, j + 1, k, Nx, Ny, Nz)];
-                wz_ijm1k = R_tubulence[parameters->turbulence_indexes.wz + IDX(i, j - 1, k, Nx, Ny, Nz)];
-                fw_ip1jk = R_tubulence[parameters->turbulence_indexes.fw + IDX(i + 1, j, k, Nx, Ny, Nz)];
-                fw_im1jk = R_tubulence[parameters->turbulence_indexes.fw + IDX(i - 1, j, k, Nx, Ny, Nz)];
-                fw_ijp1k = R_tubulence[parameters->turbulence_indexes.fw + IDX(i, j + 1, k, Nx, Ny, Nz)];
-                fw_ijm1k = R_tubulence[parameters->turbulence_indexes.fw + IDX(i, j - 1, k, Nx, Ny, Nz)];
-                fw_ijkp1 = R_tubulence[parameters->turbulence_indexes.fw + IDX(i, j, k + 1, Nx, Ny, Nz)];
-                fw_ijkm1 = R_tubulence[parameters->turbulence_indexes.fw + IDX(i, j, k - 1, Nx, Ny, Nz)];
-                fw       = R_tubulence[parameters->turbulence_indexes.fw + IDX(i, j, k, Nx, Ny, Nz)];
+                // Indexes for periodic boundary conditions
+                im1 = (i - 1 + Nx - 1) % (Nx - 1);
+                // im2 = (i - 2 + Nx - 1) % (Nx - 1);
+                jm1 = (j - 1 + Ny - 1) % (Ny - 1);
+                // jm2 = (j - 2 + Ny - 1) % (Ny - 1);
+                ip1 = (i + 1) % (Nx - 1);
+                // ip2 = (i + 2) % (Nx - 1);
+                jp1 = (j + 1) % (Ny - 1);
+                // jp2 = (j + 2) % (Ny - 1);
+                uy_ip1jk = R_turbulence[parameters->turbulence_indexes.uy + IDX(ip1, j, k, Nx, Ny, Nz)];
+                uy_im1jk = R_turbulence[parameters->turbulence_indexes.uy + IDX(im1, j, k, Nx, Ny, Nz)];
+                uz_ip1jk = R_turbulence[parameters->turbulence_indexes.uz + IDX(ip1, j, k, Nx, Ny, Nz)];
+                uz_im1jk = R_turbulence[parameters->turbulence_indexes.uz + IDX(im1, j, k, Nx, Ny, Nz)];
+                uz_ijp1k = R_turbulence[parameters->turbulence_indexes.uz + IDX(i, jp1, k, Nx, Ny, Nz)];
+                uz_ijm1k = R_turbulence[parameters->turbulence_indexes.uz + IDX(i, jm1, k, Nx, Ny, Nz)];
+                vy_ip1jk = R_turbulence[parameters->turbulence_indexes.vy + IDX(ip1, j, k, Nx, Ny, Nz)];
+                vy_im1jk = R_turbulence[parameters->turbulence_indexes.vy + IDX(im1, j, k, Nx, Ny, Nz)];
+                vz_ip1jk = R_turbulence[parameters->turbulence_indexes.vz + IDX(ip1, j, k, Nx, Ny, Nz)];
+                vz_im1jk = R_turbulence[parameters->turbulence_indexes.vz + IDX(im1, j, k, Nx, Ny, Nz)];
+                vz_ijp1k = R_turbulence[parameters->turbulence_indexes.vz + IDX(i, jp1, k, Nx, Ny, Nz)];
+                vz_ijm1k = R_turbulence[parameters->turbulence_indexes.vz + IDX(i, jm1, k, Nx, Ny, Nz)];
+                wy_ip1jk = R_turbulence[parameters->turbulence_indexes.wy + IDX(ip1, j, k, Nx, Ny, Nz)];
+                wy_im1jk = R_turbulence[parameters->turbulence_indexes.wy + IDX(im1, j, k, Nx, Ny, Nz)];
+                wz_ip1jk = R_turbulence[parameters->turbulence_indexes.wz + IDX(ip1, j, k, Nx, Ny, Nz)];
+                wz_im1jk = R_turbulence[parameters->turbulence_indexes.wz + IDX(im1, j, k, Nx, Ny, Nz)];
+                wz_ijp1k = R_turbulence[parameters->turbulence_indexes.wz + IDX(i, jp1, k, Nx, Ny, Nz)];
+                wz_ijm1k = R_turbulence[parameters->turbulence_indexes.wz + IDX(i, jm1, k, Nx, Ny, Nz)];
+                fw_ip1jk = R_turbulence[parameters->turbulence_indexes.fw + IDX(ip1, j, k, Nx, Ny, Nz)];
+                fw_im1jk = R_turbulence[parameters->turbulence_indexes.fw + IDX(im1, j, k, Nx, Ny, Nz)];
+                fw_ijp1k = R_turbulence[parameters->turbulence_indexes.fw + IDX(i, jp1, k, Nx, Ny, Nz)];
+                fw_ijm1k = R_turbulence[parameters->turbulence_indexes.fw + IDX(i, jm1, k, Nx, Ny, Nz)];
+                fw_ijkp1 = R_turbulence[parameters->turbulence_indexes.fw + IDX(i, j, k + 1, Nx, Ny, Nz)];
+                fw_ijkm1 = R_turbulence[parameters->turbulence_indexes.fw + IDX(i, j, k - 1, Nx, Ny, Nz)];
+                fw       = R_turbulence[parameters->turbulence_indexes.fw + IDX(i, j, k, Nx, Ny, Nz)];
                 // Mixed partial derivatives
                 uyx = (uy_ip1jk - uy_im1jk) / (2.0 * dx);
                 uzx = (uz_ip1jk - uz_im1jk) / (2.0 * dx);
@@ -77,30 +87,30 @@ void turbulence(double *R_tubulence, double *R, Parameters *parameters) {
                 wxz = wzx;
                 wyz = wzy;
                 // Velocity gradients from R
-                ux = R_tubulence[parameters->turbulence_indexes.ux + IDX(i, j, k, Nx, Ny, Nz)];
-                uy = R_tubulence[parameters->turbulence_indexes.uy + IDX(i, j, k, Nx, Ny, Nz)];
-                uz = R_tubulence[parameters->turbulence_indexes.uz + IDX(i, j, k, Nx, Ny, Nz)];
-                vx = R_tubulence[parameters->turbulence_indexes.vx + IDX(i, j, k, Nx, Ny, Nz)];
-                vy = R_tubulence[parameters->turbulence_indexes.vy + IDX(i, j, k, Nx, Ny, Nz)];
-                vz = R_tubulence[parameters->turbulence_indexes.vz + IDX(i, j, k, Nx, Ny, Nz)];
-                wx = R_tubulence[parameters->turbulence_indexes.wx + IDX(i, j, k, Nx, Ny, Nz)];
-                wy = R_tubulence[parameters->turbulence_indexes.wy + IDX(i, j, k, Nx, Ny, Nz)];
-                wz = R_tubulence[parameters->turbulence_indexes.wz + IDX(i, j, k, Nx, Ny, Nz)];
-                Tx = R_tubulence[parameters->turbulence_indexes.Tx + IDX(i, j, k, Nx, Ny, Nz)];
-                Ty = R_tubulence[parameters->turbulence_indexes.Ty + IDX(i, j, k, Nx, Ny, Nz)];
-                Tz = R_tubulence[parameters->turbulence_indexes.Tz + IDX(i, j, k, Nx, Ny, Nz)];
-                uxx = R_tubulence[parameters->turbulence_indexes.uxx + IDX(i, j, k, Nx, Ny, Nz)];
-                uyy = R_tubulence[parameters->turbulence_indexes.uyy + IDX(i, j, k, Nx, Ny, Nz)];
-                uzz = R_tubulence[parameters->turbulence_indexes.uzz + IDX(i, j, k, Nx, Ny, Nz)];
-                vxx = R_tubulence[parameters->turbulence_indexes.vxx + IDX(i, j, k, Nx, Ny, Nz)];
-                vyy = R_tubulence[parameters->turbulence_indexes.vyy + IDX(i, j, k, Nx, Ny, Nz)];
-                vzz = R_tubulence[parameters->turbulence_indexes.vzz + IDX(i, j, k, Nx, Ny, Nz)];
-                wxx = R_tubulence[parameters->turbulence_indexes.wxx + IDX(i, j, k, Nx, Ny, Nz)];
-                wyy = R_tubulence[parameters->turbulence_indexes.wyy + IDX(i, j, k, Nx, Ny, Nz)];
-                wzz = R_tubulence[parameters->turbulence_indexes.wzz + IDX(i, j, k, Nx, Ny, Nz)];
-                Txx = R_tubulence[parameters->turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)];
-                Tyy = R_tubulence[parameters->turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)];
-                Tzz = R_tubulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)];
+                ux = R_turbulence[parameters->turbulence_indexes.ux + IDX(i, j, k, Nx, Ny, Nz)];
+                uy = R_turbulence[parameters->turbulence_indexes.uy + IDX(i, j, k, Nx, Ny, Nz)];
+                uz = R_turbulence[parameters->turbulence_indexes.uz + IDX(i, j, k, Nx, Ny, Nz)];
+                vx = R_turbulence[parameters->turbulence_indexes.vx + IDX(i, j, k, Nx, Ny, Nz)];
+                vy = R_turbulence[parameters->turbulence_indexes.vy + IDX(i, j, k, Nx, Ny, Nz)];
+                vz = R_turbulence[parameters->turbulence_indexes.vz + IDX(i, j, k, Nx, Ny, Nz)];
+                wx = R_turbulence[parameters->turbulence_indexes.wx + IDX(i, j, k, Nx, Ny, Nz)];
+                wy = R_turbulence[parameters->turbulence_indexes.wy + IDX(i, j, k, Nx, Ny, Nz)];
+                wz = R_turbulence[parameters->turbulence_indexes.wz + IDX(i, j, k, Nx, Ny, Nz)];
+                Tx = R_turbulence[parameters->turbulence_indexes.Tx + IDX(i, j, k, Nx, Ny, Nz)];
+                Ty = R_turbulence[parameters->turbulence_indexes.Ty + IDX(i, j, k, Nx, Ny, Nz)];
+                Tz = R_turbulence[parameters->turbulence_indexes.Tz + IDX(i, j, k, Nx, Ny, Nz)];
+                uxx = R_turbulence[parameters->turbulence_indexes.uxx + IDX(i, j, k, Nx, Ny, Nz)];
+                uyy = R_turbulence[parameters->turbulence_indexes.uyy + IDX(i, j, k, Nx, Ny, Nz)];
+                uzz = R_turbulence[parameters->turbulence_indexes.uzz + IDX(i, j, k, Nx, Ny, Nz)];
+                vxx = R_turbulence[parameters->turbulence_indexes.vxx + IDX(i, j, k, Nx, Ny, Nz)];
+                vyy = R_turbulence[parameters->turbulence_indexes.vyy + IDX(i, j, k, Nx, Ny, Nz)];
+                vzz = R_turbulence[parameters->turbulence_indexes.vzz + IDX(i, j, k, Nx, Ny, Nz)];
+                wxx = R_turbulence[parameters->turbulence_indexes.wxx + IDX(i, j, k, Nx, Ny, Nz)];
+                wyy = R_turbulence[parameters->turbulence_indexes.wyy + IDX(i, j, k, Nx, Ny, Nz)];
+                wzz = R_turbulence[parameters->turbulence_indexes.wzz + IDX(i, j, k, Nx, Ny, Nz)];
+                Txx = R_turbulence[parameters->turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)];
+                Tyy = R_turbulence[parameters->turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)];
+                Tzz = R_turbulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)];
 
                 // tau_p = sqrt((nu * 0.5 * (uz + wx)) * (nu * 0.5 * (uz + wx)) + (nu * 0.5 * (vz + wy)) * (nu * 0.5 * (vz + wy)));
                 // u_tau = sqrt(tau_p);

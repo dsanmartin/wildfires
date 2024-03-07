@@ -35,11 +35,11 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     int Y_index = parameters->field_indexes.Y;
     // Fields nodes
     double u_ijk, u_ip1jk, u_im1jk, u_ijp1k, u_ijm1k, u_ijkp1, u_ijkm1;
-    double u_ip2jk = 0.0, u_im2jk = 0.0, u_ijp2k = 0.0, u_ijm2k = 0.0, u_ijkp2 = 0.0, u_ijkm2 = 0.0;
+    double u_ip2jk, u_im2jk, u_ijp2k, u_ijm2k, u_ijkp2, u_ijkm2;
     double v_ijk, v_ip1jk, v_im1jk, v_ijp1k, v_ijm1k, v_ijkp1, v_ijkm1;
-    double v_ip2jk = 0.0, v_im2jk = 0.0, v_ijp2k = 0.0, v_ijm2k = 0.0, v_ijkp2 = 0.0, v_ijkm2 = 0.0;
+    double v_ip2jk, v_im2jk, v_ijp2k, v_ijm2k, v_ijkp2, v_ijkm2;
     double w_ijk, w_ip1jk, w_im1jk, w_ijp1k, w_ijm1k, w_ijkp1, w_ijkm1;
-    double w_ip2jk = 0.0, w_im2jk = 0.0, w_ijp2k = 0.0, w_ijm2k = 0.0, w_ijkp2 = 0.0, w_ijkm2 = 0.0;
+    double w_ip2jk, w_im2jk, w_ijp2k, w_ijm2k, w_ijkp2, w_ijkm2;
     double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1;
     double Y_ijk;
     // Upwind scheme terms
@@ -52,16 +52,16 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double ux, uy, uz, vx, vy, vz, wx, wy, wz, Tx, Ty, Tz; // For central difference
     // Second partial derivatives
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
-    double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, S = 0.0;    
+    double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, S;    
     double u_tau, tau_p, fw;
     double mod_U;
-    double F_x = 0.0, F_y = 0.0, F_z = 0.0;
+    double F_x, F_y, F_z;
     int im1, ip1, jm1, jp1;
     int im2, ip2, jm2, jp2;
     // Loop over interior nodes. Periodic boundary conditions in x and y.
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
-            for (int k = 1; k < Nz - 1; k++) {            
+            for (int k = 1; k < Nz - 1; k++) {   
                 /* Get fields nodes */
                 // Indexes for periodic boundary conditions
                 im1 = (i - 1 + Nx - 1) % (Nx - 1);
@@ -128,12 +128,20 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                     u_ijkm2 = R_old[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
                     v_ijkm2 = R_old[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
                     w_ijkm2 = R_old[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
+                } else {
+                    u_ijkm2 = 0.0;
+                    v_ijkm2 = 0.0;
+                    w_ijkm2 = 0.0;
                 }
                 // \phi_{i,j,k+2}
                 if (k < Nz - 2) {
                     u_ijkp2 = R_old[u_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
                     v_ijkp2 = R_old[v_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
                     w_ijkp2 = R_old[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
+                } else {
+                    u_ijkp2 = 0.0;
+                    v_ijkp2 = 0.0;
+                    w_ijkp2 = 0.0;
                 }
                 /* Computing upwind scheme terms */
                 u_plu = MAX(u_ijk, 0.0);
@@ -226,15 +234,6 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 R_turbulence[parameters->turbulence_indexes.wx  + IDX(i, j, k, Nx, Ny, Nz)] = wx;
                 R_turbulence[parameters->turbulence_indexes.wy  + IDX(i, j, k, Nx, Ny, Nz)] = wy;
                 R_turbulence[parameters->turbulence_indexes.wz  + IDX(i, j, k, Nx, Ny, Nz)] = wz;
-                // R_turbulence[parameters->turbulence_indexes.ux  + IDX(i, j, k, Nx, Ny, Nz)] = ux_uw;
-                // R_turbulence[parameters->turbulence_indexes.uy  + IDX(i, j, k, Nx, Ny, Nz)] = uy_uw;
-                // R_turbulence[parameters->turbulence_indexes.uz  + IDX(i, j, k, Nx, Ny, Nz)] = uz_uw;
-                // R_turbulence[parameters->turbulence_indexes.vx  + IDX(i, j, k, Nx, Ny, Nz)] = vx_uw;
-                // R_turbulence[parameters->turbulence_indexes.vy  + IDX(i, j, k, Nx, Ny, Nz)] = vy_uw;
-                // R_turbulence[parameters->turbulence_indexes.vz  + IDX(i, j, k, Nx, Ny, Nz)] = vz_uw;
-                // R_turbulence[parameters->turbulence_indexes.wx  + IDX(i, j, k, Nx, Ny, Nz)] = wx_uw;
-                // R_turbulence[parameters->turbulence_indexes.wy  + IDX(i, j, k, Nx, Ny, Nz)] = wy_uw;
-                // R_turbulence[parameters->turbulence_indexes.wz  + IDX(i, j, k, Nx, Ny, Nz)] = wz_uw;
                 R_turbulence[parameters->turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;
                 R_turbulence[parameters->turbulence_indexes.Ty  + IDX(i, j, k, Nx, Ny, Nz)] = Ty;
                 R_turbulence[parameters->turbulence_indexes.Tz  + IDX(i, j, k, Nx, Ny, Nz)] = Tz;
@@ -252,17 +251,6 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 R_turbulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)] = Tzz;
                 R_turbulence[parameters->turbulence_indexes.fw  + IDX(i, j, k, Nx, Ny, Nz)] = fw;
                 /* Compute fuel and source term */
-                // if (k < Nz_Y) {
-                //     Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
-                //     S = source(T_ijk, Y_ijk, H_R, A, T_a, h, a_v, T_inf, c_p, rho);
-                //     Y_RHS = -Y_f * Y_ijk * K(T_ijk, A, T_a) * H(T_ijk - T_pc);
-                //     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
-                //     // Compute force terms
-                //     mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
-                //     F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
-                //     F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;                             
-                //     F_z = - g * (T_ijk - T_inf) / T_ijk - Y_D * a_v * Y_ijk * mod_U * w_ijk;
-                // }
                 if (k < Nz_Y) {
                     Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
                     Y_RHS = -Y_f * Y_ijk * K(T_ijk, A, T_a) * H(T_ijk - T_pc);
@@ -286,15 +274,20 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
                 R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_RHS;
                 R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;  
-                // printf("u[%d,%d,%d] = %e\n", i, j, k, u_RHS);              
+                if (u_RHS > 20)
+                    printf("u[%d,%d,%d] = %f\n", i, j, k, u_RHS);
+                if (v_RHS > 20)
+                    printf("v[%d,%d,%d] = %f\n", i, j, k, v_RHS);
+                if (w_RHS > 20)
+                    printf("w[%d,%d,%d] = %f\n", i, j, k, w_RHS);
+                if (T_RHS > 900)
+                    printf("T[%d,%d,%d] = %f\n", i, j, k, T_RHS);
             }
         }
     }
-    // Add turbulence terms
-    turbulence(R_turbulence, R_new, parameters);
 }
 
-void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
+void boundary_conditions(double *R_new, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -313,55 +306,12 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
-                // Periodic boundary conditions in x and y
-                // Left boundary
-                // if (i == 0) {
-                //     R_new[u_index + IDX(0, j, k, Nx, Ny, Nz)] = R_old[u_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
-                //     R_new[v_index + IDX(0, j, k, Nx, Ny, Nz)] = R_old[v_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
-                //     R_new[w_index + IDX(0, j, k, Nx, Ny, Nz)] = R_old[w_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
-                //     R_new[T_index + IDX(0, j, k, Nx, Ny, Nz)] = R_old[T_index + IDX(Nx - 2, j, k, Nx, Ny, Nz)];
-                //     if (k < Nz_Y) {
-                //         R_new[Y_index + IDX(0, j, k, Nx, Ny, Nz_Y)] = R_old[Y_index + IDX(Nx - 2, j, k, Nx, Ny, Nz_Y)];
-                //     }
-                // }
-                // // Right boundary
-                // if (i == Nx - 1) {
-                //     R_new[u_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)] = R_old[u_index + IDX(1, j, k, Nx, Ny, Nz)];
-                //     R_new[v_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)] = R_old[v_index + IDX(1, j, k, Nx, Ny, Nz)];
-                //     R_new[w_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)] = R_old[w_index + IDX(1, j, k, Nx, Ny, Nz)];
-                //     R_new[T_index + IDX(Nx - 1, j, k, Nx, Ny, Nz)] = R_old[T_index + IDX(1, j, k, Nx, Ny, Nz)];
-                //     if (k < Nz_Y) {
-                //         R_new[Y_index + IDX(Nx - 1, j, k, Nx, Ny, Nz_Y)] = R_old[Y_index + IDX(1, j, k, Nx, Ny, Nz_Y)];
-                //     }
-                // }
-                // // Back boundary
-                // if (j == 0) {
-                //     R_new[u_index + IDX(i, 0, k, Nx, Ny, Nz)] = R_old[u_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
-                //     R_new[v_index + IDX(i, 0, k, Nx, Ny, Nz)] = R_old[v_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
-                //     R_new[w_index + IDX(i, 0, k, Nx, Ny, Nz)] = R_old[w_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
-                //     R_new[T_index + IDX(i, 0, k, Nx, Ny, Nz)] = R_old[T_index + IDX(i, Ny - 2, k, Nx, Ny, Nz)];
-                //     if (k < Nz_Y) {
-                //         R_new[Y_index + IDX(i, 0, k, Nx, Ny, Nz_Y)] = R_old[Y_index + IDX(i, Ny - 2, k, Nx, Ny, Nz_Y)];
-                //     }
-                // }
-                // // Front boundary
-                // if (j == Ny - 1) {
-                //     R_new[u_index + IDX(i, Ny - 1, k, Nx, Ny, Nz)] = R_old[u_index + IDX(i, 1, k, Nx, Ny, Nz)];
-                //     R_new[v_index + IDX(i, Ny - 1, k, Nx, Ny, Nz)] = R_old[v_index + IDX(i, 1, k, Nx, Ny, Nz)];
-                //     R_new[w_index + IDX(i, Ny - 1, k, Nx, Ny, Nz)] = R_old[w_index + IDX(i, 1, k, Nx, Ny, Nz)];
-                //     R_new[T_index + IDX(i, Ny - 1, k, Nx, Ny, Nz)] = R_old[T_index + IDX(i, 1, k, Nx, Ny, Nz)];
-                //     if (k < Nz_Y) {
-                //         R_new[Y_index + IDX(i, Ny - 1, k, Nx, Ny, Nz_Y)] = R_old[Y_index + IDX(i, 1, k, Nx, Ny, Nz_Y)];
-                //     }
-                // }
-                // u = v = w = dT/dz = 0 at z = z_min and z = z_max using a second order approximation
-                // du/dz = dv/dz = dw/dz = dY/dz = 0 at z = z_min and z = Y_height using a second order approximation
                 // Bottom boundary
                 if (k == 0) {
-                    T_ijkp1 = R_old[T_index + IDX(i, j, 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
-                    T_ijkp2 = R_old[T_index + IDX(i, j, 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-                    Y_ijkp1 = R_old[Y_index + IDX(i, j, 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
-                    Y_ijkp2 = R_old[Y_index + IDX(i, j, 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
+                    T_ijkp1 = R_new[T_index + IDX(i, j, 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+                    T_ijkp2 = R_new[T_index + IDX(i, j, 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
+                    Y_ijkp1 = R_new[Y_index + IDX(i, j, 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
+                    Y_ijkp2 = R_new[Y_index + IDX(i, j, 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
                     R_new[u_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // u = 0
                     R_new[v_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // v = 0
                     R_new[w_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // w = 0
@@ -370,21 +320,21 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
                 }
                 // Top boundary
                 if (k == Nz - 1) {
-                    u_ijkm1 = R_old[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // u_{i,j,k-1}
-                    u_ijkm2 = R_old[u_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // u_{i,j,k-2}
-                    v_ijkm1 = R_old[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // v_{i,j,k-1}
-                    v_ijkm2 = R_old[v_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // v_{i,j,k-2}
-                    w_ijkm1 = R_old[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // w_{i,j,k-1}
-                    w_ijkm2 = R_old[w_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // w_{i,j,k-2}
-                    T_ijkm1 = R_old[T_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // T_{i,j,k-1}
-                    T_ijkm2 = R_old[T_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // T_{i,j,k-2}
+                    u_ijkm1 = R_new[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // u_{i,j,k-1}
+                    u_ijkm2 = R_new[u_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // u_{i,j,k-2}
+                    v_ijkm1 = R_new[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // v_{i,j,k-1}
+                    v_ijkm2 = R_new[v_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // v_{i,j,k-2}
+                    w_ijkm1 = R_new[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // w_{i,j,k-1}
+                    w_ijkm2 = R_new[w_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // w_{i,j,k-2}
+                    T_ijkm1 = R_new[T_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // T_{i,j,k-1}
+                    T_ijkm2 = R_new[T_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // T_{i,j,k-2}
                     R_new[u_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
                     R_new[v_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
                     R_new[w_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
                     R_new[T_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0
                     if (k < Nz_Y) {
-                        Y_ijkm1 = R_old[Y_index + IDX(i, j, Nz - 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k-1}
-                        Y_ijkm2 = R_old[Y_index + IDX(i, j, Nz - 3, Nx, Ny, Nz_Y)]; // Y_{i,j,k-2}
+                        Y_ijkm1 = R_new[Y_index + IDX(i, j, Nz - 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k-1}
+                        Y_ijkm2 = R_new[Y_index + IDX(i, j, Nz - 3, Nx, Ny, Nz_Y)]; // Y_{i,j,k-2}
                         R_new[Y_index + IDX(i, j, Nz - 1, Nx, Ny, Nz_Y)] = (4 * Y_ijkm1 - Y_ijkm2) / 3; // dY/dz = 0
                     }
                 }
@@ -401,8 +351,8 @@ void boundary_conditions(double *R_old, double *R_new, Parameters *parameters) {
                 if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] < T_inf) {
                     R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_inf;
                 }
-                if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > 1500) {
-                    R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = 1500;
+                if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > 1000) {
+                    R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = 1000;
                 }
             }        
         }
@@ -465,39 +415,39 @@ void velocity_correction(double *R_new, double *R_old, double *p, double dt, Par
                             R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = 1;
                         }
                     }
-                } else { // Boundary points
-                    if (k == 0) {
-                        T_ijkp1 = R_old[T_index + IDX(i, j, 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
-                        T_ijkp2 = R_old[T_index + IDX(i, j, 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-                        Y_ijkp1 = R_old[Y_index + IDX(i, j, 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
-                        Y_ijkp2 = R_old[Y_index + IDX(i, j, 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
-                        R_new[u_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // u = 0
-                        R_new[v_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // v = 0
-                        R_new[w_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // w = 0
-                        R_new[T_index + IDX(i, j, 0, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
-                        R_new[Y_index + IDX(i, j, 0, Nx, Ny, Nz_Y)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
-                    }
-                    // Top boundary
-                    if (k == Nz - 1) {
-                        u_ijkm1 = R_old[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // u_{i,j,k-1}
-                        u_ijkm2 = R_old[u_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // u_{i,j,k-2}
-                        v_ijkm1 = R_old[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // v_{i,j,k-1}
-                        v_ijkm2 = R_old[v_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // v_{i,j,k-2}
-                        w_ijkm1 = R_old[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // w_{i,j,k-1}
-                        w_ijkm2 = R_old[w_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // w_{i,j,k-2}
-                        T_ijkm1 = R_old[T_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // T_{i,j,k-1}
-                        T_ijkm2 = R_old[T_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // T_{i,j,k-2}
-                        R_new[u_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
-                        R_new[v_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
-                        R_new[w_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
-                        R_new[T_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0
-                        if (k < Nz_Y) {
-                            Y_ijkm1 = R_old[Y_index + IDX(i, j, Nz - 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k-1}
-                            Y_ijkm2 = R_old[Y_index + IDX(i, j, Nz - 3, Nx, Ny, Nz_Y)]; // Y_{i,j,k-2}
-                            R_new[Y_index + IDX(i, j, Nz - 1, Nx, Ny, Nz_Y)] = (4 * Y_ijkm1 - Y_ijkm2) / 3; // dY/dz = 0
-                        }
-                    }
-                }
+                } // else { // Boundary points
+                //     if (k == 0) {
+                //         T_ijkp1 = R_old[T_index + IDX(i, j, 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+                //         T_ijkp2 = R_old[T_index + IDX(i, j, 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
+                //         Y_ijkp1 = R_old[Y_index + IDX(i, j, 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
+                //         Y_ijkp2 = R_old[Y_index + IDX(i, j, 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
+                //         R_new[u_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // u = 0
+                //         R_new[v_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // v = 0
+                //         R_new[w_index + IDX(i, j, 0, Nx, Ny, Nz)] = 0; // w = 0
+                //         R_new[T_index + IDX(i, j, 0, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
+                //         R_new[Y_index + IDX(i, j, 0, Nx, Ny, Nz_Y)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
+                //     }
+                //     // Top boundary
+                //     if (k == Nz - 1) {
+                //         u_ijkm1 = R_old[u_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // u_{i,j,k-1}
+                //         u_ijkm2 = R_old[u_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // u_{i,j,k-2}
+                //         v_ijkm1 = R_old[v_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // v_{i,j,k-1}
+                //         v_ijkm2 = R_old[v_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // v_{i,j,k-2}
+                //         w_ijkm1 = R_old[w_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // w_{i,j,k-1}
+                //         w_ijkm2 = R_old[w_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // w_{i,j,k-2}
+                //         T_ijkm1 = R_old[T_index + IDX(i, j, Nz - 2, Nx, Ny, Nz)]; // T_{i,j,k-1}
+                //         T_ijkm2 = R_old[T_index + IDX(i, j, Nz - 3, Nx, Ny, Nz)]; // T_{i,j,k-2}
+                //         R_new[u_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
+                //         R_new[v_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
+                //         R_new[w_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
+                //         R_new[T_index + IDX(i, j, Nz - 1, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0
+                //         if (k < Nz_Y) {
+                //             Y_ijkm1 = R_old[Y_index + IDX(i, j, Nz - 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k-1}
+                //             Y_ijkm2 = R_old[Y_index + IDX(i, j, Nz - 3, Nx, Ny, Nz_Y)]; // Y_{i,j,k-2}
+                //             R_new[Y_index + IDX(i, j, Nz - 1, Nx, Ny, Nz_Y)] = (4 * Y_ijkm1 - Y_ijkm2) / 3; // dY/dz = 0
+                //         }
+                //     }
+                // }
             }
         }
     }
@@ -505,6 +455,8 @@ void velocity_correction(double *R_new, double *R_old, double *p, double dt, Par
 
 void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters *parameters) {
     Phi(t_n, y_n, F, U_turbulence, parameters);
+    turbulence(U_turbulence, F, parameters);
+    boundary_conditions(F, parameters);
     for (int i = 0; i < size; i++) {        
         y_np1[i] = y_n[i] + dt * F[i];
     }
@@ -603,11 +555,21 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         // solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, parameters);
         solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
 
+        // printf("Exploring p");
+        // for (int i = 0; i < Nx; i++) {
+        //     for (int j = 0; j < Ny; j++) {
+        //         for (int k = 0; k < Nz; k++) {
+        //             if (p[IDX(i, j, k, Nx, Ny, Nz)] > 1000) {
+        //                 printf("p[%d,%d,%d] = %f\n", i, j, k, p[IDX(i, j, k, Nx, Ny, Nz)]);
+        //             }
+        //         }
+        //     }
+        // }
         // Velocity correction
-        velocity_correction(y_np1, y_n, p, dt, parameters);
+        velocity_correction(y_np1, y_np1, p, dt, parameters);
 
         // Boundary conditions
-        // boundary_conditions(y_n, y_np1, parameters); 
+        boundary_conditions(y_np1, parameters); 
         
         end = clock();
 

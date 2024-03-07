@@ -13,7 +13,7 @@ void save_scalar(char *path, double *x, double *y, double *z, double *f, int Nx,
     fclose(output);
 }
 
-void save_data(char *save_path, double *data, double *p, int n, Parameters *parameters) {
+void save_data(char *save_path, double *data, double *P, int n, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -21,7 +21,7 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
     double *x = parameters->x;
     double *y = parameters->y;
     double *z = parameters->z;
-    double u, v, w, T, Y;
+    double u, v, w, T, Y, p;
     char *filename_u = (char *) malloc(100 * sizeof(char));
     char *filename_v = (char *) malloc(100 * sizeof(char));
     char *filename_w = (char *) malloc(100 * sizeof(char));
@@ -29,11 +29,11 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
     char *filename_Y = (char *) malloc(100 * sizeof(char));
     char *filename_p = (char *) malloc(100 * sizeof(char));
     FILE *output_u, *output_v, *output_w, *output_T, *output_Y, *output_p;
-    int u_index = 0;
-    int v_index = Nx * Ny * Nz;
-    int w_index = 2 * Nx * Ny * Nz;
-    int T_index = 3 * Nx * Ny * Nz;
-    int Y_index = 4 * Nx * Ny * Nz;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
+    int T_index = parameters->field_indexes.T;
+    int Y_index = parameters->field_indexes.Y;
     sprintf(filename_u, "%su.csv.%d", save_path, n);
     sprintf(filename_v, "%sv.csv.%d", save_path, n);
     sprintf(filename_w, "%sw.csv.%d", save_path, n);
@@ -59,11 +59,12 @@ void save_data(char *save_path, double *data, double *p, int n, Parameters *para
                 v = data[v_index + IDX(i, j, k, Nx, Ny, Nz)];
                 w = data[w_index + IDX(i, j, k, Nx, Ny, Nz)];
                 T = data[T_index + IDX(i, j, k, Nx, Ny, Nz)];
+                p = P[IDX(i, j, k, Nx, Ny, Nz)];
                 fprintf(output_u, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], u);
                 fprintf(output_v, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], v);
                 fprintf(output_w, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], w);
                 fprintf(output_T, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], T);
-                fprintf(output_p, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], p[IDX(i, j, k, Nx, Ny, Nz)]);
+                fprintf(output_p, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], p);
                 if (k < Nz_Y) {
                     Y = data[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
                     fprintf(output_Y, "%.14f, %.14f, %.14f, %.14f\n", x[i], y[j], z[k], Y);

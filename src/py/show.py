@@ -94,7 +94,8 @@ with open(params_path, 'r') as f:
 # Nx, Ny, Nz, Nt = 128, 128, 64, 21
 # Nz_Y = 4
 # t_min, t_max = 0, 5
-Nt = Nt // NT + 1
+if NT > 1:
+    Nt = Nt // NT + 1
 Nz_Y = 4
 
 # data = data.reshape((Ny, Nx, Nz), order='C')
