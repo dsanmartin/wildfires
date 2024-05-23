@@ -219,13 +219,13 @@ Parameters read_parameters_file(const char *filePath) {
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
         if (i < parameters.Nx - 1) {
-            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / (parameters.x_max - parameters.x_min);
+            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / (parameters.x_max - parameters.x_min*0.0);
         }
     }
     for (int j = 0; j < parameters.Ny; j++) {
         parameters.y[j] = parameters.y_min + j * parameters.dy;
         if (j < parameters.Ny - 1) {
-            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / (parameters.y_max - parameters.y_min);
+            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / (parameters.y_max - parameters.y_min*0.0);
         }
     }
     for (int k = 0; k < parameters.Nz; k++) {

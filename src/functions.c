@@ -5,7 +5,7 @@ double power_law(double z, double u_r, double z_r, double alpha_u) {
 }
 
 double gaussian(double x, double y, double z, double x_0, double y_0, double z_0, double sx, double sy, double sz) {
-    return exp(-pow((x - x_0) / sx, 2) - pow((y - y_0) / sy, 2) - pow((z - z_0) / sz, 2));
+    return exp(-pow((x - x_0) / sx, 2.0) - pow((y - y_0) / sy, 2.0) - pow((z - z_0) / sz, 2.0));
 }
 
 double K(double T, double A, double T_a) {
@@ -14,9 +14,9 @@ double K(double T, double A, double T_a) {
 
 double H(double x) {
     if (x > 0) {
-        return 1;
+        return 1.0;
     } else {
-        return 0;
+        return 0.0;
     }
 }
 
@@ -24,8 +24,8 @@ double f_damping(double z, double u_tau, double nu) {
     return 1 - exp(-z * u_tau / 25 / nu);
 }
 
-double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho) {
-    return H_R * Y * K(T, A, T_a) * H(T - T_a) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
+double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc) {
+    return H_R * Y * K(T, A, T_a) * H(T - T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
 }
 
 void power_law_initial_condition(double *x, double *y, double *z, double *u, double *v, double *w, Parameters *parameters) {
@@ -78,7 +78,7 @@ void fuel_initial_condition(double *x, double *y, double *z, double *Y, Paramete
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz_Y_h; k++) {
-                Y[IDX(i, j, k, Nx, Ny, Nz_Y_h)] = 1;
+                Y[IDX(i, j, k, Nx, Ny, Nz_Y_h)] = 1.0;
             }
         }
     }
@@ -108,16 +108,16 @@ void initial_conditions(double *x, double *y, double *z, double *u, double *v, d
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
                 u[IDX(i, j, k, Nx, Ny, Nz)] = power_law(z[k], u_r, z_r, alpha_u);
-                v[IDX(i, j, k, Nx, Ny, Nz)] = 0;
-                w[IDX(i, j, k, Nx, Ny, Nz)] = 0;
-                T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf + (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                v[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
+                w[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
+                T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
                 if (k == Nz - 1) {
                     p[IDX(i, j, k, Nx, Ny, Nz)] = p_top;
                 } else {
-                    p[IDX(i, j, k, Nx, Ny, Nz)] = 0;
+                    p[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 }
                 if (k < Nz_Y) {
-                    Y[IDX(i, j, k, Nx, Ny, Nz_Y)] = 1;
+                    Y[IDX(i, j, k, Nx, Ny, Nz_Y)] = 1.0;
                 }
             }
         }

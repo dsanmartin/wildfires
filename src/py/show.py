@@ -96,8 +96,6 @@ with open(params_path, 'r') as f:
 # t_min, t_max = 0, 5
 if NT > 1:
     Nt = Nt // NT + 1
-Nz_Y = 4
-
 # data = data.reshape((Ny, Nx, Nz), order='C')
 # T = np.zeros((Ny, Nx, Nz))
 # for k in range(Nz):
@@ -118,6 +116,7 @@ for n in range(Nt):
     data_T = np.loadtxt(data_dir + 'T.csv.{}'.format(n), delimiter=',', skiprows=1)
     data_Y = np.loadtxt(data_dir + 'Y.csv.{}'.format(n), delimiter=',', skiprows=1)
     data_p = np.loadtxt(data_dir + 'p.csv.{}'.format(n), delimiter=',', skiprows=1)
+    if n == 0: Nz_Y = data_Y.shape[0] // (Ny * Nx)
     u[n, :, :, :] = data_u[:, 3].reshape((Ny, Nx, Nz), order='F')
     v[n, :, :, :] = data_v[:, 3].reshape((Ny, Nx, Nz), order='F')
     w[n, :, :, :] = data_w[:, 3].reshape((Ny, Nx, Nz), order='F')

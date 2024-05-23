@@ -10,7 +10,7 @@ double gaussian(double x, double y, double z, double x_0, double y_0, double z_0
 double K(double T, double A, double T_a);
 double H(double x);
 double f_damping(double z, double u_tau, double nu);
-double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho);
+double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc);
 void power_law_initial_condition(double *x, double *y, double *z, double *u, double *v, double *w, Parameters *parameters);
 void gaussian_temperature_initial_condition(double *x, double *y, double *z, double *T, Parameters *parameters);
 void fuel_initial_condition(double *x, double *y, double *z, double *Y, Parameters *parameters);
