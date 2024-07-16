@@ -8,7 +8,7 @@ void axpy(double *y, double *x, double a, int size) {
 
 void caxpy(double *c, double *x, double *y, double a, int size) {
     for (int i = 0; i < size; i++) {
-        c[i] = a * x[i] + y[i];
+        c[i] = y[i] + a * x[i];
     }
 }
 

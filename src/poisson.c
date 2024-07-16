@@ -79,19 +79,22 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int size = Nx * Ny * Nz;
-    int u_index = 0;
-    int v_index = size;
-    int w_index = 2 * size;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
     double dt = parameters->dt;
     double rho = parameters->rho;
-    double u_ip1jk = 0.0, u_im1jk = 0.0, u_ikj = 0.0, u_iphjk = 0.0, u_imhjk = 0.0;
-    double v_ijp1k = 0.0, v_ijm1k = 0.0, v_ijk = 0.0, v_ijphk = 0.0, v_ijmhk = 0.0;
-    double w_ijk = 0.0, w_ijkp1 = 0.0, w_ijkm1 = 0.0, w_ijkp2 = 0.0, w_ijkm2 = 0.0;
-    double ux = 0.0, vy = 0.0, wz = 0.0;
+    // double u_ip1jk = 0.0, u_im1jk = 0.0, u_ijk = 0.0, u_iphjk = 0.0, u_imhjk = 0.0;
+    // double v_ijp1k = 0.0, v_ijm1k = 0.0, v_ijk = 0.0, v_ijphk = 0.0, v_ijmhk = 0.0;
+    // double w_ijk = 0.0, w_ijkp1 = 0.0, w_ijkm1 = 0.0, w_ijkp2 = 0.0, w_ijkm2 = 0.0, w_ijkph = 0.0, w_ijkmh = 0.0;
+    // double ux = 0.0, vy = 0.0, wz = 0.0;
+    double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
+    double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
+    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2, w_ijkph, w_ijkmh;
+    double ux, vy, wz;
     double gamma_rs;
     double *kx = parameters->kx;
     double *ky = parameters->ky;
@@ -111,6 +114,8 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
     // fftw_complex *p_top_out = fftw_alloc_complex((Nx - 1) * (Ny - 1));
     // fftw_complex *p_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     // fftw_complex *p_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    // FILE *debug_pressure = fopen("data/output/debug_pressure.csv", "w");
+    // fprintf(debug_pressure, "i, j, k, f_in_real, f_in_imag, f_out_real, f_out_imag\n");
     double f;
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
@@ -120,32 +125,34 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
                 jm1 = (j - 1 + Ny - 1) % (Ny - 1);
                 ip1 = (i + 1) % (Nx - 1);
                 jp1 = (j + 1) % (Ny - 1);
+                // Local nodes
+                u_ijk = U[u_index + IDX(i, j, k, Nx, Ny, Nz)];
+                v_ijk = U[v_index + IDX(i, j, k, Nx, Ny, Nz)];
+                w_ijk = U[w_index + IDX(i, j, k, Nx, Ny, Nz)];
                 // Periodic boundary conditions on xy
                 u_im1jk = U[u_index + IDX(im1, j, k, Nx, Ny, Nz)];
                 u_ip1jk = U[u_index + IDX(ip1, j, k, Nx, Ny, Nz)];
                 v_ijm1k = U[v_index + IDX(i, jm1, k, Nx, Ny, Nz)];
                 v_ijp1k = U[v_index + IDX(i, jp1, k, Nx, Ny, Nz)];
                 // dw/dz 
-                if (k == 0) { // Bottom boundary
-                    w_ijk   = U[w_index + IDX(i, j, k, Nx, Ny, Nz)];
+                if (k == 0) { // Bottom boundary                    
                     w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
                     w_ijkp2 = U[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
                     wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz at z = z_min
                 } else if (k == Nz - 1) { // Top boundary
-                    w_ijk   = U[w_index + IDX(i, j, k, Nx, Ny, Nz)];
                     w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
                     w_ijkm2 = U[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
                     wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz at z = z_max
                 } else { // Interior
-                    w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
                     w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
-                    wz = (w_ijkp1 - w_ijkm1) / (2 * dz); // dw/dz at z = z_k
+                    w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
+                    w_ijkph = 0.5 * (w_ijk + w_ijkp1);
+                    w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
+                    wz = (w_ijkph - w_ijkmh) / dz; // dw/dz at z = z_k
                 }
                 // Half derivatives
-                u_ikj = U[u_index + IDX(i, j, k, Nx, Ny, Nz)];
-                v_ijk = U[v_index + IDX(i, j, k, Nx, Ny, Nz)];
-                u_iphjk = 0.5 * (u_ip1jk + u_ikj);
-                u_imhjk = 0.5 * (u_ikj + u_im1jk);
+                u_iphjk = 0.5 * (u_ip1jk + u_ijk);
+                u_imhjk = 0.5 * (u_ijk + u_im1jk);
                 v_ijphk = 0.5 * (v_ijp1k + v_ijk);
                 v_ijmhk = 0.5 * (v_ijk + v_ijm1k);
                 ux = (u_iphjk - u_imhjk) / dx; // du/dx
@@ -178,8 +185,8 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
                     // if (f != 0)
                     //     printf("f[%d,%d,%d] = %.8f\n", i, j, k, f);
                     f_in[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k] = f; //f[IDX(i, j, k, Nx, Ny, Nz)] + I * 0.0;
-                    f_out[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k] = 0.0;
-                    p[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = 0.0;
+                    // f_out[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k] = 0.0;
+                    // p[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = 0.0;
                     // if (abs(f_in[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k]) > 1000)
                     // if (k == 0)
                     // printf("f_in[%d,%d,%d]: %.14f + %.14fi\n", i, j, k, creal(f_in[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k]), cimag(f_in[j + (Ny - 1) * i + (Nx - 1) * (Ny - 1) * k]));
@@ -238,6 +245,7 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
                 // printf("d[k] = %f + %fi\n", creal(d[k]), cimag(d[k]));
                 // if (r > 0 && s > 0 && k > 0)
                 //     printf("F_out[%d,%d,%d] = %.14f + %.14fi\n", r, s, k, creal(f_out[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]), cimag(f_out[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]));
+                // fprintf(debug_pressure, "%d, %d, %d, %.20f, %.20f, %.20f, %.20f\n", r, s, k, creal(f_in[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]), cimag(f_in[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]), creal(f_out[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]), cimag(f_out[s + (Ny - 1) * r + (Nx - 1) * (Ny - 1) * k]));
             }
             // Fix first coefficient of b and c
             b[0] =  -1.0 / dz;
@@ -271,6 +279,8 @@ void solve_pressure(double *U, double *p, double *a, double *b, double *c, doubl
             }
         }
     }
+
+    // fclose(debug_pressure);
 
     // Plan for IFFT2(p) for each z slice
     p_plan = fftw_plan_many_dft(2, n, howmany, p_in, inembed, istride, idist, p_out, onembed, ostride, odist, FFTW_BACKWARD, FFTW_ESTIMATE);

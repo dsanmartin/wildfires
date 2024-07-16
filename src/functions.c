@@ -12,8 +12,16 @@ double K(double T, double A, double T_a) {
     return A * exp(-T_a / T);
 }
 
-double H(double x) {
-    if (x > 0) {
+// double H(double x) {
+//     if (x > 0) {
+//         return 1.0;
+//     } else {
+//         return 0.0;
+//     }
+// }
+
+double H(double x, double T_pc) {
+    if (x > T_pc) {
         return 1.0;
     } else {
         return 0.0;
@@ -25,7 +33,7 @@ double f_damping(double z, double u_tau, double nu) {
 }
 
 double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc) {
-    return H_R * Y * K(T, A, T_a) * H(T - T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
+    return H_R * Y * K(T, A, T_a) * H(T, T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
 }
 
 void power_law_initial_condition(double *x, double *y, double *z, double *u, double *v, double *w, Parameters *parameters) {

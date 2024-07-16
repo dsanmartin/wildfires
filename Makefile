@@ -20,7 +20,7 @@ MKDIR  = mkdir -p
 # C/C++ flags
 #
 
-CFLAGS    = -Wall -O3 -std=c99 -lm -lfftw3# -pg -g -Wextra 
+CFLAGS    = -Wall -std=c99 -lm -lfftw3 -O3# -pg -g -Wextra 
 
 #
 # Files to compile: 

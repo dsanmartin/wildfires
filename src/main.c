@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     // Allocate memory for x, y, z, u, v, w
     // size = (parameters.Nx - 1) * (parameters.Ny - 1) * parameters.Nz;
     size = parameters.Nx * parameters.Ny * parameters.Nz;
-    size_Y = parameters.Nx * parameters.Ny * (parameters.Nz_Y);
+    size_Y = parameters.Nx * parameters.Ny * parameters.Nz_Y;
     u = (double *) malloc(size * sizeof(double));
     v = (double *) malloc(size * sizeof(double));
     w = (double *) malloc(size * sizeof(double));
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     // Save initial data
     printf("Saving initial data...\n");
     save_data("data/output/", y_0, p, 0, &parameters);
-    save_time("data/output/", parameters.t, parameters.Nt, parameters.NT);
+    save_domain("data/output/", &parameters);
     printf("Initial data saved!\n");
 
     // Solve PDE

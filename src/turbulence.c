@@ -138,7 +138,7 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
                 fwz = (fw_ijkp1 - fw_ijkm1) / (2 * dz);
     
                 // |S| = sqrt(2 * S_ij * S_ij)
-                mod_S = sqrt(2.0 * (ux * ux + vy * vy + wz * wz + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz))) + 1e-16;
+                mod_S = sqrt(2.0 * (ux * ux + vy * vy + wz * wz) + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz)) + 1e-16;
                 psi_x = 4 * (ux * uxx + vy * vyx + wz * wzx) + 2 * (uz + wx) * (uzx + wxx) + 2 * (vx + uy) * (vxx + uyx) + 2 * (wy + vz) * (wyx + vzx);
                 psi_y = 4 * (ux * uxy + vy * vyy + wz * wzy) + 2 * (uz + wx) * (uzy + wxy) + 2 * (vx + uy) * (vxy + uyy) + 2 * (wy + vz) * (wyy + vzy);
                 psi_z = 4 * (ux * uxz + vy * vyz + wz * wzz) + 2 * (uz + wx) * (uzz + wxz) + 2 * (vx + uy) * (vxz + uyz) + 2 * (wy + vz) * (wyz + vzz);
@@ -147,7 +147,7 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
                 sgs_x_damp = 2 * mod_S * fw * (fwx * ux + 0.5 * fwy * (vx + uy) + 0.5 * fwz * (wx + uz));
                 sgs_y_damp = 2 * mod_S * fw * (fwy * vy + 0.5 * fwx * (uy + vx) + 0.5 * fwz * (wy + vz));
                 sgs_z_damp = 2 * mod_S * fw * (fwz * wz + 0.5 * fwx * (wx + uz) + 0.5 * fwy * (wy + vz));
-                sgs_q_damp = 2 * fw * mod_S * (fwx * Tx + fwy * Ty + fwz * Tz);
+                sgs_q_damp = 2 * mod_S * fw * (fwx * Tx + fwy * Ty + fwz * Tz);
                 sgs_x_no_damp = 1 / (2 * mod_S) * (psi_x * ux + 0.5 * psi_y * (uy + vx) + 0.5 * psi_z * (wx + uz)) + mod_S * (uxx + 0.5 * (vxy + uyy) + 0.5 * (wxz + uzz));
                 sgs_y_no_damp = 1 / (2 * mod_S) * (psi_y * vy + 0.5 * psi_x * (vx + uy) + 0.5 * psi_z * (wy + vz)) + mod_S * (vyy + 0.5 * (uyx + vxx) + 0.5 * (wyz + vzz));
                 sgs_z_no_damp = 1 / (2 * mod_S) * (psi_z * wz + 0.5 * psi_x * (wx + uz) + 0.5 * psi_y * (wy + vz)) + mod_S * (wzz + 0.5 * (uzx + wxx) + 0.5 * (vzx + wyx));
