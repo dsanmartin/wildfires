@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
     double *u, *v, *w, *T, *Y, *p, *y_0;
     int size, size_Y;
 
+    setbuf(stdout, NULL);
+
     // Get parameters input file path
     if (argc == 2) {
         parameters_file_path = argv[1];
@@ -19,6 +21,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <parameters_file_path>\n", argv[0]);
         return 1;
     }
+
 
     Parameters parameters = read_parameters_file(parameters_file_path);
     log_parameters(&parameters, 0);

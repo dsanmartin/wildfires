@@ -967,14 +967,23 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     // double *p = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *p_top = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // double *f = (double *) malloc(Nx * Ny * Nz * sizeof(double)); 
-    double *a = (double *) malloc((Nz - 2) * sizeof(double));
-    double *b = (double *) malloc((Nz - 1) * sizeof(double));
-    double *c = (double *) malloc((Nz - 2) * sizeof(double));
-    double complex *d = (double complex *) malloc((Nz - 1) * sizeof(double complex));
-    double complex *l = (double complex *) malloc((Nz - 2) * sizeof(double complex));
-    double complex *u = (double complex *) malloc((Nz - 1) * sizeof(double complex));
-    double complex *y = (double complex *) malloc((Nz - 1) * sizeof(double complex));
-    double complex *pk = (double complex *) malloc((Nz - 1) * sizeof(double complex));
+    // double *a = (double *) malloc((Nz - 2) * sizeof(double));
+    // double *b = (double *) malloc((Nz - 1) * sizeof(double));
+    // double *c = (double *) malloc((Nz - 2) * sizeof(double));
+    // double complex *d = (double complex *) malloc((Nz - 1) * sizeof(double complex));
+    // double complex *l = (double complex *) malloc((Nz - 2) * sizeof(double complex));
+    // double complex *u = (double complex *) malloc((Nz - 1) * sizeof(double complex));
+    // double complex *y = (double complex *) malloc((Nz - 1) * sizeof(double complex));
+    fftw_complex *a = fftw_alloc_complex((Nz - 2));
+    fftw_complex *b = fftw_alloc_complex((Nz - 1));
+    fftw_complex *c = fftw_alloc_complex((Nz - 2));
+    fftw_complex *d = fftw_alloc_complex((Nz - 1));
+    fftw_complex *l = fftw_alloc_complex((Nz - 2));
+    fftw_complex *u = fftw_alloc_complex((Nz - 1));
+    fftw_complex *y = fftw_alloc_complex((Nz - 1));
+    // double complex *pk = (double complex *) malloc((Nz - 1) * sizeof(double complex));
+    fftw_complex *pk = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *pk = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     fftw_complex *f_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     fftw_complex *f_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     fftw_complex *p_top_in = fftw_alloc_complex((Nx - 1) * (Ny - 1));
@@ -997,10 +1006,10 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         step_start = clock();
         // printf("Euler step\n");
         // Euler step to compute U^*, T^{n+1}, Y^{n+1}
-        euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters);
+        // euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters);
 
         // RK2 step to compute U^*, T^{n+1}, Y^{n+1}
-        // rk2(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
+        rk2(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
 
         // RK4 step to compute U^*, T^{n+1}, Y^{n+1}
         // rk4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
@@ -1023,7 +1032,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         // bound(y_np1, parameters);
 
         // printf("Velocity correction\n");
-        // velocity_correction_boundaries_bounding(y_np1, p, dt, parameters);
+        velocity_correction_boundaries_bounding(y_np1, p, dt, parameters);
         
         step_end = clock();
 
@@ -1049,30 +1058,38 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
 
     // fclose(logs);
     // Free memory
-    free(t);
-    free(y_n);
-    free(y_np1);
-    free(F);
-    free(R_turbulence);
-    free(k);
+    // free(t);
+    // free(y_n);
+    // free(y_np1);
+    // free(F);
+    // free(R_turbulence);
+    // free(k);
     // free(p);
     // free(p_top);
     // free(f);
     // Free memory
-    fftw_destroy_plan(p_top_plan);
-    fftw_destroy_plan(f_plan);
-    fftw_destroy_plan(p_plan);
-    fftw_free(p_top_in);
-    fftw_free(p_in);
-    fftw_free(f_in);
-    fftw_free(p_top_out);
-    fftw_free(f_out);
-    fftw_free(p_out);
-    free(a);
-    free(b);
-    free(c);
-    free(d);
-    free(l);
-    free(u);
-    free(y);
+    // fftw_destroy_plan(p_top_plan);
+    // fftw_destroy_plan(f_plan);
+    // fftw_destroy_plan(p_plan);
+    // fftw_free(p_top_in);
+    // fftw_free(p_in);
+    // fftw_free(f_in);
+    // fftw_free(p_top_out);
+    // fftw_free(f_out);
+    // fftw_free(p_out);
+    // fftw_free(pk);
+    // fftw_free(d);
+    // fftw_free(l);
+    // fftw_free(uu);
+    // fftw_free(y);
+    // fftw_free(a);
+    // fftw_free(b);
+    // fftw_free(c);
+    // free(a);
+    // free(b);
+    // free(c);
+    // free(d);
+    // free(l);
+    // free(u);
+    // free(y);
 }

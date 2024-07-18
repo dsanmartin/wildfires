@@ -87,12 +87,11 @@ void save_data_txt(char *save_path, double *data, double *P, int n, Parameters *
 }
 
 
-void save_data(char *save_path, double *data, double *P, int n, Parameters *parameters) {
+void save_data(char *save_path, double *data, double *p, int n, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     int Nz_Y = parameters->k_Y_h + 1;
-    double u, v, w, T, Y, p;
     char *filename_u = (char *) malloc(100 * sizeof(char));
     char *filename_v = (char *) malloc(100 * sizeof(char));
     char *filename_w = (char *) malloc(100 * sizeof(char));
@@ -121,28 +120,8 @@ void save_data(char *save_path, double *data, double *P, int n, Parameters *para
     fwrite(data + v_index, sizeof(double), Nx * Ny * Nz, output_v);
     fwrite(data + w_index, sizeof(double), Nx * Ny * Nz, output_w);
     fwrite(data + T_index, sizeof(double), Nx * Ny * Nz, output_T);
-    fwrite(P, sizeof(double), Nx * Ny * Nz, output_p);
+    fwrite(p, sizeof(double), Nx * Ny * Nz, output_p);
     fwrite(data + Y_index, sizeof(double), Nx * Ny * Nz_Y, output_Y);
-    // for (int k = 0; k < Nz; k++) {
-    //     for (int j = 0; j < Ny; j++) {
-    //         for (int i = 0; i < Nx; i++) {
-    //             u = data[u_index + IDX(i, j, k, Nx, Ny, Nz)];
-    //             v = data[v_index + IDX(i, j, k, Nx, Ny, Nz)];
-    //             w = data[w_index + IDX(i, j, k, Nx, Ny, Nz)];
-    //             T = data[T_index + IDX(i, j, k, Nx, Ny, Nz)];
-    //             p = P[IDX(i, j, k, Nx, Ny, Nz)];
-    //             fwrite(&u, sizeof(double), 1, output_u);
-    //             fwrite(&v, sizeof(double), 1, output_v);
-    //             fwrite(&w, sizeof(double), 1, output_w);
-    //             fwrite(&T, sizeof(double), 1, output_T);
-    //             fwrite(&p, sizeof(double), 1, output_p);
-    //             if (k < Nz_Y) {
-    //                 Y = data[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
-    //                 fwrite(&Y, sizeof(double), 1, output_Y);
-    //             }
-    //         }
-    //     }
-    // }
     free(filename_u);
     free(filename_v);
     free(filename_w);
