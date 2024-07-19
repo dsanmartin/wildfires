@@ -905,8 +905,12 @@ void rk2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     int k1_index = 0;
     int k2_index = size;
     Phi_2(t_n, y_n, k + k1_index, U_turbulence, parameters);
+    turbulence(U_turbulence, k + k1_index, parameters);
+    boundary_conditions(k + k1_index, parameters);
     caxpy(F, k + k1_index, y_n, dt, size);
     Phi_2(t_n + dt, F, k + k2_index, U_turbulence, parameters);
+    turbulence(U_turbulence, k + k2_index, parameters);
+    boundary_conditions(k + k2_index, parameters);
     for (int i = 0; i < size; i++) {
         y_np1[i] = y_n[i] + 0.5 * dt * (k[k1_index + i] + k[k2_index + i]);
     }
@@ -948,6 +952,7 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
 }
 
 void solve_PDE(double *y_n, double *p, Parameters *parameters) {
+    setbuf(stdout, NULL);
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
