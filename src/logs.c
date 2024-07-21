@@ -2,10 +2,13 @@
 
 void log_parameters(Parameters *parameters, int to_file) {
     FILE *output;
-    if (to_file)
-        output = fopen("data/output/parameters.txt", "w");
-    else
+    if (to_file) {
+        char path[256];
+        sprintf(path, "%sparameters.txt", parameters->save_path);
+        output = fopen(path, "w");
+    } else
         output = stdout;
+    fprintf(output, "Simulation name: %s\n", parameters->sim_id);
     fprintf(output, "Domain:\n");
     fprintf(output, "  [%lf, %lf] x [%lf, %lf] x [%lf, %lf] x [%lf, %lf]\n",
         parameters->x_min, parameters->x_max, parameters->y_min, parameters->y_max,

@@ -53,3 +53,13 @@ void fft_freq(double *f, int N, double d) {
         }
     }
 }
+
+
+void generate_current_datetime_string(char *datetime_str, size_t max_size) {
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    if (tm != NULL) {
+        // Format: YYYYMMDDHHMMSS
+        strftime(datetime_str, max_size, "%Y%m%d%H%M%S", tm);
+    }
+}

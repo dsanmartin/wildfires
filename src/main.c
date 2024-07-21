@@ -51,8 +51,8 @@ int main(int argc, char *argv[]) {
 
     // Save initial data
     printf("Saving initial data...\n");
-    save_data("data/output/", y_0, p, 0, &parameters);
-    save_domain("data/output/", &parameters);
+    save_data(parameters.save_path, y_0, p, 0, &parameters);
+    save_domain(parameters.save_path, &parameters);
     printf("Initial data saved!\n");
 
     // Solve PDE
@@ -68,15 +68,6 @@ int main(int argc, char *argv[]) {
     free(T);
     free(p);
     free(Y);
-    // printf("Memory freed 1!\n");
-    // free(parameters.x);
-    // free(parameters.y);
-    // free(parameters.z);
-    // free(parameters.t);
-    // free(parameters.r);
-    // free(parameters.s);
-    // free(parameters.kx);
-    // free(parameters.ky);
     printf("Memory freed!\n");
 
     return 0;

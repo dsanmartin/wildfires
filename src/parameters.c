@@ -26,9 +26,16 @@
 Parameters read_parameters_file(const char *filePath) {
     FILE *parameters_file = fopen(filePath, "r"); // Open file
     Parameters parameters; // Create parameters struct
+    memset(&parameters, 0, sizeof(Parameters)); // Initialize parameters struct
     char line[MAX_LINE_LENGTH]; // Create line buffer
     int size; // Size of the fields
-    memset(&parameters, 0, sizeof(Parameters)); // Initialize parameters struct
+    generate_current_datetime_string(parameters.sim_id, 32); // Get YYYYMMDD for simulation ID
+    strcpy(parameters.save_path, "data/output/"); // Set save path
+    // // Concatenate simulation ID to save path
+    strcat(parameters.save_path, parameters.sim_id);
+    strcat(parameters.save_path, "/");
+    // // Create directory if it does not exist
+    mkdir(parameters.save_path, 0777);
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -195,6 +202,10 @@ Parameters read_parameters_file(const char *filePath) {
         // p_top
         if (strncmp(line, "p_top =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.p_top));
+        }
+        // Time integration method
+        if (strncmp(line, "method =", 8) == 0) {
+            sscanf(line + 9, "%s", (char *) &(parameters.method));
         }
     }
     parameters.alpha_u = 1.0 / 7.0;
