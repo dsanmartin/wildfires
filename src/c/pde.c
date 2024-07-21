@@ -1,4 +1,15 @@
-#include "../include/pde.h"
+/**
+ * @file pde.c
+ * @author Daniel San Martin (dsanmartinreyes@gmail.com)
+ * @brief Functions for solving the partial differential equations of the wildfire simulation.
+ * @version 0.1
+ * @date 2024-07-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
+#include "../../include/c/pde.h"
 
 void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameters *parameters) {
     int Nx = parameters->Nx;
@@ -430,82 +441,6 @@ void boundary_conditions(double *R_new, Parameters *parameters) {
     }
 }
 
-void bound(double *R_new, Parameters *parameters) {
-    int Nx = parameters->Nx;
-    int Ny = parameters->Ny;
-    int Nz = parameters->Nz;
-    int Nz_Y = parameters->Nz_Y;
-    int T_index = parameters->field_indexes.T;
-    int Y_index = parameters->field_indexes.Y;
-    double T_inf = parameters->T_inf;
-    for (int i = 0; i < Nx; i++) {
-        for (int j = 0; j < Ny; j++) {
-            for (int k = 0; k < Nz; k++) {
-                // Check if Y_ijk is not valid
-                if (k < Nz_Y) {
-                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] < 0) {
-                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = 0;
-                    }
-                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] > 1) {
-                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = 1;
-                    }
-                }
-                // Check if T_ijk is less than T_inf and higher than 1500
-                if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] < T_inf) {
-                    R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_inf;
-                }
-                if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > 1500) {
-                    R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = 1500;
-                }
-            }
-        }
-    }
-}
-
-void velocity_correction(double *R_new, double *p, double dt, Parameters *parameters) {
-    int Nx = parameters->Nx;
-    int Ny = parameters->Ny;
-    int Nz = parameters->Nz;
-    int u_index = parameters->field_indexes.u;
-    int v_index = parameters->field_indexes.v;
-    int w_index = parameters->field_indexes.w;
-    double rho = parameters->rho;
-    double dx = parameters->dx;
-    double dy = parameters->dy;
-    double dz = parameters->dz;
-    // double u_ijkm1, u_ijkm2, v_ijkm1, v_ijkm2, w_ijkm1, w_ijkm2, T_ijkm1, T_ijkm2, T_ijkp1, T_ijkp2, Y_ijkm1, Y_ijkm2, Y_ijkp1, Y_ijkp2;
-    double pim1jk, pip1jk, pijm1k, pijp1k, pijkp1, pijkm1;
-    double px, py, pz;
-    int im1, ip1, jm1, jp1;
-    for (int i = 0; i < Nx; i++) {
-        for (int j = 0; j < Ny; j++) {
-            for (int k = 1; k < Nz-1; k++) {
-                // Indexes for periodic boundary conditions
-                im1 = (i - 1 + Nx - 1) % (Nx - 1); // i-1
-                jm1 = (j - 1 + Ny - 1) % (Ny - 1); // j-1
-                ip1 = (i + 1) % (Nx - 1); // i+1
-                jp1 = (j + 1) % (Ny - 1); // j+1
-                pim1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
-                pip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
-                pijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
-                pijp1k = p[IDX(i, jp1, k, Nx, Ny, Nz)]; // p_{i,j+1,k}
-                // if (k > 0 && k < Nz - 1) { // Interior points
-                    pijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
-                    pijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-                    px = (pip1jk - pim1jk) / (2 * dx);
-                    py = (pijp1k - pijm1k) / (2 * dy);
-                    pz = (pijkp1 - pijkm1) / (2 * dz);
-                    // px = 0;
-                    // py = 0;
-                    // pz = 0;
-                    R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
-                    R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
-                    R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
-            }
-        }
-    }
-}
-
 void velocity_correction_boundaries_bounding(double *R_new, double *p, double dt, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
@@ -609,14 +544,8 @@ void euler_step(double dt, double *y_n, double *y_np1, double *F, int size) {
 }
 
 void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters *parameters) {
-    // Phi(t_n, y_n, F, U_turbulence, parameters);
-    // turbulence(U_turbulence, F, parameters);
-    // boundary_conditions(F, parameters);
     Phi(t_n, y_n, F, U_turbulence, parameters);
     euler_step(dt, y_n, y_np1, F, size);
-    // for (int i = 0; i < size; i++) {        
-    //     y_np1[i] = y_n[i] + dt * F[i];
-    // }
 }
 
 void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int size) {
@@ -628,19 +557,10 @@ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int
 void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters *parameters) {
     int k1_index = 0;
     int k2_index = size;
-    // Phi(t_n, y_n, k + k1_index, U_turbulence, parameters);
-    // turbulence(U_turbulence, k + k1_index, parameters);
-    // boundary_conditions(k + k1_index, parameters);
     Phi(t_n, y_n, k + k1_index, U_turbulence, parameters);
     caxpy(F, k + k1_index, y_n, dt, size);
-    // Phi(t_n + dt, F, k + k2_index, U_turbulence, parameters);
-    // turbulence(U_turbulence, k + k2_index, parameters);
-    // boundary_conditions(k + k2_index, parameters);
     Phi(t_n + dt, F, k + k2_index, U_turbulence, parameters);
     RK2_step(dt, y_n, y_np1, k + k1_index, k + k2_index, size);
-    // for (int i = 0; i < size; i++) {
-    //     y_np1[i] = y_n[i] + 0.5 * dt * (k[k1_index + i] + k[k2_index + i]);
-    // }
 }
 
 void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, double *k3, double *k4, int size) {
@@ -662,9 +582,6 @@ void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     caxpy(F, k + k3_index, y_n, dt, size);
     Phi(t_n + dt, F, k + k4_index, U_turbulence, parameters);
     RK4_step(dt, y_n, y_np1, k + k1_index, k + k2_index, k + k3_index, k + k4_index, size);
-    // for (int i = 0; i < size; i++) {
-    //     y_np1[i] = y_n[i] + (dt / 6) * (k[k1_index + i] + 2 * k[k2_index + i] + 2 * k[k3_index + i] + k[k4_index + i]);
-    // }
 }
 
 void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters *parameters) {
@@ -686,7 +603,6 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
 }
 
 void solve_PDE(double *y_n, double *p, Parameters *parameters) {
-    setbuf(stdout, NULL);
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -694,7 +610,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     int NT = parameters->NT;
     int Nz_Y = parameters->Nz_Y;
     int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y;
-    char log_path[100];
+    // char log_path[100];
     int n_save;
     int k_size = 2;
     if (strncmp(parameters->method, "RK4", 3) == 0) 
@@ -706,6 +622,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     double *F = (double *) malloc(size * sizeof(double));
     double *k = (double *) malloc(k_size * size * sizeof(double));
     double *R_turbulence = (double *) malloc(27 * Nx * Ny * Nz * sizeof(double));
+    clock_t start, end, step_start, step_end; // Timers
     // Arrays for pressure Poisson Problem
     fftw_complex *a = fftw_alloc_complex((Nz - 2));
     fftw_complex *b = fftw_alloc_complex((Nz - 1));
@@ -722,18 +639,14 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     fftw_complex *p_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     fftw_complex *p_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
     fftw_plan p_plan, f_plan, p_top_plan;
-    // char *save_path = "data/output/";
-    clock_t start, end, step_start, step_end;
-    // copy_slice(p_top, p_0, Nz - 1, Nx, Ny, Nz);
-    // Create log path using save_path
-    strcpy(log_path, parameters->save_path);
-    strcat(log_path, "log.txt");
-    FILE *logs = fopen(log_path, "w");
+    p_plan = NULL;
+    f_plan = NULL;
+    p_top_plan = NULL;
     // Solver time
     start = clock();
     // Time integration
     for (int n = 1; n < Nt; n++) { 
-        step_start = clock();
+        step_start = clock(); // Start step timer
         // Compute U^*, T^{n+1}, Y^{n+1}
         // Check time integration method
         if (strncmp(parameters->method, "Euler", 5) == 0) {
@@ -743,86 +656,47 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         } else if (strncmp(parameters->method, "RK4", 3) == 0) {
             RK4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters);
         } else {
-            printf("Time integration method not found\n");
+            log_message(parameters, "Time integration method not found.");
             exit(1);
         }
-
-        // Boundary conditions
-        // boundary_conditions(y_np1, parameters);
-
         // Solve Poisson problem for pressure (it only uses U^*)
-        // (THE PROBLEM COULD BE HERE)
-        // printf("Solving pressure Poisson problem\n");
         solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
-
-        // // Velocity correction 
-        // velocity_correction(y_np1, p, dt, parameters);
-
-        // // Boundary conditions
-        // boundary_conditions(y_np1, parameters); 
-
-        // // Bound temperature and fuel
-        // bound(y_np1, parameters);
-
-        // printf("Velocity correction\n");
+        // Chorin's projection method + BC + bounds
         velocity_correction_boundaries_bounding(y_np1, p, dt, parameters);
-        
-        step_end = clock();
-        // printf("Euler step\n");
+        // End step timer
+        step_end = clock(); 
+        // Compute step time
         step_time = (double) (step_end - step_start) / CLOCKS_PER_SEC;
-        
         // Save data each NT steps and at the last step
         if (n % NT == 0 || n == Nt - 1) {  
             n_save = n / NT;
-            printf("n = %d, t_n = %lf\n", n, t[n]);
-            fprintf(logs, "n = %d, t_n = %lf\n", n, t[n]);
-            printf("Time per iteration: %lf s\n", step_time);
-            fprintf(logs, "Time per iteration: %lf s\n", step_time);  
-            printf("Saving data...\n");
-            fprintf(logs, "Saving data...\n");
+            log_timestep(parameters, n, t[n], step_time);
             save_data(parameters->save_path, y_np1, p, n_save, parameters);
         }
-
         // Update y_n
         copy(y_n, y_np1, size);
     }
     end = clock();
     printf("Solver time: %lf s\n", (double) (end - start) / CLOCKS_PER_SEC);
-
-    fclose(logs);
     // Free memory
-    // free(t);
-    // free(y_n);
-    // free(y_np1);
-    // free(F);
-    // free(R_turbulence);
-    // free(k);
-    // free(p);
-    // free(p_top);
-    // free(f);
-    // Free memory
-    // fftw_destroy_plan(p_top_plan);
-    // fftw_destroy_plan(f_plan);
-    // fftw_destroy_plan(p_plan);
-    // fftw_free(p_top_in);
-    // fftw_free(p_in);
-    // fftw_free(f_in);
-    // fftw_free(p_top_out);
-    // fftw_free(f_out);
-    // fftw_free(p_out);
-    // fftw_free(pk);
-    // fftw_free(d);
-    // fftw_free(l);
-    // fftw_free(uu);
-    // fftw_free(y);
-    // fftw_free(a);
-    // fftw_free(b);
-    // fftw_free(c);
-    // free(a);
-    // free(b);
-    // free(c);
-    // free(d);
-    // free(l);
-    // free(u);
-    // free(y);
+    free(y_n);
+    free(y_np1);
+    free(F);
+    free(R_turbulence);
+    free(k);
+    // Free memory for Poisson problem
+    fftw_free(a);
+    fftw_free(b);
+    fftw_free(c);
+    fftw_free(d);
+    fftw_free(l);
+    fftw_free(u);
+    fftw_free(y);
+    fftw_free(pk);
+    fftw_free(f_in);
+    fftw_free(f_out);
+    fftw_free(p_top_in);
+    fftw_free(p_top_out);
+    fftw_free(p_in);
+    fftw_free(p_out);
 }

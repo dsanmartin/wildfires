@@ -1,6 +1,45 @@
+/**
+ * @file structures.h
+ * @author Daniel San Martin (dsanmartinreyes@gmail.com)
+ * @brief Structures used in the wildfire simulation.
+ * @version 0.1
+ * @date 2024-07-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include <stdio.h>
+
+/**
+ * @brief Structure to store the indexes of the fields.
+ * 
+ */
+typedef struct _field_indexes {
+    int u;
+    int v;
+    int w;
+    int T;
+    int Y;
+} FieldIndexes;
+
+/**
+ * @brief Structure to store the indexes of the gradients for pressure field.
+ * 
+ */
+typedef struct _pressure_indexes  {
+    int ux;
+    int vy;
+    int wz;
+} PressureIndexes;
+
+/**
+ * @brief Structure to store the indexes of the turbulence fields.
+ * 
+ */
 typedef struct _turbulence_indexes {
     int ux;
     int uy;
@@ -26,44 +65,25 @@ typedef struct _turbulence_indexes {
     int Txx;
     int Tyy;
     int Tzz;
-    // int uyx;
-    // int uzx;
-    // int uxy;
-    // int uzy;
-    // int uxz;
-    // int uyz;
-    // int vyx;
-    // int vzx;
-    // int vxy;
-    // int vzy;
-    // int vxz;
-    // int vyz;
-    // int wyx;
-    // int wzx;
-    // int wxy;
-    // int wzy;
-    // int wxz;
-    // int wyz;
     int fw;
     int fwx;
     int fwy;
     int fwz;
 } TurbulenceIndexes;
 
-typedef struct _pressure_indexes  {
-    int ux;
-    int vy;
-    int wz;
-} PressureIndexes;
+/**
+ * @brief Structure to store the log files.
+ * 
+ */
+typedef struct _log_files {
+    FILE *parameters;
+    FILE *log;
+} LogFiles;
 
-typedef struct _field_indexes {
-    int u;
-    int v;
-    int w;
-    int T;
-    int Y;
-} FieldIndexes;
-
+/**
+ * @brief Structure to store the parameters of the simulation.
+ * 
+ */
 typedef struct _parameters {
     /* Mesh nodes */
     int Nx; // Number of grid points in x
@@ -156,6 +176,7 @@ typedef struct _parameters {
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;
+    LogFiles log_files;
 } Parameters;
 
 #endif

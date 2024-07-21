@@ -1,41 +1,40 @@
-#include "../include/parameters.h"
-
-#define MAX_LINE_LENGTH 512
-
 /**
- * @brief Reads the parameters from a file.
- *
- * This function reads the parameters from a file specified by the filePath parameter.
- * The file should have the following format:
- * - Nx = <value>
- * - Ny = <value>
- * - Nz = <value>
- * - Nt = <value>
- * - x_min = <value>
- * - x_max = <value>
- * - y_min = <value>
- * - y_max = <value>
- * - z_min = <value>
- * - z_max = <value>
- * - t_min = <value>
- * - t_max = <value>
- *
- * @param filePath The path to the parameters file.
- * @return The parameters read from the file.
+ * @file parameters.c
+ * @author Daniel San Martin (dsanmartinreyes@gmail.com)
+ * @brief Functions to handle the simulation parameters from a file.
+ * @version 0.1
+ * @date 2024-07-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
  */
-Parameters read_parameters_file(const char *filePath) {
-    FILE *parameters_file = fopen(filePath, "r"); // Open file
+#include "../../include/c/parameters.h"
+
+Parameters read_parameters_file(const char *file_path) {
+    FILE *parameters_file = fopen(file_path, "r"); // Open file
+    int size; // Size of the fields
+    char line[MAX_LINE_LENGTH]; // Create line buffer
+    char parameter_file_path[256]; // Path to the parameters file
+    char log_file_path[256]; // Path to the log file
     Parameters parameters; // Create parameters struct
     memset(&parameters, 0, sizeof(Parameters)); // Initialize parameters struct
-    char line[MAX_LINE_LENGTH]; // Create line buffer
-    int size; // Size of the fields
     generate_current_datetime_string(parameters.sim_id, 32); // Get YYYYMMDD for simulation ID
     strcpy(parameters.save_path, "data/output/"); // Set save path
-    // // Concatenate simulation ID to save path
+    // Concatenate simulation ID to save path
     strcat(parameters.save_path, parameters.sim_id);
     strcat(parameters.save_path, "/");
-    // // Create directory if it does not exist
+    // Create directory if it does not exist
     mkdir(parameters.save_path, 0777);
+    // Concatenate save path to parameters file path
+    strcpy(parameter_file_path, parameters.save_path);
+    strcat(parameter_file_path, "parameters.txt");
+    // Create file for parameters.txt
+    parameters.log_files.parameters = fopen(parameter_file_path, "w");
+    // Concatenate save path to log file path
+    strcpy(log_file_path, parameters.save_path);
+    strcat(log_file_path, "log.txt");
+    // Create file for log.txt
+    parameters.log_files.log = fopen(log_file_path, "w");
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -316,7 +315,19 @@ Parameters read_parameters_file(const char *filePath) {
     parameters.turbulence_indexes.fwx = 25 * size;
     parameters.turbulence_indexes.fwy = 26 * size;
     parameters.turbulence_indexes.fwz = 27 * size;
-    
+    // Close file
     fclose(parameters_file);
     return parameters;
+}
+
+void free_parameters(Parameters *parameters) {
+    free(parameters->x);
+    free(parameters->y);
+    free(parameters->z);
+    free(parameters->t);
+    free(parameters->r);
+    free(parameters->s);
+    free(parameters->kx);
+    free(parameters->ky);
+    fclose(parameters->log_files.log);
 }

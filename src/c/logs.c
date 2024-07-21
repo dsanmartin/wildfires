@@ -1,12 +1,11 @@
-#include "../include/logs.h"
+#include "../../include/c/logs.h"
 
 void log_parameters(Parameters *parameters, int to_file) {
     FILE *output;
-    if (to_file) {
-        char path[256];
-        sprintf(path, "%sparameters.txt", parameters->save_path);
-        output = fopen(path, "w");
-    } else
+    setbuf(stdout, NULL);
+    if (to_file) 
+        output = parameters->log_files.parameters;
+    else
         output = stdout;
     fprintf(output, "Simulation name: %s\n", parameters->sim_id);
     fprintf(output, "Domain:\n");
@@ -45,4 +44,20 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "  Y_h: %lf\n", parameters->Y_h);
     if (to_file)
         fclose(output);
+}
+
+void log_message(Parameters *parameters, char *message) {
+    setbuf(stdout, NULL);
+    fprintf(parameters->log_files.log, "%s\n", message);
+    printf("%s\n", message);
+}
+
+void log_timestep(Parameters *parameters, int n, double t_n, double step_time) {
+    setbuf(stdout, NULL);
+    printf("n = %d, t_n = %lf\n", n, t_n);
+    fprintf(parameters->log_files.log, "n = %d, t_n = %lf\n", n, t_n);
+    printf("Time per iteration: %lf s\n", step_time);
+    fprintf(parameters->log_files.log, "Time per iteration: %lf s\n", step_time);  
+    printf("Saving data...\n");
+    fprintf(parameters->log_files.log, "Saving data...\n");
 }

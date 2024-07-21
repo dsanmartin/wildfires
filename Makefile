@@ -3,8 +3,11 @@
 #
 
 BIN     := ./bin/
-SRC     := ./src/
+C       := ./src/c/
+OMP     := ./src/omp/
+CUDA	:= ./src/cuda/
 DEST    := ./obj/
+SRC	    := $(C)
 
 EXE    = wildfires
 

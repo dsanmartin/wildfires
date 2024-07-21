@@ -1,6 +1,17 @@
-#include "../include/turbulence.h"
+/**
+ * @file turbulence.c
+ * @author Daniel San Martin (dsanmartinreyes@gmail.com)
+ * @brief Functions for adding turbulence to the wildfire simulation.
+ * @version 0.1
+ * @date 2024-07-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 
-void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
+#include "../../include/c/turbulence.h"
+
+void turbulence(double *R_turbulence, double *R_new, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -10,7 +21,6 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
     double Delta = pow(dx * dy * dz, 1.0 / 3.0);
     double C_s = parameters->C_s;
     double Pr = parameters->Pr;
-    // double nu = parameters->nu;
     double l = C_s * Delta;
     double ux, uy, uz, vx, vy, vz, wx, wy, wz, Tx, Ty, Tz;
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
@@ -26,22 +36,17 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
     double sgs_x_no_damp, sgs_y_no_damp, sgs_z_no_damp, sgs_q_no_damp;
     double sgs_x_damp, sgs_y_damp, sgs_z_damp, sgs_q_damp;
     double fw, fwx, fwy, fwz;
-    // double u_tau, tau_p;
-    // double *z = parameters->z;
     int im1, ip1, jm1, jp1;
-    // int im2, ip2, jm2, jp2;
+    // Loop over nodes
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 1; k < Nz - 1; k++) {
                 // Indexes for periodic boundary conditions
                 im1 = (i - 1 + Nx - 1) % (Nx - 1);
-                // im2 = (i - 2 + Nx - 1) % (Nx - 1);
                 jm1 = (j - 1 + Ny - 1) % (Ny - 1);
-                // jm2 = (j - 2 + Ny - 1) % (Ny - 1);
                 ip1 = (i + 1) % (Nx - 1);
-                // ip2 = (i + 2) % (Nx - 1);
                 jp1 = (j + 1) % (Ny - 1);
-                // jp2 = (j + 2) % (Ny - 1);
+                // Get the values of the derivatives
                 ux_ijp1k = R_turbulence[parameters->turbulence_indexes.ux + IDX(i, jp1, k, Nx, Ny, Nz)];
                 ux_ijm1k = R_turbulence[parameters->turbulence_indexes.ux + IDX(i, jm1, k, Nx, Ny, Nz)];
                 ux_ijkp1 = R_turbulence[parameters->turbulence_indexes.ux + IDX(i, j, k + 1, Nx, Ny, Nz)];
@@ -129,20 +134,15 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
                 Txx = R_turbulence[parameters->turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)];
                 Tyy = R_turbulence[parameters->turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)];
                 Tzz = R_turbulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)];
-
-                // tau_p = sqrt((nu * 0.5 * (uz + wx)) * (nu * 0.5 * (uz + wx)) + (nu * 0.5 * (vz + wy)) * (nu * 0.5 * (vz + wy)));
-                // u_tau = sqrt(tau_p);
-                // fw = f_damping(z[k], u_tau, nu);
+                // Damping derivatives
                 fwx = (fw_ip1jk - fw_im1jk) / (2 * dx);
                 fwy = (fw_ijp1k - fw_ijm1k) / (2 * dy);
                 fwz = (fw_ijkp1 - fw_ijkm1) / (2 * dz);
-    
                 // |S| = sqrt(2 * S_ij * S_ij)
                 mod_S = sqrt(2.0 * (ux * ux + vy * vy + wz * wz) + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz)) + 1e-16;
                 psi_x = 4 * (ux * uxx + vy * vyx + wz * wzx) + 2 * (uz + wx) * (uzx + wxx) + 2 * (vx + uy) * (vxx + uyx) + 2 * (wy + vz) * (wyx + vzx);
                 psi_y = 4 * (ux * uxy + vy * vyy + wz * wzy) + 2 * (uz + wx) * (uzy + wxy) + 2 * (vx + uy) * (vxy + uyy) + 2 * (wy + vz) * (wyy + vzy);
                 psi_z = 4 * (ux * uxz + vy * vyz + wz * wzz) + 2 * (uz + wx) * (uzz + wxz) + 2 * (vx + uy) * (vxz + uyz) + 2 * (wy + vz) * (wyz + vzz);
-
                 // SGS model
                 sgs_x_damp = 2 * mod_S * fw * (fwx * ux + 0.5 * fwy * (vx + uy) + 0.5 * fwz * (wx + uz));
                 sgs_y_damp = 2 * mod_S * fw * (fwy * vy + 0.5 * fwx * (uy + vx) + 0.5 * fwz * (wy + vz));
@@ -156,12 +156,11 @@ void turbulence(double *R_turbulence, double *R, Parameters *parameters) {
                 sgs_y = -2 * l * l * (sgs_y_no_damp * fw * fw + sgs_y_damp);
                 sgs_z = -2 * l * l * (sgs_z_no_damp * fw * fw + sgs_z_damp);
                 sgs_q = -l * l / Pr * (sgs_q_no_damp * fw * fw + sgs_q_damp);
-
                 // Add SGS model to R
-                R[parameters->field_indexes.u + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_x;
-                R[parameters->field_indexes.v + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_y;
-                R[parameters->field_indexes.w + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_z;
-                R[parameters->field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_q;
+                R_new[parameters->field_indexes.u + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_x;
+                R_new[parameters->field_indexes.v + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_y;
+                R_new[parameters->field_indexes.w + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_z;
+                R_new[parameters->field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_q;
             }
         }
     }
