@@ -7,7 +7,7 @@ C       := ./src/c/
 OMP     := ./src/omp/
 CUDA	:= ./src/cuda/
 DEST    := ./obj/
-SRC	    := $(C)
+SRC	    := $(OMP)
 
 EXE    = wildfires
 
@@ -23,7 +23,7 @@ MKDIR  = mkdir -p
 # C/C++ flags
 #
 
-CFLAGS    = -Wall -std=c99 -lm -lfftw3 -O3 -pg# -pg -g -Wextra 
+CFLAGS    = -Wall -std=c99 -lm -lfftw3 -O3 -fopenmp -lgomp# -pg -g 
 
 #
 # Files to compile: 

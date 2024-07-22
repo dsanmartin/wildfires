@@ -19,9 +19,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
-    // double dt = parameters->dt;
-    // double *x = parameters->x;
-    // double *y = parameters->y;
     double *z = parameters->z;
     double nu = parameters->nu;
     double alpha = parameters->alpha;
@@ -302,7 +299,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 }
                 u_tau = sqrt(tau_p);
                 fw = f_damping(z[k], u_tau, nu);
-                // fw = 0.0;
                 // Copy to turbulence array
                 R_turbulence[parameters->turbulence_indexes.ux  + IDX(i, j, k, Nx, Ny, Nz)] = ux;
                 R_turbulence[parameters->turbulence_indexes.uy  + IDX(i, j, k, Nx, Ny, Nz)] = uy;
@@ -340,34 +336,19 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 // Compute source and force terms
                 S = source(T_ijk, Y_ijk, H_R, A, T_a, h, a_v, T_inf, c_p, rho, T_pc);
                 mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
-                // Y_D = 1.0;
-                // a_v = 1.0;
+                // Force terms
                 F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
                 F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;                             
                 F_z = - g * (T_ijk - T_inf) / T_ijk - Y_D * a_v * Y_ijk * mod_U * w_ijk;
-                // double T_tmp = (T_ijk - T_inf) / T_ijk;
-                // F_z = (T_inf / T_ijk - 1.0) * g - Y_D * a_v * Y_ijk * mod_U * w_ijk;
-                // Compute RHS for velocity and temperature
-                // uux = ux_uw;
-                // vuy = v_ijk * uy_uw;
-                // wuz = w_ijk * uz_uw;
-                // uvx = u_ijk * vx_uw;
-                // vvy = v_ijk * vy_uw;
-                // wvz = w_ijk * vz_uw;
-                // uwx = u_ijk * wx_uw;
-                // vwy = v_ijk * wy_uw;
-                // wwz = w_ijk * wz_uw;
+                // Compute Laplacian terms
                 lap_u = uxx + uyy + uzz;
                 lap_v = vxx + vyy + vzz;
                 lap_w = wxx + wyy + wzz;
                 lap_T = Txx + Tyy + Tzz;
+                // Compute RHS
                 u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
                 v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
                 w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
-                // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
-                // u_RHS = nu * lap_u - (uux + vuy + wuz);
-                // v_RHS = nu * lap_v - (uvx + vvy + wvz);
-                // w_RHS = nu * lap_w - (uwx + vwy + wwz);
                 T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
                 // Save RHS into R_new
                 R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
@@ -616,6 +597,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     if (strncmp(parameters->method, "RK4", 3) == 0) 
         k_size = 4;
     double step_time;
+    double cfl;
     double *t = parameters->t;
     double dt = parameters->dt;
     double *y_np1 = (double *) malloc(size * sizeof(double));
@@ -670,7 +652,8 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         // Save data each NT steps and at the last step
         if (n % NT == 0 || n == Nt - 1) {  
             n_save = n / NT;
-            log_timestep(parameters, n, t[n], step_time);
+            cfl = CFL(y_np1, parameters);
+            log_timestep(parameters, n, t[n], step_time, cfl);
             save_data(parameters->save_path, y_np1, p, n_save, parameters);
         }
         // Update y_n

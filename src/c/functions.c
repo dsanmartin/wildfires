@@ -34,6 +34,39 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
     return H_R * Y * K(T, A, T_a) * H(T, T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
 }
 
+double CFL(double *U, Parameters *parameters) {
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
+    int Nz = parameters->Nz;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
+    double dx = parameters->dx;
+    double dy = parameters->dy;
+    double dz = parameters->dz;
+    double dt = parameters->dt;
+    double max_u = 0.0;
+    double max_v = 0.0;
+    double max_w = 0.0;
+    double abs_u, abs_v, abs_w;
+    double *u = U + u_index;
+    double *v = U + v_index;
+    double *w = U + w_index;
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int k = 0; k < Nz; k++) {
+                abs_u = fabs(u[IDX(i, j, k, Nx, Ny, Nz)]);
+                abs_v = fabs(v[IDX(i, j, k, Nx, Ny, Nz)]);
+                abs_w = fabs(w[IDX(i, j, k, Nx, Ny, Nz)]);
+                max_u = MAX(max_u, abs_u);
+                max_v = MAX(max_v, abs_v);
+                max_w = MAX(max_w, abs_w);
+            }
+        }
+    }
+    return dt * (max_u / dx + max_v / dy + max_w / dz);
+}
+
 void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;

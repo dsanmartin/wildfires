@@ -173,6 +173,7 @@ typedef struct _parameters {
     char method[32];
     char save_path[256];
     char sim_id[32];
+    int n_threads;
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;

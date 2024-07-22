@@ -91,6 +91,15 @@ double f_damping(double z, double u_tau, double nu);
 double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc);
 
 /**
+ * Calculates the Courant-Friedrichs-Lewy (CFL) number for a given set of variables.
+ *
+ * @param U The array of variables.
+ * @param parameters The parameters used in the calculation.
+ * @return The calculated CFL number.
+ */
+double CFL(double *U, Parameters *parameters);
+
+/**
  * @brief Sets the initial conditions for the simulation.
  * 
  * @param x The x-coordinates.
@@ -105,5 +114,6 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
  * @param parameters The simulation parameters.
  */
 void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters);
+
 
 #endif

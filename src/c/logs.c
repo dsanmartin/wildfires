@@ -52,12 +52,14 @@ void log_message(Parameters *parameters, char *message) {
     printf("%s\n", message);
 }
 
-void log_timestep(Parameters *parameters, int n, double t_n, double step_time) {
+void log_timestep(Parameters *parameters, int n, double t_n, double step_time, double cfl) {
     setbuf(stdout, NULL);
     printf("n = %d, t_n = %lf\n", n, t_n);
-    fprintf(parameters->log_files.log, "n = %d, t_n = %lf\n", n, t_n);
+    printf("CFL: %lf\n", cfl);
     printf("Time per iteration: %lf s\n", step_time);
-    fprintf(parameters->log_files.log, "Time per iteration: %lf s\n", step_time);  
     printf("Saving data...\n");
+    fprintf(parameters->log_files.log, "n = %d, t_n = %lf\n", n, t_n);
+    fprintf(parameters->log_files.log, "CFL: %lf\n", cfl);
+    fprintf(parameters->log_files.log, "Time per iteration: %lf s\n", step_time);  
     fprintf(parameters->log_files.log, "Saving data...\n");
 }
