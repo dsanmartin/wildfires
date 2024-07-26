@@ -1,7 +1,7 @@
 /**
  * @file pde.h
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
- * @brief Functions to evaluate RHS of the PDE
+ * @brief Functions for solving the partial differential equations of the wildfire simulation.
  * @version 0.1
  * @date 2024-07-21
  * 
@@ -12,9 +12,18 @@
 #ifndef PDE_H
 #define PDE_H
 
-#include "structures.h"
-#include "turbulence.h"
-#include "utils.h"
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <omp.h>
+#include <sys/time.h>
+#include "../c/functions.h"
+#include "../c/logs.h"
+#include "../c/output.h"
+#include "../c/poisson.h"
+#include "../c/turbulence.h"
+#include "../c/structures.h"
+#include "../c/utils.h"
 
 /**
  * @brief Calculates the right-hand side (RHS) of the partial differential equation (PDE).
@@ -52,18 +61,6 @@ void boundary_conditions(double *R_new, Parameters *parameters);
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
 void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameters *parameters);
-
-/**
- * @brief Bounds the temperature and fuel arrays.
- *
- * This function modifies the given temperature and fuel arrays to enforce the
- * specified bounding values.
- *
- * @param R_new The array of temperature values and fuel.
- * @param parameters The parameters struct containing information about the
- *                   computational domain and the boundary conditions.
- */
-void bounds(double *R_new, Parameters *parameters);
 
 /**
  * @brief Applies velocity correction of Chorin's projection method to the given arrays.

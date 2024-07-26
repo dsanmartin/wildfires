@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     // Initialize u, v, w, T, Y, p
     // printf("Initial conditions...\n");
     log_message(&parameters, "Initial conditions...");
-    initial_conditions(parameters.x, parameters.y, parameters.z, u, v, w, T, Y, p, &parameters);
+    initial_conditions(u, v, w, T, Y, p, &parameters);
     // printf("Initial conditions... OK!\n");
 
     // Create y_0 using T and Y
@@ -44,8 +44,8 @@ int main(int argc, char *argv[]) {
     // Save initial data
     // printf("Saving initial data...\n");
     log_message(&parameters, "Saving initial data...");
-    save_data(parameters.save_path, y_0, p, 0, &parameters);
-    save_domain(parameters.save_path, &parameters);
+    save_data(y_0, p, 0, &parameters);
+    save_domain(&parameters);
     // printf("Initial data saved!\n");
 
     // Solve PDE
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     free(p);
     free(Y);
     free_parameters(&parameters);
-    // printf("Memory freed!\n");
+    printf("Memory freed!\n");
 
     return 0;
 }

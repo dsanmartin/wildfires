@@ -90,21 +90,46 @@ double f_damping(double z, double u_tau, double nu);
  */
 double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc);
 
+// /**
+//  * Calculates the Courant-Friedrichs-Lewy (CFL) number for a given set of variables.
+//  *
+//  * @param U The array of variables.
+//  * @param parameters The parameters used in the calculation.
+//  * @return The calculated CFL number.
+//  */
+// double CFL(double *U, Parameters *parameters);
+
+
+// /**
+//  * Calculates the min and max values of temperature and fuel fraction.
+//  *
+//  * @param y_n A pointer to the variable where the calculated temperature of fuel will be stored.
+//  * @param Y_min The minimum value of fuel.
+//  * @param Y_max The maximum value of fuel.
+//  * @param T_min The minimum value of temperature.
+//  * @param T_max The maximum value of temperature.
+//  * @param parameters A pointer to the structure containing additional parameters.
+//  *
+//  * @brief Computes the minimum and maximum temperature and fuel fraction values.
+//  */
+// void temperature_fuel_min_and_max_values(double *y_n, double Y_min, double Y_max, double T_min, double T_max, Parameters *parameters);
+
 /**
- * Calculates the Courant-Friedrichs-Lewy (CFL) number for a given set of variables.
+ * @brief Calculates the timestep reports based on the given parameters.
  *
- * @param U The array of variables.
- * @param parameters The parameters used in the calculation.
- * @return The calculated CFL number.
+ * @param y_n The array of values.
+ * @param CFL The CFL (Courant-Friedrichs-Lewy) number.
+ * @param Y_min The minimum value for Y (fuel).
+ * @param Y_max The maximum value for Y (fuel).
+ * @param T_min The minimum value for T (temperature).
+ * @param T_max The maximum value for T (temperature).
+ * @param parameters The pointer to the Parameters struct.
  */
-double CFL(double *U, Parameters *parameters);
+void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters *parameters);
 
 /**
  * @brief Sets the initial conditions for the simulation.
  * 
- * @param x The x-coordinates.
- * @param y The y-coordinates.
- * @param z The z-coordinates.
  * @param u The x-component of the velocity.
  * @param v The y-component of the velocity.
  * @param w The z-component of the velocity.
@@ -113,7 +138,7 @@ double CFL(double *U, Parameters *parameters);
  * @param p The pressure.
  * @param parameters The simulation parameters.
  */
-void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters);
+void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters);
 
 
 #endif

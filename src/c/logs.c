@@ -15,7 +15,7 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "Grid size:\n");
     fprintf(output, "  Nx: %d, Ny: %d, Nz: %d, Nt: %d\n", parameters->Nx, parameters->Ny, parameters->Nz, parameters->Nt);
     fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters->dx, parameters->dy, parameters->dz, parameters->dt);
-    fprintf(output, "  NT: %d\n", parameters->NT);
+    fprintf(output, "  Time samples: %d\n", parameters->NT);
     fprintf(output, "Fluid parameters:\n");
     fprintf(output, "  rho: %lf, nu: %e, alpha: %e, T_inf: %lf,  g: %lf\n", parameters->rho, parameters->nu, parameters->alpha, parameters->T_inf, parameters->g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters->C_s, parameters->Pr);
@@ -52,14 +52,18 @@ void log_message(Parameters *parameters, char *message) {
     printf("%s\n", message);
 }
 
-void log_timestep(Parameters *parameters, int n, double t_n, double step_time, double cfl) {
+void log_timestep(Parameters *parameters, int n, double t_n, double step_time, double CFL, double T_min, double T_max, double Y_min, double Y_max) {
     setbuf(stdout, NULL);
-    printf("n = %d, t_n = %lf\n", n, t_n);
-    printf("CFL: %lf\n", cfl);
-    printf("Time per iteration: %lf s\n", step_time);
-    printf("Saving data...\n");
-    fprintf(parameters->log_files.log, "n = %d, t_n = %lf\n", n, t_n);
-    fprintf(parameters->log_files.log, "CFL: %lf\n", cfl);
-    fprintf(parameters->log_files.log, "Time per iteration: %lf s\n", step_time);  
-    fprintf(parameters->log_files.log, "Saving data...\n");
+    printf("Time step: %6d, Simulation time: %lf s\n", n, t_n);
+    printf("CFL: %lf\n", CFL);
+    printf("Temperature: Min = %.2f, Max = %.2f\n", T_min, T_max);
+    printf("Fuel: Min = %.2f, Max = %.2f\n", Y_min, Y_max);
+    printf("Step time: %lf s\n", step_time);
+    // printf("Saving data...\n");
+    fprintf(parameters->log_files.log, "Time step: %6d, Simulation time: %lf s\n", n, t_n);
+    fprintf(parameters->log_files.log, "CFL: %lf\n", CFL);    
+    fprintf(parameters->log_files.log, "Temperature: Min = %.2f, Max = %.2f\n", T_min, T_max);
+    fprintf(parameters->log_files.log, "Fuel: Min = %.2f, Max = %.2f\n", Y_min, Y_max); 
+    fprintf(parameters->log_files.log, "Step time: %lf s\n", step_time); 
+    // fprintf(parameters->log_files.log, "Saving data...\n");
 }

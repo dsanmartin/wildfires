@@ -171,7 +171,7 @@ typedef struct _parameters {
     double hill_height;
     double p_top;
     char method[32];
-    char save_path[256];
+    char save_path[64];
     char sim_id[32];
     int n_threads;
     FieldIndexes field_indexes;

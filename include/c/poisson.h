@@ -68,4 +68,10 @@ void thomas_algorithm(fftw_complex *a, fftw_complex *b, fftw_complex *c, fftw_co
 void solve_pressure(double *U, double *p, fftw_complex *a, fftw_complex *b, fftw_complex *c, fftw_complex *d, fftw_complex *l, fftw_complex *u, fftw_complex *y, fftw_complex *pk, fftw_plan p_plan, fftw_plan f_plan, fftw_plan p_top_plan, fftw_complex *f_in, fftw_complex *f_out, fftw_complex *p_top_in, fftw_complex *p_top_out, fftw_complex *p_in, fftw_complex *p_out, Parameters *parameters);
 
 
+
+void thomas_algorithm_debug(fftw_complex *a, fftw_complex *b, fftw_complex *c, fftw_complex *d, fftw_complex *x, fftw_complex *l, fftw_complex *u, 
+    // fftw_complex *y, fftw_complex *U, fftw_complex *L, fftw_complex *Y, fftw_complex *D, int r, int s, int N) {
+    fftw_complex *y, fftw_complex *X, fftw_complex *V, fftw_complex *L, fftw_complex *Y, fftw_complex *D, int r, int s, int Nx, int Ny, int N);
+void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b, fftw_complex *c, fftw_complex *d, fftw_complex *l, fftw_complex *u, fftw_complex *y, fftw_complex *pk, fftw_plan p_plan, fftw_plan f_plan, fftw_plan p_top_plan, fftw_complex *f_in, fftw_complex *f_out, fftw_complex *p_top_in, fftw_complex *p_top_out, fftw_complex *p_in, fftw_complex *p_out, Parameters *parameters);
+
 #endif

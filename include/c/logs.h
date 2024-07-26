@@ -48,6 +48,6 @@ void log_message(Parameters *parameters, char *message);
  * @param t_n The current time.
  * @param step_time The time taken for the timestep.
  */
-void log_timestep(Parameters *parameters, int n, double t_n, double step_time, double cfl);
+void log_timestep(Parameters *parameters, int n, double t_n, double step_time, double CFL, double T_min, double T_max, double Y_min, double Y_max);
 
 #endif

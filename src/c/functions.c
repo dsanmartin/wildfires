@@ -34,13 +34,49 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
     return H_R * Y * K(T, A, T_a) * H(T, T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho);
 }
 
-double CFL(double *U, Parameters *parameters) {
+// double CFL(double *U, Parameters *parameters) {
+//     int Nx = parameters->Nx;
+//     int Ny = parameters->Ny;
+//     int Nz = parameters->Nz;
+//     int u_index = parameters->field_indexes.u;
+//     int v_index = parameters->field_indexes.v;
+//     int w_index = parameters->field_indexes.w;
+//     double dx = parameters->dx;
+//     double dy = parameters->dy;
+//     double dz = parameters->dz;
+//     double dt = parameters->dt;
+//     double max_u = 0.0;
+//     double max_v = 0.0;
+//     double max_w = 0.0;
+//     double abs_u, abs_v, abs_w;
+//     double *u = U + u_index;
+//     double *v = U + v_index;
+//     double *w = U + w_index;
+//     for (int i = 0; i < Nx; i++) {
+//         for (int j = 0; j < Ny; j++) {
+//             for (int k = 0; k < Nz; k++) {
+//                 abs_u = fabs(u[IDX(i, j, k, Nx, Ny, Nz)]);
+//                 abs_v = fabs(v[IDX(i, j, k, Nx, Ny, Nz)]);
+//                 abs_w = fabs(w[IDX(i, j, k, Nx, Ny, Nz)]);
+//                 max_u = MAX(max_u, abs_u);
+//                 max_v = MAX(max_v, abs_v);
+//                 max_w = MAX(max_w, abs_w);
+//             }
+//         }
+//     }
+//     return dt * (max_u / dx + max_v / dy + max_w / dz);
+// }
+
+void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
+    int Nz_Y = parameters->Nz_Y;
     int u_index = parameters->field_indexes.u;
     int v_index = parameters->field_indexes.v;
     int w_index = parameters->field_indexes.w;
+    int T_index = parameters->field_indexes.T;
+    int Y_index = parameters->field_indexes.Y;
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
@@ -49,25 +85,35 @@ double CFL(double *U, Parameters *parameters) {
     double max_v = 0.0;
     double max_w = 0.0;
     double abs_u, abs_v, abs_w;
-    double *u = U + u_index;
-    double *v = U + v_index;
-    double *w = U + w_index;
+    // double CFL_tmp = 0.0;
+    double Y_min_tmp = 0.0, Y_max_tmp = -1e9;
+    double T_min_tmp = 1e9, T_max_tmp = -1e9;
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
-                abs_u = fabs(u[IDX(i, j, k, Nx, Ny, Nz)]);
-                abs_v = fabs(v[IDX(i, j, k, Nx, Ny, Nz)]);
-                abs_w = fabs(w[IDX(i, j, k, Nx, Ny, Nz)]);
+                abs_u = fabs(y_n[u_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                abs_v = fabs(y_n[v_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                abs_w = fabs(y_n[w_index + IDX(i, j, k, Nx, Ny, Nz)]);
                 max_u = MAX(max_u, abs_u);
                 max_v = MAX(max_v, abs_v);
                 max_w = MAX(max_w, abs_w);
+                if (k < Nz_Y) {
+                    Y_min_tmp = MIN(Y_min_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)]);
+                    Y_max_tmp = MAX(Y_max_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)]);
+                }
+                T_min_tmp = MIN(T_min_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                T_max_tmp = MAX(T_max_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
             }
         }
     }
-    return dt * (max_u / dx + max_v / dy + max_w / dz);
+    *CFL = dt * (max_u / dx + max_v / dy + max_w / dz);
+    *Y_min = Y_min_tmp;
+    *Y_max = Y_max_tmp;
+    *T_min = T_min_tmp;
+    *T_max = T_max_tmp;
 }
 
-void initial_conditions(double *x, double *y, double *z, double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters) {
+void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
@@ -85,6 +131,10 @@ void initial_conditions(double *x, double *y, double *z, double *u, double *v, d
     double sz = parameters->T0_height;
     double T_hot = parameters->T_hot;
     double T_inf = parameters->T_inf;
+    /* Spatial domain */
+    double *x = parameters->x;
+    double *y = parameters->y;
+    double *z = parameters->z;
     /* Pressure paramenters */
     double p_top = parameters->p_top;
     /* Fill arrays */

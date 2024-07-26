@@ -21,8 +21,8 @@ Parameters read_parameters_file(const char *file_path) {
     generate_current_datetime_string(parameters.sim_id, 32); // Get YYYYMMDD for simulation ID
     strcpy(parameters.save_path, "data/output/"); // Set save path
     // Concatenate simulation ID to save path
-    strcat(parameters.save_path, parameters.sim_id);
-    strcat(parameters.save_path, "/");
+    // strcat(parameters.save_path, parameters.sim_id);
+    // strcat(parameters.save_path, "/");
     // Create directory if it does not exist
     mkdir(parameters.save_path, 0777);
     // Concatenate save path to parameters file path
@@ -206,18 +206,22 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "method =", 8) == 0) {
             sscanf(line + 9, "%s", (char *) &(parameters.method));
         }
+        // Number of threads
+        if (strncmp(line, "threads =", 9) == 0) {
+            sscanf(line + 10, "%d", &(parameters.n_threads));
+        }
     }
     parameters.alpha_u = 1.0 / 7.0;
     // Compute dx, dy, dz, dts
     parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
     parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
     parameters.dz = (parameters.z_max - parameters.z_min) / (parameters.Nz - 1);
-    parameters.dt = (parameters.t_max - parameters.t_min) / (parameters.Nt - 1);
+    parameters.dt = (parameters.t_max - parameters.t_min) / parameters.Nt;
     // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
     parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
     parameters.z = (double *) malloc(parameters.Nz * sizeof(double));
-    parameters.t = (double *) malloc(parameters.Nt * sizeof(double));
+    parameters.t = (double *) malloc((parameters.Nt + 1) * sizeof(double));
     // Initialize r, s
     parameters.r = (double *) malloc((parameters.Nx - 1) * sizeof(double));
     parameters.s = (double *) malloc((parameters.Ny - 1) * sizeof(double));
@@ -246,10 +250,14 @@ Parameters read_parameters_file(const char *file_path) {
             parameters.Nz_Y = k + 1;
         }
     }
-    for (int n = 0; n < parameters.Nt; n++) {
+    for (int n = 0; n <= parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
     }
-    
+    // Bounds parameters
+    parameters.T_min = parameters.T_inf;
+    parameters.T_max = 1500;
+    parameters.Y_min = 0.0;
+    parameters.Y_max = 1.0;
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;
     parameters.T0_y_center = (parameters.T0_y_start + parameters.T0_y_end) / 2;
@@ -257,17 +265,14 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.T0_length = parameters.T0_x_end - parameters.T0_x_start;
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
-
     // Sizes
     size = parameters.Nx * parameters.Ny * parameters.Nz;
-
     // Fill field indexes
     parameters.field_indexes.u = 0;
     parameters.field_indexes.v = size;
     parameters.field_indexes.w = 2 * size;
     parameters.field_indexes.T = 3 * size;
     parameters.field_indexes.Y = 4 * size;
-
     // Fill turbulence indexes
     parameters.turbulence_indexes.ux = 0;
     parameters.turbulence_indexes.uy = size;
@@ -293,24 +298,6 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.turbulence_indexes.Txx = 21 * size;
     parameters.turbulence_indexes.Tyy = 22 * size;
     parameters.turbulence_indexes.Tzz = 23 * size;
-    // parameters.turbulence_indexes.uyx = 24 * size;
-    // parameters.turbulence_indexes.uzx = 25 * size;
-    // parameters.turbulence_indexes.uxy = 26 * size;
-    // parameters.turbulence_indexes.uzy = 27 * size;
-    // parameters.turbulence_indexes.uxz = 28 * size;
-    // parameters.turbulence_indexes.uyz = 29 * size;
-    // parameters.turbulence_indexes.vyx = 30 * size;
-    // parameters.turbulence_indexes.vzx = 31 * size;
-    // parameters.turbulence_indexes.vxy = 32 * size;
-    // parameters.turbulence_indexes.vzy = 33 * size;
-    // parameters.turbulence_indexes.vxz = 34 * size;
-    // parameters.turbulence_indexes.vyz = 35 * size;
-    // parameters.turbulence_indexes.wyx = 36 * size;
-    // parameters.turbulence_indexes.wzx = 37 * size;
-    // parameters.turbulence_indexes.wxy = 38 * size;
-    // parameters.turbulence_indexes.wzy = 39 * size;
-    // parameters.turbulence_indexes.wxz = 40 * size;
-    // parameters.turbulence_indexes.wyz = 41 * size;
     parameters.turbulence_indexes.fw = 24 * size;
     parameters.turbulence_indexes.fwx = 25 * size;
     parameters.turbulence_indexes.fwy = 26 * size;

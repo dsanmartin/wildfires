@@ -1,86 +1,78 @@
-#
+COMPILATION = "C"
+
+# Compiler
+CC = gcc
+
 # Folder structure
-#
-
-BIN     := ./bin/
-C       := ./src/c/
-OMP     := ./src/omp/
+BIN		:= ./bin/
+DEST	:= ./obj/
+C		:= ./src/c/
+OMP		:= ./src/omp/
 CUDA	:= ./src/cuda/
-DEST    := ./obj/
-SRC	    := $(OMP)
 
-EXE    = wildfires
+# Output executable
+TARGET = $(BIN)wildfires
 
-#
-# Executables
-#
-
-CC     = gcc
+# Commands
 RM     = rm
 MKDIR  = mkdir -p
 
-#
-# C/C++ flags
-#
+# Flags
+CFLAGS		= -Wall -std=c99 -lm -lfftw3 -O3
+OMPFLAGS	= -fopenmp -lgomp
+FLAGS		= $(CFLAGS) #$(OMPFLAGS)
 
-CFLAGS    = -Wall -std=c99 -lm -lfftw3 -O3 -fopenmp -lgomp# -pg -g 
+# Source files
+SRC_C = $(wildcard $(C)*.c)
+SRC_OMP = $(wildcard $(OMP)*.c)
+SRCS = $(SRC_C)
+ifeq ($(COMPILATION), "OMP")
+# Exclude files in SRC_OMP from SRC
+EXCLUDE_SRC = $(C)pde.c $(C)parameters.c
+SRCS = $(filter-out $(EXCLUDE_SRC),$(SRC_C))
+SRCS += $(SRC_OMP)
+FLAGS += $(OMPFLAGS)
+endif
+$(info SRCS = $(SRCS))
 
-#
-# Files to compile: 
-#
+# Object files
+OBJS = $(patsubst %.c,$(DEST)%.o,$(notdir $(SRCS)))
+$(info OBJS = $(OBJS))
 
-MAIN   = main.c
-CODC   = functions.c logs.c output.c parameters.c pde.c poisson.c turbulence.c utils.c
+# Default target
+all: directories $(TARGET)
 
-#
-# Formating the folder structure for compiling/linking/cleaning.
-#
+# Link the executable
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(FLAGS)
 
-FC     = 
+# Compile source files into object files
+$(DEST)%.o: $(C)%.c
+	$(CC) $(FLAGS) -c $< -o $@
 
-#
-# Preparing variables for automated prerequisites
-#
+# # Object files
+# OBJS = $(SRCS:.c=.o)
 
-OBJC   = $(patsubst %.c,$(DEST)$(FC)%.o,$(CODC))
+# # Default target
+# all: directories $(TARGET)
 
-SRCMAIN = $(patsubst %,$(SRC)%,$(MAIN))
-OBJMAIN = $(patsubst $(SRC)%.c,$(DEST)%.o,$(SRCMAIN))
+# # Link the executable
+# $(TARGET): $(OBJS)
+# 	$(CC) -o $@ $(OBJS) $(FLAGS)
 
-# .PHONY: directories
-
-#
-# The MAGIC
-#
- all: directories $(BIN)$(EXE)
-
-.PHONY: clean
-
-$(BIN)$(EXE): $(OBJC) $(OBJMAIN)
-	$(CC) $^ -o $@ $(CFLAGS)
-
-$(OBJMAIN): $(SRCMAIN)
-	$(CC) $(CFLAGS) -c $? -o $@
-
-$(OBJC): $(DEST)%.o : $(SRC)%.c
-	$(CC) $(CFLAGS) -c $? -o $@
-
+# # Compile source files into object files
+# %.o: %.c
+# 	$(CC) $(FLAGS) -c $< -o $@
 
 directories:
 	$(MKDIR) $(BIN)
-	$(MKDIR) $(DEST)$(FC) 
+	$(MKDIR) $(DEST)
 
-#
-# Makefile for cleaning
-# 
-
+# # Clean up
 clean:
 	$(RM) -rf $(DEST)*.o
-
-fresh:
-	$(RM) -rf data/output/*
 
 distclean: clean
 	$(RM) -rf $(BIN)*
 
-reset: fresh distclean
+.PHONY: all clean

@@ -16,6 +16,7 @@
 #define idxC(i, j, k, Nx, Ny, Nz) (i) + (Nx) * ((j) + (Ny) * (k)) // Indexing macro column-major 
 #define IDX(i, j, k, Nx, Ny, Nz) idxR(i, j, k, Nx, Ny, Nz) // Default indexing macro
 #define FFTWIDX(i, j, k, Nx, Ny, Nz) (j) + (Ny) * (i) + (Nx) * (Ny) * (k) // Indexing macro for FFTW
+// #define FFTWIDX(i, j, k, Nx, Ny, Nz) (k) + (Nz) * ((j) + (Ny) * (i))
 #define MAX(x, y) (((x) > (y)) ? (x) : (y)) // Maximum of two numbers
 #define MIN(x, y) (((x) < (y)) ? (x) : (y)) // Minimum of two numbers
 
@@ -69,5 +70,17 @@ void fft_freq(double *f, int N, double d);
  * @param max_size The maximum size of the buffer.
  */
 void generate_current_datetime_string(char *datetime_str, size_t max_size);
+
+/**
+ * @brief Formats the given number of seconds into a human-friendly time format.
+ *
+ * This function takes the number of seconds as input and formats it into a string
+ * representing a human-readable time format. The formatted time is stored in the
+ * provided `formatted_time` buffer.
+ *
+ * @param seconds The number of seconds to format.
+ * @param formatted_time The buffer to store the formatted time.
+ */
+void format_seconds(double seconds, char *formatted_time);
 
 #endif

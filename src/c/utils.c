@@ -52,3 +52,10 @@ void generate_current_datetime_string(char *datetime_str, size_t max_size) {
         strftime(datetime_str, max_size, "%Y%m%d%H%M%S", tm);
     }
 }
+
+void format_seconds(double seconds, char *formatted_time) {
+    int hours = seconds / 3600;
+    int minutes = ((int) seconds % 3600) / 60;
+    int secs = ((int) seconds % 3600) % 60;
+    sprintf(formatted_time, "%02d:%02d:%02d", hours, minutes, secs);
+}

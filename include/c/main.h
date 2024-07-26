@@ -19,6 +19,6 @@
 #include "functions.h"
 #include "logs.h"
 #include "output.h"
-#include "pde.h"
+#include "solver.h"
 
 #endif

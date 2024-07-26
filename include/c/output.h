@@ -12,34 +12,35 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+#define FILENAME_SIZE 128
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "utils.h"
 #include "structures.h"
 
 /**
  * @brief Saves the simulation data to a file.
  * 
- * This function saves the simulation data to a file in the given path.
+ * This function saves the simulation data to a file.
  * The data is saved in a binary format.
  * 
- * @param path       The path to the file where the data will be saved.
  * @param data       A pointer to the array containing the simulation data.
  * @param p          A pointer to the array containing the pressure data.
  * @param n          The number of spatial points.
  * @param parameters A pointer to the Parameters struct containing the simulation parameters.
  */
-void save_data(char *path, double *data, double *p, int n, Parameters *parameters);
+void save_data(double *data, double *p, int n, Parameters *parameters);
 
 /**
  * @brief Saves the domain to a file.
  * 
- * This function saves the domain to a file in the given path.
+ * This function saves the domain to a file in the parameter path.
  * The domain is saved in a binary format.
  * 
- * @param path       The path to the file where the domain will be saved.
  * @param parameters A pointer to the Parameters struct containing the simulation parameters.
  */
-void save_domain(char *path, Parameters *parameters);
+void save_domain(Parameters *parameters);
 
 #endif
