@@ -1,5 +1,5 @@
 /**
- * @file solver.c
+ * @file solver.cu
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
  * @brief Functions for solving the partial differential equations of the wildfire simulation.
  * @version 0.1
@@ -9,21 +9,28 @@
  * 
  */
 
-#include "../../include/c/solver.h"
+#include "../../include/cu/solver.cuh"
 
+__global__ 
 void euler_step(double dt, double *y_n, double *y_np1, double *F, int size) {
-    for (int i = 0; i < size; i++) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int i = idx; i < size; i += stride) {
         y_np1[i] = y_n[i] + dt * F[i];
     }
 }
 
 void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters *parameters) {
     Phi(t_n, y_n, F, U_turbulence, parameters);
-    euler_step(dt, y_n, y_np1, F, size);
+    euler_step<<<parameters->number_of_blocks, parameters->threads_per_block>>>(dt, y_n, y_np1, F, size);
+    cudaDeviceSynchronize();
 }
 
+__global__
 void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int size) {
-    for (int i = 0; i < size; i++) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int i = idx; i < size; i += stride) {
         y_np1[i] = y_n[i] + 0.5 * dt * (k1[i] + k2[i]);
     }
 }
@@ -32,13 +39,18 @@ void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     int k1_index = 0;
     int k2_index = size;
     Phi(t_n, y_n, k + k1_index, U_turbulence, parameters);
-    caxpy(F, k + k1_index, y_n, dt, size);
+    caxpy<<<parameters->number_of_blocks, parameters->threads_per_block>>>(F, k + k1_index, y_n, dt, size);
+    cudaDeviceSynchronize();
     Phi(t_n + dt, F, k + k2_index, U_turbulence, parameters);
-    RK2_step(dt, y_n, y_np1, k + k1_index, k + k2_index, size);
+    RK2_step<<<parameters->number_of_blocks, parameters->threads_per_block>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, size);
+    cudaDeviceSynchronize();
 }
 
+__global__
 void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, double *k3, double *k4, int size) {
-    for (int i = 0; i < size; i++) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int i = idx; i < size; i += stride) {
         y_np1[i] = y_n[i] +  (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
     }
 }
@@ -49,13 +61,17 @@ void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     int k3_index = 2 * size;
     int k4_index = 3 * size;
     Phi(t_n, y_n, k + k1_index, U_turbulence, parameters);
-    caxpy(F, k + k1_index, y_n, dt * 0.5, size);
+    caxpy<<<parameters->number_of_blocks, parameters->threads_per_block>>>(F, k + k1_index, y_n, dt * 0.5, size);
+    cudaDeviceSynchronize();
     Phi(t_n + 0.5 * dt, F, k + k2_index, U_turbulence, parameters);
-    caxpy(F, k + k2_index, y_n, dt * 0.5, size);
+    caxpy<<<parameters->number_of_blocks, parameters->threads_per_block>>>(F, k + k2_index, y_n, dt * 0.5, size);
+    cudaDeviceSynchronize();
     Phi(t_n + 0.5 * dt, F, k + k3_index, U_turbulence, parameters);
-    caxpy(F, k + k3_index, y_n, dt, size);
+    caxpy<<<parameters->number_of_blocks, parameters->threads_per_block>>>(F, k + k3_index, y_n, dt, size);
+    cudaDeviceSynchronize();
     Phi(t_n + dt, F, k + k4_index, U_turbulence, parameters);
-    RK4_step(dt, y_n, y_np1, k + k1_index, k + k2_index, k + k3_index, k + k4_index, size);
+    RK4_step<<<parameters->number_of_blocks, parameters->threads_per_block>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, k + k3_index, k + k4_index, size);
+    cudaDeviceSynchronize();
 }
 
 void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters *parameters) {
@@ -94,34 +110,41 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     // double *CFL, *T_min, *T_max, *Y_min, *Y_max;
     double *t = parameters->t;
     double dt = parameters->dt;
-    double *y_np1 = (double *) malloc(size * sizeof(double));
-    double *F = (double *) malloc(size * sizeof(double));
-    double *k = (double *) malloc(k_size * size * sizeof(double));
-    double *R_turbulence = (double *) malloc(27 * Nx * Ny * Nz * sizeof(double));
+    double *y_np1_host = (double *) malloc(size * sizeof(double));
+    double *p_host = (double *) malloc(Nx * Ny * Nz * sizeof(double));
+    double *y_np1, *F, *k, *R_turbulence;
+    // double *F = (double *) malloc(size * sizeof(double));
+    // double *k = (double *) malloc(k_size * size * sizeof(double));
+    // double *R_turbulence = (double *) malloc(27 * Nx * Ny * Nz * sizeof(double));
+    // CudaMalloc
+    cudaMalloc(&y_np1, size * sizeof(double));
+    cudaMalloc(&F, size * sizeof(double));
+    cudaMalloc(&k, k_size * size * sizeof(double));
+    cudaMalloc(&R_turbulence, 27 * Nx * Ny * Nz * sizeof(double));
     // clock_t start, end, step_start, step_end; // Timers
     struct timeval start_solver, end_solver, start_ts, end_ts;
     char solver_time_message[256];
     // char min_max_values_message[256];
     char formatted_time[64];
-    // Arrays for pressure Poisson Problem
-    fftw_complex *a = fftw_alloc_complex((Nz - 2));
-    fftw_complex *b = fftw_alloc_complex((Nz - 1));
-    fftw_complex *c = fftw_alloc_complex((Nz - 2));
-    fftw_complex *d = fftw_alloc_complex((Nz - 1));
-    fftw_complex *l = fftw_alloc_complex((Nz - 2));
-    fftw_complex *u = fftw_alloc_complex((Nz - 1));
-    fftw_complex *y = fftw_alloc_complex((Nz - 1));
-    fftw_complex *pk = fftw_alloc_complex((Nz - 1));
-    fftw_complex *f_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
-    fftw_complex *f_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
-    fftw_complex *p_top_in = fftw_alloc_complex((Nx - 1) * (Ny - 1));
-    fftw_complex *p_top_out = fftw_alloc_complex((Nx - 1) * (Ny - 1));
-    fftw_complex *p_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
-    fftw_complex *p_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
-    fftw_plan p_plan, f_plan, p_top_plan;
-    p_plan = NULL;
-    f_plan = NULL;
-    p_top_plan = NULL;
+    // // Arrays for pressure Poisson Problem
+    // fftw_complex *a = fftw_alloc_complex((Nz - 2));
+    // fftw_complex *b = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *c = fftw_alloc_complex((Nz - 2));
+    // fftw_complex *d = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *l = fftw_alloc_complex((Nz - 2));
+    // fftw_complex *u = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *y = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *pk = fftw_alloc_complex((Nz - 1));
+    // fftw_complex *f_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    // fftw_complex *f_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    // fftw_complex *p_top_in = fftw_alloc_complex((Nx - 1) * (Ny - 1));
+    // fftw_complex *p_top_out = fftw_alloc_complex((Nx - 1) * (Ny - 1));
+    // fftw_complex *p_in = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    // fftw_complex *p_out = fftw_alloc_complex((Nx - 1) * (Ny - 1) * (Nz - 1));
+    // fftw_plan p_plan, f_plan, p_top_plan;
+    // p_plan = NULL;
+    // f_plan = NULL;
+    // p_top_plan = NULL;
     // Solver time
     // start = clock();
     gettimeofday(&start_solver, NULL);
@@ -142,13 +165,13 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
             exit(1);
         }
         // Solve Poisson problem for pressure (it only uses U^*)
-        solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
+        // solve_pressure(y_np1, p, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
         // Chorin's projection method
-        velocity_correction_fw(y_np1, p, dt, parameters);
+        velocity_correction_fw<<<parameters->number_of_blocks, parameters->threads_per_block>>>(y_np1, p, dt, parameters);
         // Boundary conditions
-        boundary_conditions(y_np1, parameters);
+        boundary_conditions<<<parameters->number_of_blocks, parameters->threads_per_block>>>(y_np1, parameters);
         // Bounds
-        bounds(y_np1, parameters);
+        bounds<<<parameters->number_of_blocks, parameters->threads_per_block>>>(y_np1, parameters);
         // End step timer
         // step_end = clock(); 
         gettimeofday(&end_ts, NULL);
@@ -158,12 +181,15 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         // Save data each NT steps and at the last step
         if (n % NT == 0 || n == Nt) {  
             n_save = n / NT;
-            timestep_reports(y_np1, &CFL, &T_min, &T_max, &Y_min, &Y_max, parameters);
+            timestep_reports<<<parameters->number_of_blocks, parameters->threads_per_block>>>(y_np1, &CFL, &T_min, &T_max, &Y_min, &Y_max, parameters);
             log_timestep(parameters, n, t[n], step_time, CFL, T_min, T_max, Y_min, Y_max);
-            save_data(y_np1, p, n_save, parameters);
+            // Copy y_np1 and p to host
+            cudaMemcpy(y_np1_host, y_np1, size * sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(p_host, p, Nx * Ny * Nz * sizeof(double), cudaMemcpyDeviceToHost);
+            save_data(y_np1_host, p_host, n_save, parameters);
         }
         // Update y_n
-        copy(y_n, y_np1, size);
+        copy<<<parameters->number_of_blocks, parameters->threads_per_block>>>(y_n, y_np1, size);
     }
     // end = clock();
     gettimeofday(&end_solver, NULL);
@@ -174,24 +200,26 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     sprintf(solver_time_message, "\nSolver time: %s", formatted_time);
     log_message(parameters, solver_time_message);
     // Free memory
-    free(y_n);
-    free(y_np1);
-    free(F);
-    free(R_turbulence);
-    free(k);
+    cudaFree(y_n);
+    cudaFree(y_np1);
+    cudaFree(F);
+    cudaFree(R_turbulence);
+    cudaFree(k);
+    free(y_np1_host);
+    free(p_host);
     // Free memory for Poisson problem
-    fftw_free(a);
-    fftw_free(b);
-    fftw_free(c);
-    fftw_free(d);
-    fftw_free(l);
-    fftw_free(u);
-    fftw_free(y);
-    fftw_free(pk);
-    fftw_free(f_in);
-    fftw_free(f_out);
-    fftw_free(p_top_in);
-    fftw_free(p_top_out);
-    fftw_free(p_in);
-    fftw_free(p_out);
+    // fftw_free(a);
+    // fftw_free(b);
+    // fftw_free(c);
+    // fftw_free(d);
+    // fftw_free(l);
+    // fftw_free(u);
+    // fftw_free(y);
+    // fftw_free(pk);
+    // fftw_free(f_in);
+    // fftw_free(f_out);
+    // fftw_free(p_top_in);
+    // fftw_free(p_top_out);
+    // fftw_free(p_in);
+    // fftw_free(p_out);
 }

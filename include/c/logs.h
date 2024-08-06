@@ -24,7 +24,16 @@
  * @param parameters A pointer to the Parameters struct containing the parameters to log.
  * @param to_file    A flag indicating whether to log to a file (1) or standard output (0).
  */
-void log_parameters(Parameters *parameters, int to_file);
+void log_parameters_report(Parameters *parameters, int to_file);
+
+/**
+ * @brief Logs the parameters to a file and standard output.
+ *
+ * This function logs the parameters using the specified parameters.
+ *
+ * @param parameters The parameters to be logged.
+ */
+void log_parameters(Parameters *parameters);
 
 /**
  * @brief Logs a message.
@@ -35,7 +44,7 @@ void log_parameters(Parameters *parameters, int to_file);
  * @param parameters The parameters for logging.
  * @param message The message to be logged.
  */
-void log_message(Parameters *parameters, char *message);
+void log_message(Parameters *parameters, const char *message);
 
 /**
  * @brief Logs the current timestep information.

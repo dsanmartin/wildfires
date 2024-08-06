@@ -9,7 +9,7 @@
  * 
  */
 
-#include "../../include/c/solver.h"
+#include "../../include/omp/solver.h"
 
 void euler_step(double dt, double *y_n, double *y_np1, double *F, int size) {
     for (int i = 0; i < size; i++) {

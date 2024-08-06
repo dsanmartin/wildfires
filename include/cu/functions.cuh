@@ -1,5 +1,5 @@
 /**
- * @file functions.h
+ * @file functions.cuh
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
  * @brief Implementation of various functions used in the wildfire simulation.
  * @version 0.1
@@ -9,12 +9,12 @@
  * 
  */
 
-#ifndef FUNCTIONS_H
-#define FUNCTIONS_H
+#ifndef FUNCTIONS_CUH
+#define FUNCTIONS_CUH
 
 #include <math.h>
-#include "structures.h"
-#include "utils.h"
+#include "../c/structures.h"
+#include "utils.cuh"
 
 /**
  * @brief Calculates the power law wind profile.
@@ -101,6 +101,7 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
  * @param T_max The maximum value for T (temperature).
  * @param parameters The pointer to the Parameters struct.
  */
+__global__ 
 void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters *parameters);
 
 /**

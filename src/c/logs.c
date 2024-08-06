@@ -1,6 +1,6 @@
 #include "../../include/c/logs.h"
 
-void log_parameters(Parameters *parameters, int to_file) {
+void log_parameters_report(Parameters *parameters, int to_file) {
     FILE *output;
     setbuf(stdout, NULL);
     if (to_file) 
@@ -16,6 +16,7 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "  Nx: %d, Ny: %d, Nz: %d, Nt: %d\n", parameters->Nx, parameters->Ny, parameters->Nz, parameters->Nt);
     fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters->dx, parameters->dy, parameters->dz, parameters->dt);
     fprintf(output, "  Time samples: %d\n", parameters->NT);
+    fprintf(output, "Time integration: %s\n", parameters->method);
     fprintf(output, "Fluid parameters:\n");
     fprintf(output, "  rho: %lf, nu: %e, alpha: %e, T_inf: %lf,  g: %lf\n", parameters->rho, parameters->nu, parameters->alpha, parameters->T_inf, parameters->g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters->C_s, parameters->Pr);
@@ -24,7 +25,7 @@ void log_parameters(Parameters *parameters, int to_file) {
     fprintf(output, "  Y_D: %lf, Y_f: %lf\n", parameters->Y_D, parameters->Y_f);
     fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf\n", parameters->A, parameters->T_pc, parameters->T_a);
     fprintf(output, "Wind initial condition:\n");
-    fprintf(output, "  U0_type: %s\n", parameters->U0_type);    
+    fprintf(output, "  Type: %s\n", parameters->U0_type);    
     if (strcmp(parameters->U0_type, "constant") == 0)
         fprintf(output, "  u_r: %lf\n", parameters->u_r);
     else if (strcmp(parameters->U0_type, "log") == 0)
@@ -32,21 +33,36 @@ void log_parameters(Parameters *parameters, int to_file) {
     else if (strcmp(parameters->U0_type, "power_law") == 0)
         fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters->u_r, parameters->z_r, parameters->alpha_u);
     fprintf(output, "Temperature initial condition:\n");
-    fprintf(output, "  T0_shape: %s\n", parameters->T0_shape);
+    fprintf(output, "  Shape: %s\n", parameters->T0_shape);
     fprintf(output, "  T_hot: %lf\n", parameters->T_hot);
-    fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
-        parameters->T0_x_start, parameters->T0_x_end, parameters->T0_x_center, parameters->T0_length);
-    fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
-        parameters->T0_y_start, parameters->T0_y_end, parameters->T0_y_center, parameters->T0_width);
-    fprintf(output, "  T0_z_start: %lf, T0_z_end: %lf, T0_z_center: %lf, T0_height: %lf\n",
-        parameters->T0_z_start, parameters->T0_z_end, parameters->T0_z_center, parameters->T0_height);
+    fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
+        parameters->T0_x_start, parameters->T0_x_end, 
+        parameters->T0_y_start, parameters->T0_y_end, 
+        parameters->T0_z_start, parameters->T0_z_end);
+    fprintf(output, "  Center: [%lf, %lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
+        parameters->T0_x_center, parameters->T0_y_center, parameters->T0_z_center,
+        parameters->T0_length, parameters->T0_width, parameters->T0_height);
+    // fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
+    //     parameters->T0_x_start, parameters->T0_x_end, parameters->T0_x_center, parameters->T0_length);
+    // fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
+    //     parameters->T0_y_start, parameters->T0_y_end, parameters->T0_y_center, parameters->T0_width);
+    // fprintf(output, "  T0_z_start: %lf, T0_z_end: %lf, T0_z_center: %lf, T0_height: %lf\n",
+    //     parameters->T0_z_start, parameters->T0_z_end, parameters->T0_z_center, parameters->T0_height);
     fprintf(output, "Fuel initial condition:\n");
-    fprintf(output, "  Y_h: %lf\n", parameters->Y_h);
+    fprintf(output, "  Fuel height: %lf\n", parameters->Y_h);
+    fprintf(output, "Bounds:\n");
+    fprintf(output, "  Temperature: [%lf, %lf]\n", parameters->T_min, parameters->T_max);
+    fprintf(output, "  Fuel: [%lf, %lf]\n", parameters->Y_min, parameters->Y_max);
     if (to_file)
         fclose(output);
 }
 
-void log_message(Parameters *parameters, char *message) {
+void log_parameters(Parameters *parameters) {
+    log_parameters_report(parameters, 0);
+    log_parameters_report(parameters, 1);
+}
+
+void log_message(Parameters *parameters, const char *message) {
     setbuf(stdout, NULL);
     fprintf(parameters->log_files.log, "%s\n", message);
     printf("%s\n", message);

@@ -1,5 +1,5 @@
 /**
- * @file utils.h
+ * @file utils.cuh
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
  * @brief Utility functions for the wildfire simulation.
  * @version 0.1
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef UTILS_CUH
+#define UTILS_CUH
 
 #define idxR(i, j, k, Nx, Ny, Nz) (k) + (Nz) * ((j) + (Ny) * (i)) // Indexing macro row-major
 #define idxC(i, j, k, Nx, Ny, Nz) (i) + (Nx) * ((j) + (Ny) * (k)) // Indexing macro column-major 
@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "constants.h"
+#include "../c/constants.h"
 
 /**
  * Performs the operation c = a * x + y, where c, x, and y are arrays of doubles.
@@ -32,6 +32,7 @@
  * @param a     The scalar value a.
  * @param size  The size of the arrays c, x, and y.
  */
+__global__
 void caxpy(double *c, double *x, double *y, double a, int size);
 
 /**
@@ -43,6 +44,7 @@ void caxpy(double *c, double *x, double *y, double a, int size);
  * @param source Pointer to the source array.
  * @param size The number of elements to copy.
  */
+__global__
 void copy(double *destination, double *source, int size);
 
 /**

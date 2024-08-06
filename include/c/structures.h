@@ -174,6 +174,8 @@ typedef struct _parameters {
     char save_path[64];
     char sim_id[32];
     int n_threads;
+    int threads_per_block;
+    int number_of_blocks;
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;

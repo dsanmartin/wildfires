@@ -282,6 +282,7 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
     FILE *debug_F_K = fopen("data/output/F_k.bin", "wb");
     // FILE *debug_P_top = fopen("data/output/p_top.bin", "wb");
     FILE *debug_p_in = fopen("data/output/p_in.bin", "wb");
+    FILE *debug_p_out = fopen("data/output/p_out.bin", "wb");
     // FILE *debug_ux = fopen("data/output/ux.bin", "wb");
     // FILE *debug_vy = fopen("data/output/vy.bin", "wb");
     // FILE *debug_wz = fopen("data/output/wz.bin", "wb");
@@ -367,8 +368,7 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
         }
     }
     
-    fwrite(f_in, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F);
-    
+    fwrite(f_in, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F);    
     // fwrite(UX, sizeof(double), (Nx - 1) * (Ny - 1) * (Nz), debug_ux);
     // fwrite(VY, sizeof(double), (Nx - 1) * (Ny - 1) * (Nz), debug_vy);
     // fwrite(WZ, sizeof(double), (Nx - 1) * (Ny - 1) * (Nz), debug_wz);
@@ -387,8 +387,7 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
     // fftw_destroy_plan(p_top_plan);
     // fftw_destroy_plan(f_plan);
     // fwrite(p_top_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1), debug_P_top);
-    fwrite(f_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F_K);
-    
+    // fwrite(f_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F_K);
 
     // Compute r,s systems of equations
     for (int r = 0; r < Nx - 1; r++) {
@@ -431,7 +430,7 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
             }
         }
     }
-    // fwrite(f_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F_K);
+    fwrite(f_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_F_K);
     fwrite(p_in, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_p_in);
     // fwrite(A, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 2), debug_A);
     // fwrite(C, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 2), debug_C);
@@ -469,6 +468,8 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
         }
     }
 
+    fwrite(p_out, sizeof(fftw_complex), (Nx - 1) * (Ny - 1) * (Nz - 1), debug_p_out);
+
     // free(F);
     // free(A);
     // free(C);
@@ -493,6 +494,7 @@ void solve_pressure_debug(double *U, double *p, fftw_complex *a, fftw_complex *b
     fclose(debug_F_K);
     // fclose(debug_P_top);
     fclose(debug_p_in);
+    fclose(debug_p_out);
     // fclose(debug_A);
     // fclose(debug_C);
     // fclose(debug_B);

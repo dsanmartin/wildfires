@@ -63,6 +63,18 @@ void boundary_conditions(double *R_new, Parameters *parameters);
 void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameters *parameters);
 
 /**
+ * @brief Bounds the temperature and fuel arrays.
+ *
+ * This function modifies the given temperature and fuel arrays to enforce the
+ * specified bounding values.
+ *
+ * @param R_new The array of temperature values and fuel.
+ * @param parameters The parameters struct containing information about the
+ *                   computational domain and the boundary conditions.
+ */
+void bounds(double *R_new, Parameters *parameters);
+
+/**
  * @brief Applies velocity correction of Chorin's projection method to the given arrays.
  *
  * This function applies velocity correction using Chorin's projection method to the arrays. 
@@ -73,6 +85,10 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameter
  * @param dt The time step used for the velocity correction.
  * @param parameters Pointer to the structure containing the parameters.
  */
-void velocity_correction_boundaries_bounding(double *R_new, double *p, double dt, Parameters *parameters);
+void velocity_correction(double *R_new, double *p, double dt, Parameters *parameters);
+
+void velocity_correction_fw(double *R_new, double *p, double dt, Parameters *parameters);
+
+void velocity_correction_bw(double *R_new, double *p, double dt, Parameters *parameters);
 
 #endif

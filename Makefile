@@ -1,78 +1,82 @@
-COMPILATION = "C"
+COMPILATION = "CUDA"
 
 # Compiler
-CC = gcc
+CC = g++
+NVCC = nvcc
 
 # Folder structure
+SRC     := ./src/
 BIN		:= ./bin/
 DEST	:= ./obj/
-C		:= ./src/c/
-OMP		:= ./src/omp/
-CUDA	:= ./src/cuda/
+CSRC	:= $(SRC)c/
 
 # Output executable
-TARGET = $(BIN)wildfires
+EXE	= wildfires
+TARGET	= $(BIN)$(EXE)
 
 # Commands
 RM     = rm
 MKDIR  = mkdir -p
 
 # Flags
-CFLAGS		= -Wall -std=c99 -lm -lfftw3 -O3
+CFLAGS		= -Wall -lm -lfftw3 -O3 #-std=c99
 OMPFLAGS	= -fopenmp -lgomp
-FLAGS		= $(CFLAGS) #$(OMPFLAGS)
+NVARCH		= 75
+NVFLAGS		= -arch=sm_$(NVARCH) -Xptxas -dlcm=ca
+FLAGS		= $(CFLAGS)
 
 # Source files
-SRC_C = $(wildcard $(C)*.c)
-SRC_OMP = $(wildcard $(OMP)*.c)
-SRCS = $(SRC_C)
-ifeq ($(COMPILATION), "OMP")
-# Exclude files in SRC_OMP from SRC
-EXCLUDE_SRC = $(C)pde.c $(C)parameters.c
-SRCS = $(filter-out $(EXCLUDE_SRC),$(SRC_C))
-SRCS += $(SRC_OMP)
-FLAGS += $(OMPFLAGS)
-endif
-$(info SRCS = $(SRCS))
+MAIN   = cu/main.cu 
+CODC = output.c parameters.c logs.c
+# CODC = $(wildcard $(CSRC)*.c) 
+CODOMP = #$(wildcard $(OMP)*.c)
+CODCU = functions.cu pde.cu solver.cu turbulence.cu utils.cu
+
+# Folders
+FC     = c/
+FCU    = cu/
 
 # Object files
-OBJS = $(patsubst %.c,$(DEST)%.o,$(notdir $(SRCS)))
-$(info OBJS = $(OBJS))
+# OBJS = $(patsubst %.c,$(DEST)%.o,$(notdir $(SRCS)))
+OBJC   = $(patsubst %.c,$(DEST)$(FC)%.o,$(notdir $(CODC)))
+OBJCU  = $(patsubst %.cu,$(DEST)$(FCU)%.o,$(notdir $(CODCU)))
+# $(info $(OBJC))
+# $(info $(OBJCU))
+
+SRCMAIN = $(patsubst %,$(SRC)%,$(MAIN))
+OBJMAIN = $(patsubst $(SRC)%.cu,$(DEST)%.o,$(SRCMAIN))
+# $(info $(SRCMAIN))
+# $(info $(OBJMAIN))
 
 # Default target
-all: directories $(TARGET)
+all: directories $(BIN)$(EXE)
 
-# Link the executable
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(FLAGS)
+.PHONY: clean
 
-# Compile source files into object files
-$(DEST)%.o: $(C)%.c
-	$(CC) $(FLAGS) -c $< -o $@
+$(BIN)$(EXE): $(OBJC) $(OBJCU) $(OBJMAIN)
+	$(NVCC) $(NVFLAGS) $^ -o $@
 
-# # Object files
-# OBJS = $(SRCS:.c=.o)
+# $(BIN)$(EXE): $(OBJC) $(OBJCU) $(OBJMAIN)
+# 	$(CC) $^ -o $@ $(CFLAGS)
 
-# # Default target
-# all: directories $(TARGET)
+$(OBJMAIN): $(SRCMAIN)
+	$(NVCC) $(NVFLAGS) -c $? -o $@
 
-# # Link the executable
-# $(TARGET): $(OBJS)
-# 	$(CC) -o $@ $(OBJS) $(FLAGS)
+$(OBJC): $(DEST)%.o : $(SRC)%.c
+	$(CC) $(CFLAGS) -c $? -o $@
 
-# # Compile source files into object files
-# %.o: %.c
-# 	$(CC) $(FLAGS) -c $< -o $@
+$(OBJCU): $(DEST)%.o : $(SRC)%.cu
+	$(NVCC) $(NVFLAGS) -c $? -o $@
 
 directories:
 	$(MKDIR) $(BIN)
-	$(MKDIR) $(DEST)
+	$(MKDIR) $(DEST)$(FC) 
+	$(MKDIR) $(DEST)$(FCU)  
 
 # # Clean up
 clean:
-	$(RM) -rf $(DEST)*.o
+	$(RM) -rf $(DEST)$(FC)*.o
+	$(RM) -rf $(DEST)$(FCU)*.o
 
 distclean: clean
 	$(RM) -rf $(BIN)*
-
-.PHONY: all clean

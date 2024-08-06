@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2024
  * 
  */
-#include "../../include/c/parameters.h"
+#include "../../include/cu/parameters.cuh"
 
 Parameters read_parameters_file(const char *file_path) {
     FILE *parameters_file = fopen(file_path, "r"); // Open file

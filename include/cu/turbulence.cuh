@@ -1,5 +1,5 @@
 /**
- * @file turbulence.h
+ * @file turbulence.cuh
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
  * @brief Functions for adding turbulence to the wildfire simulation.
  * @version 0.1
@@ -9,14 +9,15 @@
  * 
  */
 
-#ifndef TURBULENCE_H
-#define TURBULENCE_H
+#ifndef TURBULENCE_CUH
+#define TURBULENCE_CUH
 
 #include <math.h>
 #include <stdlib.h>
-#include "utils.h"
-#include "functions.h"
-#include "structures.h"
+#include "../c/structures.h"
+#include "utils.cuh"
+#include "functions.cuh"
+
 
 /**
  * @brief Calculates the turbulence of a given set of parameters.
@@ -27,12 +28,7 @@
  * @param R_new Pointer to the new value.
  * @param parameters Pointer to the Parameters struct containing the necessary parameters.
  */
+__global__
 void turbulence(double *R_turbulence, double *R_new, Parameters *parameters);
-
-void turbulence_debug(double *R_turbulence, double *R_new, Parameters *parameters);
-
-void turbulence_v1(double *R_turbulence, double *R_new, Parameters *parameters); 
-
-void turbulence_v1_debug(double *R_turbulence, double *R_new, Parameters *parameters); 
 
 #endif

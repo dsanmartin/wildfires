@@ -1,4 +1,4 @@
-#include "../../include/c/main.h"
+#include "../../include/omp/main.h"
 
 int main(int argc, char *argv[]) { 
     char *parameters_file_path;
