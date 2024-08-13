@@ -1,36 +1,41 @@
 COMPILATION = "CUDA"
 
 # Compiler
-CC = g++
+CC = gcc
 NVCC = nvcc
 
 # Folder structure
 SRC     := ./src/
 BIN		:= ./bin/
 DEST	:= ./obj/
-CSRC	:= $(SRC)c/
 
 # Output executable
 EXE	= wildfires
-TARGET	= $(BIN)$(EXE)
 
 # Commands
 RM     = rm
 MKDIR  = mkdir -p
 
 # Flags
-CFLAGS		= -Wall -lm -lfftw3 -O3 #-std=c99
 OMPFLAGS	= -fopenmp -lgomp
-NVARCH		= 75
-NVFLAGS		= -arch=sm_$(NVARCH) -Xptxas -dlcm=ca
-FLAGS		= $(CFLAGS)
+NVARCH		= 89
+NVFLAGS		= -gencode arch=compute_$(NVARCH),code=sm_$(NVARCH) -lcufft -O2#-Xptxas -dlcm=ca -I/usr/local/cuda/inc -L/usr/local/cuda/lib
+CFLAGS		= -Wall -lm -O3
 
 # Source files
+ifeq ($(COMPILATION), "CUDA")
+EXE = wildfires_cu
 MAIN   = cu/main.cu 
-CODC = output.c parameters.c logs.c
+CODC = #poisson.c
 # CODC = $(wildcard $(CSRC)*.c) 
 CODOMP = #$(wildcard $(OMP)*.c)
-CODCU = functions.cu pde.cu solver.cu turbulence.cu utils.cu
+CODCU = functions.cu logs.cu output.cu parameters.cu pde.cu poisson.cu solver.cu turbulence.cu utils.cu
+else ifeq ($(COMPILATION), "C")
+CFLAGS	+= -lfftw3
+EXE = wildfires_c
+MAIN   = c/main.c
+CODC = functions.c logs.c output.c parameters.c pde.c poisson.c solver.c turbulence.c utils.c
+endif
 
 # Folders
 FC     = c/
@@ -53,20 +58,32 @@ all: directories $(BIN)$(EXE)
 
 .PHONY: clean
 
+ifeq ($(COMPILATION), "CUDA")
+
 $(BIN)$(EXE): $(OBJC) $(OBJCU) $(OBJMAIN)
 	$(NVCC) $(NVFLAGS) $^ -o $@
-
-# $(BIN)$(EXE): $(OBJC) $(OBJCU) $(OBJMAIN)
-# 	$(CC) $^ -o $@ $(CFLAGS)
 
 $(OBJMAIN): $(SRCMAIN)
 	$(NVCC) $(NVFLAGS) -c $? -o $@
 
 $(OBJC): $(DEST)%.o : $(SRC)%.c
-	$(CC) $(CFLAGS) -c $? -o $@
+	$(NVCC) $(CFLAGS) -c $? -o $@
 
 $(OBJCU): $(DEST)%.o : $(SRC)%.cu
 	$(NVCC) $(NVFLAGS) -c $? -o $@
+
+else ifeq ($(COMPILATION), "C")
+
+$(BIN)$(EXE): $(OBJC) $(OBJMAIN)
+	$(CC) $^ -o $@ $(CFLAGS)
+
+# $(OBJMAIN): $(SRCMAIN)
+# 	$(CC) $(CFLAGS) -c $? -o $@
+
+$(OBJC): $(DEST)%.o : $(SRC)%.c
+	$(CC) $(CFLAGS) -c $? -o $@
+
+endif
 
 directories:
 	$(MKDIR) $(BIN)

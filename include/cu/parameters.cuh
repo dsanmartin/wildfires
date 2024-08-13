@@ -35,6 +35,6 @@ Parameters read_parameters_file(const char *file_path);
  * @brief Free parameters memory.
  * 
  */
-void free_parameters(Parameters *parameters);
+void free_parameters(Parameters parameters);
 
 #endif

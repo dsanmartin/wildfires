@@ -30,7 +30,7 @@
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
 __global__
-void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameters *parameters);
+void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameters parameters, double *z);
 
 /**
  * @brief Applies boundary conditions to the given array.
@@ -41,7 +41,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
  * @param parameters The parameters used to determine the boundary conditions.
  */
 __global__
-void boundary_conditions(double *R_new, Parameters *parameters);
+void boundary_conditions(double *R_new, Parameters parameters);
 
 /**
  * @brief Function evaluation for method of lines (MOL) time integration.
@@ -54,7 +54,7 @@ void boundary_conditions(double *R_new, Parameters *parameters);
  * @param U_turbulence Pointer to the array containing the turbulence values of U.
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
-void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameters *parameters);
+void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameters parameters, double *z);
 
 /**
  * @brief Bounds the temperature and fuel arrays.
@@ -67,7 +67,7 @@ void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameter
  *                   computational domain and the boundary conditions.
  */
 __global__
-void bounds(double *R_new, Parameters *parameters);
+void bounds(double *R_new, Parameters parameters);
 
 /**
  * @brief Applies velocity correction of Chorin's projection method to the given arrays.
@@ -81,12 +81,12 @@ void bounds(double *R_new, Parameters *parameters);
  * @param parameters Pointer to the structure containing the parameters.
  */
 __global__
-void velocity_correction(double *R_new, double *p, double dt, Parameters *parameters);
+void velocity_correction(double *R_new, double *p, double dt, Parameters parameters);
 
 __global__
-void velocity_correction_fw(double *R_new, double *p, double dt, Parameters *parameters);
+void velocity_correction_fw(double *R_new, double *p, double dt, Parameters parameters);
 
 __global__
-void velocity_correction_bw(double *R_new, double *p, double dt, Parameters *parameters);
+void velocity_correction_bw(double *R_new, double *p, double dt, Parameters parameters);
 
 #endif

@@ -12,15 +12,43 @@
 #ifndef UTILS_CUH
 #define UTILS_CUH
 
+#define THREADS 128
+#define BLOCKS 512
+
 #define idxR(i, j, k, Nx, Ny, Nz) (k) + (Nz) * ((j) + (Ny) * (i)) // Indexing macro row-major
 #define idxC(i, j, k, Nx, Ny, Nz) (i) + (Nx) * ((j) + (Ny) * (k)) // Indexing macro column-major 
 #define IDX(i, j, k, Nx, Ny, Nz) idxR(i, j, k, Nx, Ny, Nz) // Default indexing macro
 #define FFTWIDX(i, j, k, Nx, Ny, Nz) (j) + (Ny) * (i) + (Nx) * (Ny) * (k) // Indexing macro for FFTW
 #define MAX(x, y) (((x) > (y)) ? (x) : (y)) // Maximum of two numbers
 #define MIN(x, y) (((x) < (y)) ? (x) : (y)) // Minimum of two numbers
+#define CUIDX(i, j, k, Nx, Ny, Nz) IDX(i, j, k, Nx, Ny, Nz) //((i) + (Nx) * ((j) + (Ny) * (k)))
+#define CUFFTIDX(i, j, k, Nx, Ny, Nz) FFTWIDX(i, j, k, Nx, Ny, Nz) //((i) + (Nx) * ((j) + (Ny) * (k)))
+
+#define CHECK(call)                                                            \
+{                                                                              \
+    const cudaError_t error = call;                                            \
+    if (error != cudaSuccess)                                                  \
+    {                                                                          \
+        fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);                 \
+        fprintf(stderr, "code: %d, reason: %s\n", error,                       \
+                cudaGetErrorString(error));                                    \
+    }                                                                          \
+}
+
+#define CHECK_CUFFT(call)                                                      \
+{                                                                              \
+    cufftResult err;                                                           \
+    if ( (err = (call)) != CUFFT_SUCCESS)                                      \
+    {                                                                          \
+        fprintf(stderr, "Got CUFFT error %d at %s:%d\n", err, __FILE__,        \
+                __LINE__);                                                     \
+        exit(1);                                                               \
+    }                                                                          \
+}
 
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 #include "../c/constants.h"
 
 /**
@@ -83,5 +111,22 @@ void generate_current_datetime_string(char *datetime_str, size_t max_size);
  * @param formatted_time The buffer to store the formatted time.
  */
 void format_seconds(double seconds, char *formatted_time);
+
+/**
+ * @brief Checks the result of a CUDA function call and prints an error message if needed.
+ *
+ * This function checks the result of a CUDA function call and prints an error message
+ * if the result is different from `cudaSuccess`.
+ *
+ * @param result The result of the CUDA function call.
+ * @return The result of the CUDA function call.
+ */
+inline cudaError_t checkCuda(cudaError_t result) {
+  if (result != cudaSuccess) {
+    fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+    assert(result == cudaSuccess);
+  }
+  return result;
+}
 
 #endif

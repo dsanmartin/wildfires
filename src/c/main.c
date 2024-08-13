@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
     free(T);
     free(p);
     free(Y);
+    free(y_0);
     free_parameters(&parameters);
     printf("Memory freed!\n");
 

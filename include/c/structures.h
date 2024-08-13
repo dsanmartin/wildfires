@@ -66,9 +66,9 @@ typedef struct _turbulence_indexes {
     int Tyy;
     int Tzz;
     int fw;
-    int fwx;
-    int fwy;
-    int fwz;
+    // int fwx;
+    // int fwy;
+    // int fwz;
 } TurbulenceIndexes;
 
 /**
@@ -174,8 +174,8 @@ typedef struct _parameters {
     char save_path[64];
     char sim_id[32];
     int n_threads;
-    int threads_per_block;
-    int number_of_blocks;
+    size_t threads_per_block;
+    size_t number_of_blocks;
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;

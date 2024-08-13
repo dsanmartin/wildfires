@@ -15,10 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../c/structures.h"
-#include "../c/logs.h"
-#include "../c/output.h"
-#include "parameters.cuh"
+#include "output.cuh"
 #include "functions.cuh"
+#include "logs.cuh"
+#include "parameters.cuh"
 #include "solver.cuh"
  
 #endif

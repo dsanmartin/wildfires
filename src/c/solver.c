@@ -97,7 +97,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     double *y_np1 = (double *) malloc(size * sizeof(double));
     double *F = (double *) malloc(size * sizeof(double));
     double *k = (double *) malloc(k_size * size * sizeof(double));
-    double *R_turbulence = (double *) malloc(27 * Nx * Ny * Nz * sizeof(double));
+    double *R_turbulence = (double *) malloc(25 * Nx * Ny * Nz * sizeof(double));
     // clock_t start, end, step_start, step_end; // Timers
     struct timeval start_solver, end_solver, start_ts, end_ts;
     char solver_time_message[256];
@@ -158,7 +158,7 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
         // Save data each NT steps and at the last step
         if (n % NT == 0 || n == Nt) {  
             n_save = n / NT;
-            timestep_reports(y_np1, &CFL, &T_min, &T_max, &Y_min, &Y_max, parameters);
+            timestep_reports(y_np1, &CFL, &Y_min, &Y_max, &T_min, &T_max, parameters);
             log_timestep(parameters, n, t[n], step_time, CFL, T_min, T_max, Y_min, Y_max);
             save_data(y_np1, p, n_save, parameters);
         }
@@ -174,7 +174,6 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     sprintf(solver_time_message, "\nSolver time: %s", formatted_time);
     log_message(parameters, solver_time_message);
     // Free memory
-    free(y_n);
     free(y_np1);
     free(F);
     free(R_turbulence);

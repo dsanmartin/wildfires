@@ -101,8 +101,7 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
  * @param T_max The maximum value for T (temperature).
  * @param parameters The pointer to the Parameters struct.
  */
-__global__ 
-void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters *parameters);
+void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters);
 
 /**
  * @brief Sets the initial conditions for the simulation.
@@ -115,7 +114,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
  * @param p The pressure.
  * @param parameters The simulation parameters.
  */
-void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters *parameters);
+void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters parameters);
 
 
 #endif

@@ -16,16 +16,13 @@
 #include <time.h>
 #include <string.h>
 #include <sys/time.h>
-#include "../c/logs.h"
-#include "../c/output.h"
-// #include "poisson.h"
 #include "../c/structures.h"
-#include "pde.cuh"
+#include "output.cuh"
+#include "poisson.cuh"
 #include "functions.cuh"
+#include "logs.cuh"
+#include "pde.cuh"
 #include "utils.cuh"
-
-
-
 
 /**
  * Performs a single Euler step for solving a partial differential equation (PDE).
@@ -55,7 +52,7 @@ void euler_step(double dt, double *y_n, double *y_np1, double *F, int size);
  * @param size The size of the problem.
  * @param parameters The parameters for the PDE.
  */
-void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters *parameters);
+void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters parameters, double *z);
 
 /**
  * @brief Performs a single step of the second-order Runge-Kutta method (RK2).
@@ -88,7 +85,7 @@ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters *parameters);
+void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters);
 
 /**
  * @brief Performs a single step of the fourth-order Runge-Kutta method (RK4).
@@ -123,7 +120,7 @@ void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, dou
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters *parameters);
+void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters);
 
 /**
  * @brief Creates the initial condition for the variable y_0.
@@ -139,7 +136,7 @@ void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
  * @param y_0       Array to store the computed initial condition for y_0.
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
-void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters *parameters);
+void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters parameters);
 
 /**
  * @brief Solves the partial differential equation (PDE) using the method of lines (MOL).
@@ -150,6 +147,6 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
  * @param p_0       Array containing the initial condition for the pressure field.
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
-void solve_PDE(double *y_n, double *p_0, Parameters *parameters);
+void solve_PDE(double *y_n, double *p_0, Parameters parameters);
 
 #endif
