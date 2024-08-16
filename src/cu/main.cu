@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
 
     // Solve PDE
     log_message(parameters, "Solving PDE...");
-    // solve_PDE(y_0_device, p_device, parameters);
     solve_PDE(y_0_device, p_device, parameters);
 
     // Free memory

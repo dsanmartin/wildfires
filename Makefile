@@ -19,19 +19,19 @@ MKDIR  = mkdir -p
 # Flags
 OMPFLAGS	= -fopenmp -lgomp
 NVARCH		= 89
-NVFLAGS		= -gencode arch=compute_$(NVARCH),code=sm_$(NVARCH) -lcufft -O2#-Xptxas -dlcm=ca -I/usr/local/cuda/inc -L/usr/local/cuda/lib
-CFLAGS		= -Wall -lm -O3
+NVFLAGS		= -gencode arch=compute_$(NVARCH),code=sm_$(NVARCH) -lcufft -O3# -lcufft -Xptxas -dlcm=ca -I/usr/local/cuda/inc -L/usr/local/cuda/lib
+CFLAGS		= -Wall -lm -O3 -lfftw3
 
 # Source files
 ifeq ($(COMPILATION), "CUDA")
 EXE = wildfires_cu
 MAIN   = cu/main.cu 
-CODC = #poisson.c
+CODC = #poisson2.c
 # CODC = $(wildcard $(CSRC)*.c) 
 CODOMP = #$(wildcard $(OMP)*.c)
 CODCU = functions.cu logs.cu output.cu parameters.cu pde.cu poisson.cu solver.cu turbulence.cu utils.cu
 else ifeq ($(COMPILATION), "C")
-CFLAGS	+= -lfftw3
+# CFLAGS	+= -lfftw3
 EXE = wildfires_c
 MAIN   = c/main.c
 CODC = functions.c logs.c output.c parameters.c pde.c poisson.c solver.c turbulence.c utils.c
@@ -67,7 +67,7 @@ $(OBJMAIN): $(SRCMAIN)
 	$(NVCC) $(NVFLAGS) -c $? -o $@
 
 $(OBJC): $(DEST)%.o : $(SRC)%.c
-	$(NVCC) $(CFLAGS) -c $? -o $@
+	$(CC) $(CFLAGS) -c $? -o $@
 
 $(OBJCU): $(DEST)%.o : $(SRC)%.cu
 	$(NVCC) $(NVFLAGS) -c $? -o $@

@@ -14,8 +14,8 @@
 
 // #include <complex.h>
 // #include <fftw3.h>
-#include <cufft.h>
-#include <cuComplex.h>
+#include <cufftw.h>
+// #include <cuComplex.h>
 #include <math.h>
 #include <stdlib.h>
 #include "../c/structures.h"
@@ -39,7 +39,8 @@
  * @param N The size of the linear system.
  */
  __global__
- void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, int N);
+void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters);
+//  void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, int N);
 
 /**
  * @brief Solves the pressure equation.
@@ -68,6 +69,12 @@
  * @param p_out The output array for p.
  * @param parameters The parameters for the solve_pressure function.
  */
-void solve_pressure(double *U, double *p, double *kx, double *ky, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftHandle p_plan, cufftHandle f_plan, cufftHandle p_top_plan, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
+// void solve_pressure(double *U, double *p, double *kx, double *ky, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftHandle p_plan, cufftHandle f_plan, cufftHandle p_top_plan, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
+// void solve_pressure(double *U, double *p, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftHandle p_plan, cufftHandle f_plan, cufftHandle p_top_plan, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
+void solve_pressure(double *U, double *p, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
+
+
+__global__
+void gammas_and_coefficients(double *kx, double *ky, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, Parameters parameters);
 
 #endif

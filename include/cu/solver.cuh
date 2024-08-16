@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "../c/structures.h"
+// #include "../c/poisson2.h"
 #include "output.cuh"
 #include "poisson.cuh"
 #include "functions.cuh"
