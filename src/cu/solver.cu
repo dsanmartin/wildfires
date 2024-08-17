@@ -102,61 +102,64 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int NT = parameters.NT;
     int Nz_Y = parameters.Nz_Y;
     int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y;
-    // char log_path[100];
     int n_save;
-    int k_size = 2;
-    if (strncmp(parameters.method, "RK4", 3) == 0) 
-        k_size = 4;
+    int k_size = (strncmp(parameters.method, "RK4", 3) == 0) ? 4 : 2;
     double step_time, solver_time;
     double CFL = 0.0, T_min = 1e9, T_max = -1e9, Y_min = 1e9, Y_max = -1e9;
     // double *CFL, *T_min, *T_max, *Y_min, *Y_max;
     double *t = parameters.t;
     double dt = parameters.dt;
-    double *y_np1_host = (double *) malloc(size * sizeof(double));
-    double *p_host = (double *) malloc(Nx * Ny * Nz * sizeof(double));
-    // double *kx = parameters.kx;
-    // double *ky = parameters.ky;
+    // Host data
+    double *y_np1_host, *p_host;
+    // Device data
     double *y_np1, *F, *k, *R_turbulence, *z, *kx, *ky, *gamma;
-    // double *F = (double *) malloc(size * sizeof(double));
-    // double *k = (double *) malloc(k_size * size * sizeof(double));
-    // double *R_turbulence = (double *) malloc(27 * Nx * Ny * Nz * sizeof(double));
-    // CudaMalloc
-    cudaMalloc(&y_np1, size * sizeof(double));
-    cudaMalloc(&F, size * sizeof(double));
-    cudaMalloc(&k, k_size * size * sizeof(double));
-    cudaMalloc(&R_turbulence, 25 * Nx * Ny * Nz * sizeof(double));
-    cudaMalloc(&z, Nz * sizeof(double));
-    cudaMalloc(&kx, (Nx - 1) * sizeof(double));
-    cudaMalloc(&ky, (Ny - 1) * sizeof(double));
-    cudaMalloc((void **)&gamma, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double));
-    cudaMemcpy(z, parameters.z, Nz * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(kx, parameters.kx, (Nx - 1) * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(ky, parameters.ky, (Ny - 1) * sizeof(double), cudaMemcpyHostToDevice);
     // clock_t start, end, step_start, step_end; // Timers
     struct timeval start_solver, end_solver, start_ts, end_ts;
-    char solver_time_message[BLOCKS];
+    
+    char solver_time_message[128];
     // char min_max_values_message[BLOCKS];
     char formatted_time[64];
     // Arrays for pressure Poisson Problema
     // Allocate memory for cuFFT arrays
-    cufftDoubleComplex *a, *b, *c, *d, *l, *u, *y, *pk;
-    cufftDoubleComplex *f_in, *f_out, *p_top_in, *p_top_out, *p_in, *p_out;
-    // cufftHandle p_plan = 0, f_plan = 0, p_top_plan = 0;
+    double *a, *b, *c;
+    cufftDoubleComplex *d, *l, *u, *y;
+    // cufftDoubleComplex *a, *b, *c, *d, *l, *u, *y;
+    // cufftDoubleComplex *f_in, *f_out, *p_top_in, *p_top_out, *p_in, *p_out;
+    cufftDoubleComplex *data_in, *data_out, *p_top_in, *p_top_out;
 
-    CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
+    // Host memory allocation
+    y_np1_host = (double *) malloc(size * sizeof(double));
+    p_host = (double *) malloc(Nx * Ny * Nz * sizeof(double));
+
+    // Memory allocation for device data
+    CHECK(cudaMalloc((void **)&y_np1, size * sizeof(double)));
+    CHECK(cudaMalloc((void **)&F, size * sizeof(double)));
+    CHECK(cudaMalloc((void **)&k, k_size * size * sizeof(double)));
+    CHECK(cudaMalloc((void **)&R_turbulence, 25 * Nx * Ny * Nz * sizeof(double)));
+    CHECK(cudaMalloc((void **)&z, Nz * sizeof(double)));
+    CHECK(cudaMalloc((void **)&kx, (Nx - 1) * sizeof(double)));
+    CHECK(cudaMalloc((void **)&ky, (Ny - 1) * sizeof(double)));
+    CHECK(cudaMalloc((void **)&gamma, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
+    // Allocate memory for Poisson problem
+    // CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
+    // CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
+    // CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
+    CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
+    CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
+    CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
     CHECK(cudaMalloc((void **)&d, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&l, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&u, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&y, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&pk, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&f_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&f_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&p_top_in, (Nx - 1) * (Ny - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&p_top_out, (Nx - 1) * (Ny - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&p_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    CHECK(cudaMalloc((void **)&p_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
+    CHECK(cudaMalloc((void **)&data_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
+    CHECK(cudaMalloc((void **)&data_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
+
+    // Copy host data to device
+    CHECK(cudaMemcpy(z, parameters.z, Nz * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(kx, parameters.kx, (Nx - 1) * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(ky, parameters.ky, (Ny - 1) * sizeof(double), cudaMemcpyHostToDevice));
 
     // Fill gamma and coefficients
     gammas_and_coefficients<<<BLOCKS, THREADS>>>(kx, ky, gamma, a, b, c, parameters);
@@ -183,9 +186,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             exit(1);
         }
         // Solve Poisson problem for pressure (it only uses U^*)
-        // solve_pressure(y_np1, p, kx, ky, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
-        // solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, pk, p_plan, f_plan, p_top_plan, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
-        solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, pk, f_in, f_out, p_top_in, p_top_out, p_in, p_out, parameters);
+        solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
         checkCuda(cudaGetLastError());
         // Chorin's projection method
         velocity_correction_fw<<<BLOCKS, THREADS>>>(y_np1, p, dt, parameters);
@@ -240,13 +241,15 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     cudaFree(l);
     cudaFree(u);
     cudaFree(y);
-    cudaFree(pk);
-    cudaFree(f_in);
-    cudaFree(f_out);
+    // cudaFree(pk);
     cudaFree(p_top_in);
     cudaFree(p_top_out);
-    cudaFree(p_in);
-    cudaFree(p_out);
+    cudaFree(data_in);
+    cudaFree(data_out);
+    // cudaFree(f_in);
+    // cudaFree(f_out);
+    // cudaFree(p_in);
+    // cudaFree(p_out);
 }
 
 
