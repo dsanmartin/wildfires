@@ -54,7 +54,7 @@ void boundary_conditions(double *R_new, Parameters parameters);
  * @param U_turbulence Pointer to the array containing the turbulence values of U.
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
-void Phi(double t, double *R_old, double *R_new, double *U_turbulence, Parameters parameters, double *z);
+void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *z, Parameters parameters);
 
 /**
  * @brief Bounds the temperature and fuel arrays.

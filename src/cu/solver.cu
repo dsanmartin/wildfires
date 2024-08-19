@@ -21,8 +21,8 @@ void euler_step(double dt, double *y_n, double *y_np1, double *F, int size) {
     }
 }
 
-void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters parameters, double *z) {   
-    Phi(t_n, y_n, F, U_turbulence, parameters, z);
+void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters) {   
+    Phi(t_n, y_n, F, U_turbulence, z, parameters);
     euler_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, F, size);
     cudaDeviceSynchronize();
 }
@@ -36,13 +36,13 @@ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int
     }
 }
 
-void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters, double *z) {
+void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters) {
     int k1_index = 0;
     int k2_index = size;
-    Phi(t_n, y_n, k + k1_index, U_turbulence, parameters, z);
+    Phi(t_n, y_n, k + k1_index, U_turbulence, z, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k1_index, y_n, dt, size);
     cudaDeviceSynchronize();
-    Phi(t_n + dt, F, k + k2_index, U_turbulence, parameters, z);
+    Phi(t_n + dt, F, k + k2_index, U_turbulence, z, parameters);
     RK2_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, size);
     cudaDeviceSynchronize();
 }
@@ -56,21 +56,21 @@ void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, dou
     }
 }
 
-void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters, double *z) {
+void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters) {
     int k1_index = 0;
     int k2_index = size;
     int k3_index = 2 * size;
     int k4_index = 3 * size;
-    Phi(t_n, y_n, k + k1_index, U_turbulence, parameters, z);
+    Phi(t_n, y_n, k + k1_index, U_turbulence, z, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k1_index, y_n, dt * 0.5, size);
     cudaDeviceSynchronize();
-    Phi(t_n + 0.5 * dt, F, k + k2_index, U_turbulence, parameters, z);
+    Phi(t_n + 0.5 * dt, F, k + k2_index, U_turbulence, z, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k2_index, y_n, dt * 0.5, size);
     cudaDeviceSynchronize();
-    Phi(t_n + 0.5 * dt, F, k + k3_index, U_turbulence, parameters, z);
+    Phi(t_n + 0.5 * dt, F, k + k3_index, U_turbulence, z, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k3_index, y_n, dt, size);
     cudaDeviceSynchronize();
-    Phi(t_n + dt, F, k + k4_index, U_turbulence, parameters, z);
+    Phi(t_n + dt, F, k + k4_index, U_turbulence, z, parameters);
     RK4_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, k + k3_index, k + k4_index, size);
     cudaDeviceSynchronize();
 }
@@ -93,7 +93,6 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
     }
 }
 
-
 void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
@@ -106,31 +105,24 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int k_size = (strncmp(parameters.method, "RK4", 3) == 0) ? 4 : 2;
     double step_time, solver_time;
     double CFL = 0.0, T_min = 1e9, T_max = -1e9, Y_min = 1e9, Y_max = -1e9;
-    // double *CFL, *T_min, *T_max, *Y_min, *Y_max;
     double *t = parameters.t;
     double dt = parameters.dt;
     // Host data
     double *y_np1_host, *p_host;
     // Device data
     double *y_np1, *F, *k, *R_turbulence, *z, *kx, *ky, *gamma;
-    // clock_t start, end, step_start, step_end; // Timers
-    struct timeval start_solver, end_solver, start_ts, end_ts;
-    
-    char solver_time_message[128];
-    // char min_max_values_message[BLOCKS];
-    char formatted_time[64];
     // Arrays for pressure Poisson Problema
-    // Allocate memory for cuFFT arrays
     double *a, *b, *c;
     cufftDoubleComplex *d, *l, *u, *y;
-    // cufftDoubleComplex *a, *b, *c, *d, *l, *u, *y;
-    // cufftDoubleComplex *f_in, *f_out, *p_top_in, *p_top_out, *p_in, *p_out;
     cufftDoubleComplex *data_in, *data_out, *p_top_in, *p_top_out;
-
+    // clock_t start, end, step_start, step_end; // Timers
+    struct timeval start_solver, end_solver, start_ts, end_ts; // Timers
+    // Messages
+    char solver_time_message[128];
+    char formatted_time[64];
     // Host memory allocation
     y_np1_host = (double *) malloc(size * sizeof(double));
     p_host = (double *) malloc(Nx * Ny * Nz * sizeof(double));
-
     // Memory allocation for device data
     CHECK(cudaMalloc((void **)&y_np1, size * sizeof(double)));
     CHECK(cudaMalloc((void **)&F, size * sizeof(double)));
@@ -141,9 +133,6 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&ky, (Ny - 1) * sizeof(double)));
     CHECK(cudaMalloc((void **)&gamma, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
     // Allocate memory for Poisson problem
-    // CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
-    // CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-    // CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
     CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
     CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
@@ -155,17 +144,14 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&p_top_out, (Nx - 1) * (Ny - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&data_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&data_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
-
     // Copy host data to device
     CHECK(cudaMemcpy(z, parameters.z, Nz * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(kx, parameters.kx, (Nx - 1) * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(ky, parameters.ky, (Ny - 1) * sizeof(double), cudaMemcpyHostToDevice));
-
     // Fill gamma and coefficients
     gammas_and_coefficients<<<BLOCKS, THREADS>>>(kx, ky, gamma, a, b, c, parameters);
     checkCuda(cudaGetLastError());
     CHECK(cudaDeviceSynchronize());
-
     // Solver time
     // start = clock();
     gettimeofday(&start_solver, NULL);
@@ -176,11 +162,11 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         // Compute U^*, T^{n+1}, Y^{n+1}
         // Check time integration method
         if (strncmp(parameters.method, "Euler", 5) == 0) {
-            euler(t[n], y_n, y_np1, F, R_turbulence, dt, size, parameters, z);
+            euler(t[n], y_n, y_np1, F, R_turbulence, z, dt, size, parameters);
         } else if (strncmp(parameters.method, "RK2", 3) == 0) {
-            RK2(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters, z);
+            RK2(t[n], y_n, y_np1, k, F, R_turbulence, z, dt, size, parameters);
         } else if (strncmp(parameters.method, "RK4", 3) == 0) {
-            RK4(t[n], y_n, y_np1, k, F, R_turbulence, dt, size, parameters, z);
+            RK4(t[n], y_n, y_np1, k, F, R_turbulence, z, dt, size, parameters);
         } else {
             log_message(parameters, "Time integration method not found.");
             exit(1);
@@ -241,15 +227,10 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     cudaFree(l);
     cudaFree(u);
     cudaFree(y);
-    // cudaFree(pk);
     cudaFree(p_top_in);
     cudaFree(p_top_out);
     cudaFree(data_in);
     cudaFree(data_out);
-    // cudaFree(f_in);
-    // cudaFree(f_out);
-    // cudaFree(p_in);
-    // cudaFree(p_out);
 }
 
 

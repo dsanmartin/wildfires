@@ -12,10 +12,7 @@
 #ifndef POISSON_H
 #define POISSON_H
 
-// #include <complex.h>
-// #include <fftw3.h>
 #include <cufftw.h>
-// #include <cuComplex.h>
 #include <math.h>
 #include <stdlib.h>
 #include "../c/structures.h"
@@ -36,11 +33,22 @@
  * @param l Temporary array to store the values of the lower diagonal elements during decomposition.
  * @param u Temporary array to store the values of the main diagonal elements during decomposition.
  * @param y Temporary array to store the values of the intermediate solution during forward substitution.
- * @param N The size of the linear system.
+ * @param parameters The parameters of the mathematical model.
  */
  __global__
-void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters);
-//  void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, int N);
+void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters);
+
+__global__
+void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, Parameters parameters);
+
+__global__
+void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, double *p, Parameters parameters);
+
+__global__ 
+void update_coefficients(double *gamma, double *b,  cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters);
+
+__global__
+void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters);
 
 /**
  * @brief Solves the pressure equation.
@@ -48,37 +56,22 @@ void thomas_algorithm(cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleC
  * This function solves the pressure equation using FFT-FD method.
  * FFT for periodic domain and FD for non-periodic domain.
  *
- * @param U The input array U with the velocity field.
- * @param p The output array p with the pressure field.
- * @param a The array a with the lower diagonal elements of the tridiagonal matrix.
- * @param b The array b with the main diagonal elements of the tridiagonal matrix.
- * @param c The array c with the upper diagonal elements of the tridiagonal matrix.
- * @param d The array d with the right-hand side vector.
- * @param l The array l for temporary storage of the lower diagonal elements, L in LU decomposition.
- * @param u The array u for temporary storage of the main diagonal elements, U in LU decomposition.
- * @param y The array y for temporary storage of the intermediate solution during forward substitution.
- * @param pk The array pk to store the solution of the Poisson equation.
- * @param p_plan The FFTW plan for p.
- * @param f_plan The FFTW plan for f.
- * @param p_top_plan The FFTW plan for p_top.
- * @param f_in The input array for f.
- * @param f_out The output array for f.
- * @param p_top_in The input array for p_top.
- * @param p_top_out The output array for p_top.
- * @param p_in The input array for p.
- * @param p_out The output array for p.
- * @param parameters The parameters for the solve_pressure function.
+ * @param U The input array with the velocity field.
+ * @param p The output array with the pressure field.
+ * @param gamma The array with FFT-FD coefficients.
+ * @param a The array with the lower diagonal elements of the tridiagonal matrix.
+ * @param b The array with the main diagonal elements of the tridiagonal matrix.
+ * @param c The array with the upper diagonal elements of the tridiagonal matrix.
+ * @param d The array with the right-hand side vector.
+ * @param l The array for temporary storage of the lower diagonal elements, L in LU decomposition.
+ * @param u The array for temporary storage of the main diagonal elements, U in LU decomposition.
+ * @param y The array for temporary storage of the intermediate solution during forward substitution.
+ * @param data_in The input array for FFT .
+ * @param data_out The output array for IFFT.
+ * @param p_top_in The input array for p_top FFT.
+ * @param p_top_out The output array for p_top IFFT.
+ * @param parameters The parameters of the mathematical model.
  */
-// void solve_pressure(double *U, double *p, double *kx, double *ky, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftHandle p_plan, cufftHandle f_plan, cufftHandle p_top_plan, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
-// void solve_pressure(double *U, double *p, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftHandle p_plan, cufftHandle f_plan, cufftHandle p_top_plan, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
-// void solve_pressure(double *U, double *p, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *pk, cufftDoubleComplex *f_in, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, cufftDoubleComplex *p_in, cufftDoubleComplex *p_out, Parameters parameters);
-// void solve_pressure(double *U, double *p, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
 void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
-
-
-__global__
-// void gammas_and_coefficients(double *kx, double *ky, double *gamma, cufftDoubleComplex *a, cufftDoubleComplex *b, cufftDoubleComplex *c, Parameters parameters);
-void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, Parameters parameters);
-
 
 #endif

@@ -17,7 +17,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include "../c/structures.h"
-// #include "../c/poisson2.h"
 #include "output.cuh"
 #include "poisson.cuh"
 #include "functions.cuh"
@@ -53,7 +52,7 @@ void euler_step(double dt, double *y_n, double *y_np1, double *F, int size);
  * @param size The size of the problem.
  * @param parameters The parameters for the PDE.
  */
-void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double dt, int size, Parameters parameters, double *z);
+void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters);
 
 /**
  * @brief Performs a single step of the second-order Runge-Kutta method (RK2).
@@ -86,7 +85,7 @@ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters);
+void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters);
 
 /**
  * @brief Performs a single step of the fourth-order Runge-Kutta method (RK4).
@@ -121,7 +120,7 @@ void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, dou
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double dt, int size, Parameters parameters);
+void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double dt, int size, Parameters parameters);
 
 /**
  * @brief Creates the initial condition for the variable y_0.
