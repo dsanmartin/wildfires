@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
     // Allocate memory for u, v, w, T, Y, p, y_0
     size = parameters.Nx * parameters.Ny * parameters.Nz;
-    size_Y = parameters.Nx * parameters.Ny * parameters.Nz_Y;
+    size_Y = parameters.Nx * parameters.Ny * parameters.Nz_Y_max;
     u = (double *) malloc(size * sizeof(double));
     v = (double *) malloc(size * sizeof(double));
     w = (double *) malloc(size * sizeof(double));
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
     log_message(&parameters, "Saving initial data...");
     save_data(y_0, p, 0, &parameters);
     save_domain(&parameters);
+    save_topography(&parameters);
 
     // Solve PDE
     log_message(&parameters, "Solving PDE...");

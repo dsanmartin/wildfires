@@ -228,7 +228,7 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     // CHECK(cudaDeviceSynchronize());
 
     // Plan for IFFT2D(p) for each z slice
-    CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany));
+    // CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany));
 
     // Compute IFFT2D
     CHECK_CUFFT(cufftExecZ2Z(p_plan, data_in, data_out, CUFFT_INVERSE));

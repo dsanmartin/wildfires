@@ -15,11 +15,12 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->Nz_Y;
+    int Nz_Y_max = parameters->Nz_Y_max;
+    int *Nz_Y = parameters->Nz_Y;
     double dx = parameters->dx;
     double dy = parameters->dy;
     double dz = parameters->dz;
-    double *z = parameters->z;
+    double *z_ibm = parameters->z_ibm;
     double nu = parameters->nu;
     double alpha = parameters->alpha;
     double Y_f = parameters->Y_f;
@@ -298,7 +299,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                     tau_p = 0.0;
                 }
                 u_tau = sqrt(tau_p);
-                fw = f_damping(z[k], u_tau, nu);
+                fw = f_damping(z_ibm[IDX(i, j, k, Nx, Ny, Nz)], u_tau, nu);
                 // Copy to turbulence array
                 R_turbulence[parameters->turbulence_indexes.ux  + IDX(i, j, k, Nx, Ny, Nz)] = ux;
                 R_turbulence[parameters->turbulence_indexes.uy  + IDX(i, j, k, Nx, Ny, Nz)] = uy;
@@ -326,10 +327,10 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
                 R_turbulence[parameters->turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)] = Tzz;
                 R_turbulence[parameters->turbulence_indexes.fw  + IDX(i, j, k, Nx, Ny, Nz)] = fw;
                 /* Compute fuel and source term */
-                if (k < Nz_Y) {
-                    Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)];
+                if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+                    Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];
                     Y_RHS = -Y_f * K(T_ijk, A, T_a) * H(T_ijk, T_pc) * Y_ijk;
-                    R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_RHS;
+                    R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
                 } else {
                     Y_ijk = 0.0;
                 }
@@ -366,11 +367,11 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
     boundary_conditions(R_new, parameters);
 }
 
-void boundary_conditions(double *R_new, Parameters *parameters) {
+void boundary_conditions_v1(double *R_new, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->Nz_Y;
+    int Nz_Y_max = parameters->Nz_Y_max;
     int u_index = parameters->field_indexes.u;
     int v_index = parameters->field_indexes.v;
     int w_index = parameters->field_indexes.w;
@@ -383,6 +384,7 @@ void boundary_conditions(double *R_new, Parameters *parameters) {
     double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
     // double Y_ijkp1, Y_ijkm1, Y_ijkm2, Y_ijkp2;
     double Y_ijkp1, Y_ijkp2;
+    int *Nz_Y = parameters->Nz_Y;
     // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
@@ -390,19 +392,92 @@ void boundary_conditions(double *R_new, Parameters *parameters) {
             k = 0; 
             T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
             T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-            if (k + 1 < Nz_Y) // Check if Y_ijkp1 is part of the fuel
-                Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y)]; // Y_{i,j,k+1}
+            if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
+                Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
             else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
                 Y_ijkp1 = 0.0;
-            if (k + 2 < Nz_Y) // Same as above
-                Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y)]; // Y_{i,j,k+2}
+            if (k + 2 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Same as above
+                Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
             else
                 Y_ijkp2 = 0.0;
             R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
             R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
             R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
             R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
-            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
+            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
+            // Top boundary z_k = z_max, k=Nz-1
+            k = Nz - 1;
+            u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
+            u_ijkm2 = R_new[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
+            v_ijkm1 = R_new[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
+            v_ijkm2 = R_new[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
+            w_ijkm1 = R_new[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
+            w_ijkm2 = R_new[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
+            T_ijkm1 = R_new[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
+            T_ijkm2 = R_new[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // T_{i,j,k-2}
+            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
+            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
+            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
+            // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
+        }
+    }
+}
+
+void boundary_conditions(double *R_new, Parameters *parameters) {
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
+    int Nz = parameters->Nz;
+    int Nz_Y_max = parameters->Nz_Y_max;
+    int u_index = parameters->field_indexes.u;
+    int v_index = parameters->field_indexes.v;
+    int w_index = parameters->field_indexes.w;
+    int T_index = parameters->field_indexes.T;
+    int Y_index = parameters->field_indexes.Y;
+    int k;
+    double u_ijkm1, u_ijkm2;
+    double v_ijkm1, v_ijkm2;
+    double w_ijkm1, w_ijkm2;
+    double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
+    // double Y_ijkp1, Y_ijkm1, Y_ijkm2, Y_ijkp2;
+    double Y_ijkp1, Y_ijkp2;
+    // IBM
+    int *Nz_Y = parameters->Nz_Y;
+    int *cut_nodes = parameters->cut_nodes;
+    double u_dead_nodes = parameters->u_dead_nodes;
+    double v_dead_nodes = parameters->v_dead_nodes;
+    double w_dead_nodes = parameters->w_dead_nodes;
+    double T_dead_nodes = parameters->T_dead_nodes;
+    double Y_dead_nodes = parameters->Y_dead_nodes;
+    // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            // Set dead nodes values
+            for (int k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
+                R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
+                R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_dead_nodes;
+                R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_dead_nodes;
+                R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_dead_nodes;
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_dead_nodes;
+
+            }
+            // Bottom boundary z_k = z_min, k=cut_nodes
+            k = cut_nodes[IDX(i, j, 0, Nx, Ny, 1)];
+            T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+            T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
+            if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
+                Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
+            else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
+                Y_ijkp1 = 0.0;
+            if (k + 2 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Same as above
+                Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
+            else
+                Y_ijkp2 = 0.0;
+            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
+            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
+            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
+            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
             // Top boundary z_k = z_max, k=Nz-1
             k = Nz - 1;
             u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
@@ -426,7 +501,7 @@ void bounds(double *R_new, Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->Nz_Y;
+    int Nz_Y_max = parameters->Nz_Y_max;
     int T_index = parameters->field_indexes.T;
     int Y_index = parameters->field_indexes.Y;
     double T_min = parameters->T_min;
@@ -437,12 +512,12 @@ void bounds(double *R_new, Parameters *parameters) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
                 // Check if Y_ijk is not valid
-                if (k < Nz_Y) {
-                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] < Y_min) {
-                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_min;
+                if (k < Nz_Y_max) {
+                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] < Y_min) {
+                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_min;
                     }
-                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] > Y_max) {
-                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)] = Y_max;
+                    if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] > Y_max) {
+                        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_max;
                     }
                 }
                 // Check if T_ijk is less than T_inf and higher than T_max

@@ -1,4 +1,4 @@
-COMPILATION = "CUDA"
+COMPILATION = "C"
 
 # Compiler
 CC = gcc
@@ -34,7 +34,7 @@ else ifeq ($(COMPILATION), "C")
 # CFLAGS	+= -lfftw3
 EXE = wildfires_c
 MAIN   = c/main.c
-CODC = functions.c logs.c output.c parameters.c pde.c poisson.c solver.c turbulence.c utils.c
+CODC = functions.c ibm.c logs.c output.c parameters.c pde.c poisson.c solver.c turbulence.c utils.c
 endif
 
 # Folders

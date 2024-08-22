@@ -80,6 +80,14 @@ typedef struct _log_files {
     FILE *log;
 } LogFiles;
 
+// typedef struct _dead_nodes {
+//     int i; int j; int k;
+// } DeadNodes;
+
+// typedef struct _cut_nodes {
+//     int i; int j; int k;
+// } CutNodes;
+
 /**
  * @brief Structure to store the parameters of the simulation.
  * 
@@ -137,7 +145,8 @@ typedef struct _parameters {
     double T_hot;
     double Y_h;
     int k_Y_h;
-    int Nz_Y;
+    int Nz_Y_max; // Maximum number of grid points in z for Y variable
+    int *Nz_Y; // Number of grid points in z for Y variable
     double T_min;
     double T_max;
     double Y_min;
@@ -163,13 +172,26 @@ typedef struct _parameters {
     double T0_z_end;
     double T0_z_center;
     double T0_height;
-    char Z_shape[32];
-    double hill_center_x;
-    double hill_center_y;
-    double hill_length;
-    double hill_width;
-    double hill_height;
+    char topo_shape[32]; // Topography shape (simple_hill or flat)
+    double *topography; // Topography field
+    double hill_center_x; 
+    double hill_center_y; 
+    double hill_length; 
+    double hill_width; 
+    double hill_height; 
+    // IBM dead nodes and cut nodes
+    // int n_dead_nodes;
+    // int n_cut_nodes;
+    // double *dead_nodes;
+    // double *cut_nodes;
+    int *cut_nodes;
+    double *z_ibm;
     double p_top;
+    double u_dead_nodes;
+    double v_dead_nodes;
+    double w_dead_nodes;
+    double T_dead_nodes;
+    double Y_dead_nodes;
     char method[32];
     char save_path[64];
     char sim_id[32];
@@ -179,6 +201,8 @@ typedef struct _parameters {
     FieldIndexes field_indexes;
     TurbulenceIndexes turbulence_indexes;
     PressureIndexes pressure_indexes;
+    // DeadNodes *dead_nodes;
+    // CutNodes *cut_nodes;
     LogFiles log_files;
 } Parameters;
 

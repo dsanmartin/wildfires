@@ -50,6 +50,13 @@ void log_parameters_report(Parameters *parameters, int to_file) {
     //     parameters->T0_z_start, parameters->T0_z_end, parameters->T0_z_center, parameters->T0_height);
     fprintf(output, "Fuel initial condition:\n");
     fprintf(output, "  Fuel height: %lf\n", parameters->Y_h);
+    // Topography
+    fprintf(output, "Topography:\n");
+    fprintf(output, "  Shape: %s\n", parameters->topo_shape);
+    if (strcmp(parameters->topo_shape, "hill") == 0) {
+        fprintf(output, "  Hill center: [%lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
+            parameters->hill_center_x, parameters->hill_center_y, parameters->hill_length, parameters->hill_width, parameters->hill_height);
+    }
     fprintf(output, "Bounds:\n");
     fprintf(output, "  Temperature: [%lf, %lf]\n", parameters->T_min, parameters->T_max);
     fprintf(output, "  Fuel: [%lf, %lf]\n", parameters->Y_min, parameters->Y_max);

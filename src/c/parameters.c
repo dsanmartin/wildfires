@@ -224,13 +224,44 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "Y_max =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.Y_max));
         }
+        // Topography shape
+        if (strncmp(line, "topo_shape =", 11) == 0) {
+            sscanf(line + 12, "%s", (char *) &(parameters.topo_shape));
+        }
+        // Dead nodes values
+        if (strncmp(line, "u_dead_nodes =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.u_dead_nodes));
+        }
+        if (strncmp(line, "v_dead_nodes =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.v_dead_nodes));
+        }
+        if (strncmp(line, "w_dead_nodes =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.w_dead_nodes));
+        }
+        if (strncmp(line, "T_dead_nodes =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.T_dead_nodes));
+        }
+        if (strncmp(line, "Y_dead_nodes =", 13) == 0) {
+            sscanf(line + 14, "%lf", &(parameters.Y_dead_nodes));
+        }
+        // Hill parameters
+        if (strncmp(line, "hill_center_x =", 14) == 0) {
+            sscanf(line + 15, "%lf", &(parameters.hill_center_x));
+        }
+        if (strncmp(line, "hill_center_y =", 14) == 0) {
+            sscanf(line + 15, "%lf", &(parameters.hill_center_y));
+        }
+        if (strncmp(line, "hill_length =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.hill_length));
+        }
+        if (strncmp(line, "hill_width =", 11) == 0) {
+            sscanf(line + 12, "%lf", &(parameters.hill_width));
+        }
+        if (strncmp(line, "hill_height =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.hill_height));
+        }
     }
     parameters.alpha_u = 1.0 / 7.0;
-    // Compute dx, dy, dz, dts
-    parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
-    parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
-    parameters.dz = (parameters.z_max - parameters.z_min) / (parameters.Nz - 1);
-    parameters.dt = (parameters.t_max - parameters.t_min) / parameters.Nt;
     // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
     parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
@@ -241,6 +272,20 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.s = (double *) malloc((parameters.Ny - 1) * sizeof(double));
     parameters.kx = (double *) malloc((parameters.Nx - 1) * sizeof(double));
     parameters.ky = (double *) malloc((parameters.Ny - 1) * sizeof(double));
+    // IBM malloc
+    // Allocate memory
+    parameters.cut_nodes = (int *)malloc(parameters.Nx * parameters.Ny * sizeof(int)); // Cut nodes
+    parameters.z_ibm = (double *)malloc(parameters.Nx * parameters.Ny * parameters.Nz * sizeof(double)); // IBM z distance
+    parameters.topography = (double *)malloc(parameters.Nx * parameters.Ny * sizeof(double)); // Topography
+    // Nz for Y variable. To store the number of grid points in z for Y variable
+    parameters.Nz_Y = (int *)malloc(parameters.Nx * parameters.Ny * sizeof(int));
+    // Compute dx, dy, dz, dts
+    parameters.dx = (parameters.x_max - parameters.x_min) / (parameters.Nx - 1);
+    parameters.dy = (parameters.y_max - parameters.y_min) / (parameters.Ny - 1);
+    parameters.dz = (parameters.z_max - parameters.z_min) / (parameters.Nz - 1);
+    parameters.dt = (parameters.t_max - parameters.t_min) / parameters.Nt;
+    // parameters.Nz_Y_max = 0;
+    // Frequency domain
     fft_freq(parameters.r, parameters.Nx - 1, 1.0 / (parameters.Nx - 1));
     fft_freq(parameters.s, parameters.Ny - 1, 1.0 / (parameters.Ny - 1));
     // Physical domain and frequency domain
@@ -258,11 +303,6 @@ Parameters read_parameters_file(const char *file_path) {
     }
     for (int k = 0; k < parameters.Nz; k++) {
         parameters.z[k] = parameters.z_min + k * parameters.dz;
-        // Get the index of z where Y_h is located
-        if (parameters.z[k] <= parameters.Y_h) {
-            parameters.k_Y_h = k;
-            parameters.Nz_Y = k + 1;
-        }
     }
     for (int n = 0; n <= parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
@@ -274,6 +314,12 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.T0_length = parameters.T0_x_end - parameters.T0_x_start;
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
+    // IBM topography
+    if (strcmp(parameters.topo_shape, "hill") == 0)
+        simple_hill(&parameters);
+    else if (strcmp(parameters.topo_shape, "flat") == 0)
+        flat_terrain(&parameters);
+    ibm_parameters(&parameters);    
     // Sizes
     size = parameters.Nx * parameters.Ny * parameters.Nz;
     // Fill field indexes
@@ -325,5 +371,10 @@ void free_parameters(Parameters *parameters) {
     free(parameters->s);
     free(parameters->kx);
     free(parameters->ky);
+    free(parameters->cut_nodes);
+    free(parameters->z_ibm);
+    free(parameters->topography);
+    free(parameters->Nz_Y);
+    // fclose(parameters->log_files.parameters);
     fclose(parameters->log_files.log);
 }

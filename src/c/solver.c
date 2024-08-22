@@ -62,9 +62,9 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
-    int Nz_Y = parameters->Nz_Y;
+    int Nz_Y_max = parameters->Nz_Y_max;
     int size = Nx * Ny * Nz;
-    int size_Y = Nx * Ny * Nz_Y;
+    int size_Y = Nx * Ny * Nz_Y_max;
     for (int i = 0; i < size; i++) {
         y_0[parameters->field_indexes.u + i] = u[i];
         y_0[parameters->field_indexes.v + i] = v[i];
@@ -82,8 +82,8 @@ void solve_PDE(double *y_n, double *p, Parameters *parameters) {
     int Nz = parameters->Nz;
     int Nt = parameters->Nt;
     int NT = parameters->NT;
-    int Nz_Y = parameters->Nz_Y;
-    int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y;
+    int Nz_Y_max = parameters->Nz_Y_max;
+    int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y_max;
     // char log_path[100];
     int n_save;
     int k_size = 2;

@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h> 
+#include "ibm.h"
 #include "structures.h"
 #include "utils.h"
 
