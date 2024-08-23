@@ -9,12 +9,12 @@
  * 
  */
 
-#ifndef IBM_H
-#define IBM_H
+#ifndef IBM_CUH
+#define IBM_CUH
 
-#include "functions.h"
-#include "structures.h"
-#include "utils.h"
+#include "../c/structures.h"
+#include "functions.cuh"
+#include "utils.cuh"
 
 void flat_terrain(Parameters *parameters);
 

@@ -30,7 +30,7 @@
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
 __global__
-void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameters parameters, double *z);
+void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z_ibm, int *Nz_Y, Parameters parameters);
 
 /**
  * @brief Applies boundary conditions to the given array.
@@ -41,7 +41,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, Parameter
  * @param parameters The parameters used to determine the boundary conditions.
  */
 __global__
-void boundary_conditions(double *R_new, Parameters parameters);
+void boundary_conditions(double *R_new, int *Nz_Y, int *cut_nodes, Parameters parameters);
 
 /**
  * @brief Function evaluation for method of lines (MOL) time integration.
@@ -54,7 +54,7 @@ void boundary_conditions(double *R_new, Parameters parameters);
  * @param U_turbulence Pointer to the array containing the turbulence values of U.
  * @param parameters Pointer to the Parameters struct containing additional parameters.
  */
-void Phi(double t, double *R_old, double *R_new, double *U_turbulence, double *z, Parameters parameters);
+void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *z_ibm, int *Nz_Y, int *cut_nodes, Parameters parameters);
 
 /**
  * @brief Bounds the temperature and fuel arrays.

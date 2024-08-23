@@ -19,6 +19,7 @@
 #include <string.h>
 #include <sys/stat.h> 
 #include "../c/structures.h"
+#include "ibm.cuh"
 #include "utils.cuh"
 
 /**

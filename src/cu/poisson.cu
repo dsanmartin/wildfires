@@ -52,10 +52,12 @@ void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, d
         int s = (rsk % ((Ny - 1) * (Nz - 2))) / (Nz - 2);
         int k = rsk % (Nz - 2);
         if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
-            gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
+            // gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
+            gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
             a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz), 0.0; 
             b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz, 0.0;
-            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)]) / dz;
+            // c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)]) / dz;
+            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)]) / dz;
         } else { // The rest of the coefficients a and c
             a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz); 
             c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz);
@@ -158,7 +160,8 @@ void update_coefficients(double *gamma, double *b,  cufftDoubleComplex *d, cufft
             d[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(f_out[FFTWIDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], cuCdiv(p_top_out[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1)], make_cuDoubleComplex(dz * dz, 0.0)));
         } else {
             if (k < Nz - 1) {
-                b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, 0)] / (dz * dz);
+                // b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, 0)] / (dz * dz);
+                b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] / (dz * dz);
                 if (k < Nz - 2)
                     d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = f_out[FFTWIDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)];
             }
@@ -208,7 +211,7 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
 
     // Compute f = rho / dt * div(U)
     compute_f<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
-    // CHECK(cudaDeviceSynchronize());
+    checkCuda(cudaGetLastError());
     
     // Plans for FFT2D
     CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany)); // FFT2(f_k) for each z slice
@@ -221,14 +224,11 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
 
     // Update coefficients, including f in pseudo-Fourier space
     update_coefficients<<<BLOCKS, THREADS>>>(gamma, b, d, data_out, p_top_out, parameters);
-    // CHECK(cudaDeviceSynchronize());
+    checkCuda(cudaGetLastError());
 
     // Compute r,s systems of equations using thomas algorithm
     thomas_algorithm<<<BLOCKS, THREADS>>>(a, b, c, d, data_in, l, u, y, parameters);
-    // CHECK(cudaDeviceSynchronize());
-
-    // Plan for IFFT2D(p) for each z slice
-    // CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany));
+    checkCuda(cudaGetLastError());
 
     // Compute IFFT2D
     CHECK_CUFFT(cufftExecZ2Z(p_plan, data_in, data_out, CUFFT_INVERSE));
@@ -236,7 +236,7 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
 
     // Post FFT
     post_fft<<<BLOCKS, THREADS>>>(p, data_out, parameters);
-    // CHECK(cudaDeviceSynchronize());
+    checkCuda(cudaGetLastError());
 
     // Destroy plans
     cufftDestroy(p_top_plan);

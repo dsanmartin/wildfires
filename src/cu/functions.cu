@@ -39,7 +39,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
-    int Nz_Y = parameters.Nz_Y;
+    int Nz_Y_max = parameters.Nz_Y_max;
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
@@ -72,9 +72,9 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
                 max_u = MAX(max_u, abs_u);
                 max_v = MAX(max_v, abs_v);
                 max_w = MAX(max_w, abs_w);
-                if (k < Nz_Y) {
-                    Y_min_tmp = MIN(Y_min_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)]);
-                    Y_max_tmp = MAX(Y_max_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y)]);
+                if (k < Nz_Y_max) {
+                    Y_min_tmp = MIN(Y_min_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)]);
+                    Y_max_tmp = MAX(Y_max_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)]);
                 }
                 T_min_tmp = MIN(T_min_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
                 T_max_tmp = MAX(T_max_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
@@ -92,7 +92,8 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
-    int Nz_Y = parameters.Nz_Y;
+    int Nz_Y_max = parameters.Nz_Y_max;
+    int *Nz_Y = parameters.Nz_Y;
     /* Velocity parameters */
     double u_r = parameters.u_r;
     double z_r = parameters.z_r;
@@ -125,8 +126,8 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                 } else {
                     p[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 }
-                if (k < Nz_Y) {
-                    Y[IDX(i, j, k, Nx, Ny, Nz_Y)] = 1.0;
+                if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+                    Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
                 }
             }
         }

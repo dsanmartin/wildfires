@@ -1,4 +1,4 @@
-COMPILATION = "C"
+COMPILATION = "CUDA"
 
 # Compiler
 CC = gcc
@@ -29,7 +29,7 @@ MAIN   = cu/main.cu
 CODC = #poisson2.c
 # CODC = $(wildcard $(CSRC)*.c) 
 CODOMP = #$(wildcard $(OMP)*.c)
-CODCU = functions.cu logs.cu output.cu parameters.cu pde.cu poisson.cu solver.cu turbulence.cu utils.cu
+CODCU = functions.cu ibm.cu logs.cu output.cu parameters.cu pde.cu poisson.cu solver.cu turbulence.cu utils.cu
 else ifeq ($(COMPILATION), "C")
 # CFLAGS	+= -lfftw3
 EXE = wildfires_c

@@ -354,9 +354,6 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.turbulence_indexes.Tyy = 22 * size;
     parameters.turbulence_indexes.Tzz = 23 * size;
     parameters.turbulence_indexes.fw = 24 * size;
-    // parameters.turbulence_indexes.fwx = 25 * size;
-    // parameters.turbulence_indexes.fwy = 26 * size;
-    // parameters.turbulence_indexes.fwz = 27 * size;
     // Close file
     fclose(parameters_file);
     return parameters;
@@ -375,6 +372,6 @@ void free_parameters(Parameters *parameters) {
     free(parameters->z_ibm);
     free(parameters->topography);
     free(parameters->Nz_Y);
-    // fclose(parameters->log_files.parameters);
+    fclose(parameters->log_files.parameters);
     fclose(parameters->log_files.log);
 }

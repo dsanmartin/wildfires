@@ -42,4 +42,6 @@ void save_data(double *data, double *p, int n, Parameters parameters);
  */
 void save_domain(Parameters parameters);
 
+void save_topography(Parameters parameters);
+
 #endif
