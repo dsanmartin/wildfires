@@ -442,25 +442,16 @@ void boundary_conditions(double *R_new, int *Nz_Y, int *cut_nodes, Parameters pa
     int stride = gridDim.x * blockDim.x;
     for (int ij = idx; ij < size; ij += stride) {
         int i = ij / Ny;
-        int j = ij % Ny;
-        // Set dead nodes values
-        for (k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
-            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
-            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_dead_nodes;
-            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_dead_nodes;
-            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_dead_nodes;
-            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_dead_nodes;
-
-        }
+        int j = ij % Ny;        
         // Bottom boundary z_k = z_min, k=0
         k = cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; 
         T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
         T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-        if (k + 1 < Nz_Y_max) // Check if Y_ijkp1 is part of the fuel
+        if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
             Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
         else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
             Y_ijkp1 = 0.0;
-        if (k + 2 < Nz_Y_max) // Same as above
+        if (k + 2 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Same as above
             Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
         else
             Y_ijkp2 = 0.0;
@@ -468,7 +459,8 @@ void boundary_conditions(double *R_new, int *Nz_Y, int *cut_nodes, Parameters pa
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
         R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
-        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
+        if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
+            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0        
         // Top boundary z_k = z_max, k=Nz-1
         k = Nz - 1;
         u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
@@ -484,6 +476,15 @@ void boundary_conditions(double *R_new, int *Nz_Y, int *cut_nodes, Parameters pa
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
         R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
         // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
+        // Set dead nodes values
+        for (k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
+            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
+            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_dead_nodes;
+            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_dead_nodes;
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_dead_nodes;
+            if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_dead_nodes;
+        }
     }
 }
 

@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
     cudaFree(p_device);
     free_parameters(parameters);
     printf("Memory freed!\n");
+    printf("Simulation name: %s\n", parameters.sim_id);
 
     return 0;
 }

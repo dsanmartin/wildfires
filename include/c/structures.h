@@ -179,6 +179,7 @@ typedef struct _parameters {
     double hill_length; 
     double hill_width; 
     double hill_height; 
+    double t_source; 
     // IBM dead nodes and cut nodes
     // int n_dead_nodes;
     // int n_cut_nodes;

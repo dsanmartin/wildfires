@@ -116,5 +116,8 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
  */
 void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters parameters);
 
+__global__
+void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters);
+
 
 #endif

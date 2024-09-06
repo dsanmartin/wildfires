@@ -27,6 +27,33 @@ void simple_hill(Parameters *parameters) {
     }
 }
 
+void cube(Parameters *parameters) {
+    int Nx = parameters->Nx;
+    int Ny = parameters->Ny;
+    int Nz = parameters->Nz;
+    double *x = parameters->x;
+    double *y = parameters->y;
+    double *z = parameters->z;
+    double cube_center_x = 100;
+    double cube_center_y = 100;
+    double cube_center_z = 0;
+    double cube_length = 20;
+    double cube_width = 20;
+    double cube_height = 3;
+    for (int i = 0; i < Nx; i++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int k = 0; k < Nz; k++) {
+                // Modify cut nodes considering a cube in the domain
+                if (cube_center_x - cube_length/2 <= x[i] && x[i] <= cube_center_x + cube_length/2 &&
+                    cube_center_y - cube_width/2 <= y[j] && y[j] <= cube_center_y + cube_width/2 &&
+                    cube_center_z <= z[k] && z[k] <= cube_center_z + cube_height) {
+                    parameters->cut_nodes[IDX(i, j, 0, Nx, Ny, 1)] = k;
+                }
+            }
+        }
+    }
+}
+
 void ibm_parameters(Parameters *parameters) {
     int Nx = parameters->Nx;
     int Ny = parameters->Ny;

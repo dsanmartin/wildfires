@@ -260,8 +260,11 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "hill_height =", 12) == 0) {
             sscanf(line + 13, "%lf", &(parameters.hill_height));
         }
+        // Time of temperature source
+        if (strncmp(line, "t_source =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.t_source));
+        }
     }
-    parameters.alpha_u = 1.0 / 7.0;
     // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
     parameters.y = (double *) malloc(parameters.Ny * sizeof(double));
@@ -324,6 +327,8 @@ Parameters read_parameters_file(const char *file_path) {
     else if (strcmp(parameters.topo_shape, "flat") == 0)
         flat_terrain(&parameters);
     ibm_parameters(&parameters);  
+    // Test a cube in the domain
+    // cube(&parameters);
     // Sizes
     size = parameters.Nx * parameters.Ny * parameters.Nz;
     // Fill field indexes

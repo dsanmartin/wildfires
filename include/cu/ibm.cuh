@@ -20,6 +20,8 @@ void flat_terrain(Parameters *parameters);
 
 void simple_hill(Parameters *parameters);
 
+void cube(Parameters *parameters);
+
 void ibm_parameters(Parameters *parameters);
 
 #endif

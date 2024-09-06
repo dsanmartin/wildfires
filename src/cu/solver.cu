@@ -110,7 +110,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     // Host data
     double *y_np1_host, *p_host;
     // Device data
-    double *y_np1, *F, *k, *R_turbulence, *z_ibm, *kx, *ky, *gamma;
+    double *d_x, *d_y, *d_z, *y_np1, *F, *k, *R_turbulence, *z_ibm, *kx, *ky, *gamma;
     int *Nz_Y, *cut_nodes;
     // Arrays for pressure Poisson Problema
     double *a, *b, *c;
@@ -125,6 +125,9 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     y_np1_host = (double *) malloc(size * sizeof(double));
     p_host = (double *) malloc(Nx * Ny * Nz * sizeof(double));
     // Memory allocation for device data
+    CHECK(cudaMalloc((void **)&d_x, Nx * sizeof(double)));
+    CHECK(cudaMalloc((void **)&d_y, Ny * sizeof(double)));
+    CHECK(cudaMalloc((void **)&d_z, Nz * sizeof(double)));
     CHECK(cudaMalloc((void **)&y_np1, size * sizeof(double)));
     CHECK(cudaMalloc((void **)&F, size * sizeof(double)));
     CHECK(cudaMalloc((void **)&k, k_size * size * sizeof(double)));
@@ -148,6 +151,9 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&data_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&data_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     // Copy host data to device
+    CHECK(cudaMemcpy(d_x, parameters.x, Nx * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_y, parameters.y, Ny * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_z, parameters.z, Nz * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(z_ibm, parameters.z_ibm, Nx * Ny * Nz * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(kx, parameters.kx, (Nx - 1) * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(ky, parameters.ky, (Ny - 1) * sizeof(double), cudaMemcpyHostToDevice));
@@ -188,6 +194,11 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         // Bounds
         bounds<<<BLOCKS, THREADS>>>(y_np1, parameters);
         checkCuda(cudaGetLastError());
+        // Add source when t_n <= t_source
+        if (t[n] <= parameters.t_source) {
+            temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, parameters);
+            checkCuda(cudaGetLastError());
+        }
         // End step timer
         // step_end = clock(); 
         gettimeofday(&end_ts, NULL);
@@ -220,6 +231,9 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     free(y_np1_host);
     free(p_host);
     // Device memory
+    cudaFree(d_x);
+    cudaFree(d_y);
+    cudaFree(d_z);
     cudaFree(y_np1);
     cudaFree(F);
     cudaFree(R_turbulence);

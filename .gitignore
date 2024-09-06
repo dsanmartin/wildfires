@@ -62,7 +62,7 @@ dkms.conf
 
 # Folders #
 obj/
-data/
+data/output/
 doc/
 test/
 src/py/test2.py
