@@ -323,7 +323,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // Force terms
         F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
         F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;                             
-        F_z = - g * (T_ijk - T_inf) / T_ijk - Y_D * a_v * Y_ijk * mod_U * w_ijk;
+        F_z = - g * (T_ijk - T_inf) / (T_ijk + 1e-16) - Y_D * a_v * Y_ijk * mod_U * w_ijk;
         // Compute Laplacian terms
         lap_u = uxx + uyy + uzz;
         lap_v = vxx + vyy + vzz;
@@ -347,8 +347,10 @@ void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     checkCuda(cudaGetLastError());
     turbulence<<<BLOCKS, THREADS>>>(R_turbulence, R_new, parameters);
     checkCuda(cudaGetLastError());
+    // bounds<<<BLOCKS, THREADS>>>(R_new, parameters);
+    // checkCuda(cudaGetLastError());
     boundary_conditions<<<BLOCKS, THREADS>>>(R_new, Nz_Y, cut_nodes, parameters);
-    checkCuda(cudaGetLastError());
+    checkCuda(cudaGetLastError());    
 }
 
 __global__

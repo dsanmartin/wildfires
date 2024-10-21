@@ -8,14 +8,14 @@ y_max = 400
 z_min = 0
 z_max = 20
 t_min = 0
-t_max = 1e-1
+t_max = 60
 
 # Numerical grid #
 Nx = 512
 Ny = 256
 Nz = 128
-Nt = 1
-NT = 1
+Nt = 50000
+NT = 5000
 
 # Time numerical method
 method = RK2
@@ -129,7 +129,7 @@ T0_x_end = 3.3
 T0_y_start = 20
 T0_y_end = 180
 T0_z_start = 0
-T0_z_end = 0.51
+T0_z_end = 0
 
 # Topography
 # 'flat' or 'hill'

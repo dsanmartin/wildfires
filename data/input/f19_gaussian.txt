@@ -6,7 +6,7 @@ x_max = 700
 y_min = -200
 y_max = 400
 z_min = 0
-z_max = 50
+z_max = 20
 t_min = 0
 t_max = 60
 
@@ -77,7 +77,7 @@ T_a = 18040.8533
 # Convection coefficient in W m^{-2} K^{-1} or kg s^{-3} K^{-1}  (Air: 0.5-1000), (15.9 - 18.2, Maragkos 2021) 2D: 1.147
 h = 1.147
 # Threshold to add solid fuel force #0.04
-Y_D = 0.04
+Y_D = 0.0
 # Extra parameter to control the fuel consumption rate
 Y_f = 100
 # Temperature of initial fire source in K 788.15
@@ -98,7 +98,7 @@ T_max = 1500
 Y_min = 0 
 Y_max = 1
 # Temperature source for t time. If t_source < 0, then the temperature source is not used
-t_source = 11
+t_source = -1
 
 ### Initial conditions parameters ###
 # Wind# 'power law' or 'log'
@@ -122,14 +122,14 @@ alpha_u = 0.1428571428571428
 
 # Temperature 
 # Shape 'parallelepiped' or 'gaussian'
-T0_shape = parallelepiped
+T0_shape = gaussian
 # Location
 T0_x_start = 0
-T0_x_end = 3.3
-T0_y_start = 13
-T0_y_end = 187
+T0_x_end = 4
+T0_y_start = 30
+T0_y_end = 170
 T0_z_start = 0
-T0_z_end = 0
+T0_z_end = 1
 
 # Topography
 # 'flat' or 'hill'
