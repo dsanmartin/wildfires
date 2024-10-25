@@ -13,3 +13,8 @@ $$
     & + \text{Initial and boundary conditions}.
 \end{split}
 $$
+
+# Example
+![Flat fire](./data/simulations/fire.gif)
+
+*Visualization created with [VAPOR](https://www.vapor.ucar.edu/).*
