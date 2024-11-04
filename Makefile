@@ -88,7 +88,8 @@ endif
 directories:
 	$(MKDIR) $(BIN)
 	$(MKDIR) $(DEST)$(FC) 
-	$(MKDIR) $(DEST)$(FCU)  
+	$(MKDIR) $(DEST)$(FCU)
+	$(MKDIR) -p data/output/  
 
 # # Clean up
 clean:
