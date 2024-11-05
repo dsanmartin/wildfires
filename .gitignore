@@ -67,6 +67,7 @@ data/output/
 doc/
 test/
 data/input/debug.txt
+data/input/nu_test.txt
 
 # Visual Studio Code #
 .vscode/

@@ -90,6 +90,8 @@ double f_damping(double z, double u_tau, double nu);
  */
 double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc);
 
+double non_uniform_z(double z, double z_min, double z_max, double k);
+
 /**
  * @brief Calculates the timestep reports based on the given parameters.
  *

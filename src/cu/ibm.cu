@@ -1,4 +1,4 @@
-#include "../../include/c/ibm.h"
+#include "../../include/cu/ibm.cuh"
 
 void flat_terrain(Parameters *parameters) {
     int Nx = parameters->Nx;
