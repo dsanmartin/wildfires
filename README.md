@@ -14,7 +14,7 @@ $$
 \end{split}
 $$
 
-# Example
+## Example
 ![Flat fire](./data/simulations/fire.gif)
 
 *Visualization created with [VAPOR](https://www.vapor.ucar.edu/).*

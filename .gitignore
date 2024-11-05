@@ -61,6 +61,7 @@ dkms.conf
 *.fatbin
 
 # Folders #
+bin/
 obj/
 data/output/
 doc/
