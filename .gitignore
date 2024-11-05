@@ -65,6 +65,7 @@ obj/
 data/output/
 doc/
 test/
+data/input/debug.txt
 
 # Visual Studio Code #
 .vscode/
