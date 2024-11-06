@@ -77,18 +77,9 @@
   *
   * @param R_new Pointer to the array representing the new values.
   * @param p Pointer to the array representing the previous values.
-  * @param dt The time step used for the velocity correction.
+  * @param fd_z Second-order finite difference option in the z direction. -1 backward, 0 centered, 1 forward.
   * @param parameters Pointer to the structure containing the parameters.
   */
- __global__
- void velocity_correction_cd(double *R_new, double *p, double dt, Parameters parameters);
- 
- __global__
- void velocity_correction_fw(double *R_new, double *p, double dt, Parameters parameters);
- 
- __global__
- void velocity_correction_bw(double *R_new, double *p, double dt, Parameters parameters);
-
  __global__
  void velocity_correction(double *R_new, double *p, int fd_z, Parameters parameters);
  
