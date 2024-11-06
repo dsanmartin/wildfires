@@ -81,12 +81,15 @@
   * @param parameters Pointer to the structure containing the parameters.
   */
  __global__
- void velocity_correction(double *R_new, double *p, double dt, Parameters parameters);
+ void velocity_correction_cd(double *R_new, double *p, double dt, Parameters parameters);
  
  __global__
  void velocity_correction_fw(double *R_new, double *p, double dt, Parameters parameters);
  
  __global__
  void velocity_correction_bw(double *R_new, double *p, double dt, Parameters parameters);
+
+ __global__
+ void velocity_correction(double *R_new, double *p, int fd_z, Parameters parameters);
  
  #endif
