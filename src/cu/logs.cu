@@ -18,7 +18,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "  Time samples: %d\n", parameters.NT);
     fprintf(output, "Time integration: %s\n", parameters.method);
     fprintf(output, "Fluid parameters:\n");
-    fprintf(output, "  rho: %lf, nu: %e, alpha: %e, T_inf: %lf,  g: %lf\n", parameters.rho, parameters.nu, parameters.alpha, parameters.T_inf, parameters.g);
+    fprintf(output, "  rho_inf: %lf, nu: %e, k: %e, T_inf: %lf,  g: %lf\n", parameters.rho_inf, parameters.nu, parameters.kappa, parameters.T_inf, parameters.g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters.C_s, parameters.Pr);
     fprintf(output, "Fuel parameters:\n");
     fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, a_v: %lf\n", parameters.H_R, parameters.c_p, parameters.h, parameters.a_v);
@@ -29,7 +29,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
     if (strcmp(parameters.U0_type, "constant") == 0)
         fprintf(output, "  u_r: %lf\n", parameters.u_r);
     else if (strcmp(parameters.U0_type, "log") == 0)
-        fprintf(output, "  u_z0: %lf, kappa: %lf, d: %lf, u_ast: %lf\n", parameters.u_z0, parameters.kappa, parameters.d, parameters.u_ast);
+        fprintf(output, "  u_z0: %lf, kappa: %lf, d: %lf, u_ast: %lf\n", parameters.u_z0, KAPPA, parameters.d, parameters.u_ast);
     else if (strcmp(parameters.U0_type, "power_law") == 0)
         fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters.u_r, parameters.z_r, parameters.alpha_u);
     fprintf(output, "Temperature initial condition:\n");

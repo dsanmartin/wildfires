@@ -22,7 +22,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double dz = parameters.dz;
     // Model parameters
     double nu = parameters.nu;
-    double alpha = parameters.alpha;
+    // double alpha = parameters.alpha;
+    double kappa = parameters.kappa;
     double Y_f = parameters.Y_f;
     double H_R = parameters.H_R;
     double A = parameters.A;
@@ -32,9 +33,10 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double a_v = parameters.a_v;
     double T_inf = parameters.T_inf;
     double c_p = parameters.c_p;
-    double rho = parameters.rho;
+    double rho_inf = parameters.rho_inf;
     double Y_D = parameters.Y_D;
     double g = parameters.g;
+    double delta = parameters.delta;
     // Fields indexes
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
@@ -318,7 +320,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
         }
         // Compute source and force terms
-        S = H_R * Y_ijk * K_T * H_step / c_p - h * a_v * (T_ijk - T_inf) / (c_p * rho);
+        S = H_R * Y_ijk * K_T * H_step / c_p - h * a_v * (T_ijk - T_inf) / (c_p * rho_inf);
         mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
         // Force terms
         F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
@@ -333,7 +335,10 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
         v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
         w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
-        T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
+        // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
+        // Temperature RHS with radiation and conduction
+        T_RHS = 12 * SIGMA * delta * pow(T_ijk, 2) / rho_inf / c_p * (Tx * Tx + Ty * Ty + Tz * Tz) 
+            + ((kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) / (rho_inf * c_p)) * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Save RHS into R_new
         R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
@@ -529,17 +534,18 @@ void bounds(double *R_new, Parameters parameters) {
 }
 
 __global__
-void velocity_correction(double *R_new, double *p, double dt, Parameters parameters) {
+void velocity_correction(double *R_new, double *p, int fd_z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
-    double rho = parameters.rho;
+    double rho_inf = parameters.rho_inf;
     double dx = parameters.dx;
     double dy = parameters.dy;
     double dz = parameters.dz;
+    double dt = parameters.dt;
     double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2;
     double px, py, pz;
     int im1, ip1, jm1, jp1;
@@ -555,133 +561,53 @@ void velocity_correction(double *R_new, double *p, double dt, Parameters paramet
         jm1 = (j - 1 + Ny - 1) % (Ny - 1); // j-1
         ip1 = (i + 1) % (Nx - 1); // i+1
         jp1 = (j + 1) % (Ny - 1); // j+1
+        p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
         p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
         p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
         p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
         p_ijp1k = p[IDX(i, jp1, k, Nx, Ny, Nz)]; // p_{i,j+1,k}
+        // Central difference in x and y directions
         px = (p_ip1jk - p_im1jk) / (2 * dx);
         py = (p_ijp1k - p_ijm1k) / (2 * dy);
-        if (k == 0) { // Second order forward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
-            p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-            pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
-        } else if (k == Nz - 1) { // Second order backward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-            p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-            pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+        // Depending on the finite difference scheme used for the z direction
+        if (fd_z == 0) {  // Central difference 
+            if (k == 0) { // Second order forward difference at the bottom boundary
+                p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
+                p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
+                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+            } else if (k == Nz - 1) { // Second order backward difference at the top boundary
+                p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
+                p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
+                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+            } else { // Inside the domain
+                p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
+                p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
+                pz = (p_ijkp1 - p_ijkm1) / (2 * dz);
+            }
+        } else if (fd_z == 1) { // Forward difference
+            if (k < Nz - 2) { // Second order forward difference for all nodes except the 2 last nodes
+                p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
+                p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
+                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+            } else { // Second order backward difference for the 2 last nodes
+                p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
+                p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
+                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+            }
+        } else if (fd_z == -1) { // Backward difference
+            if (k < 2) { // Second order forward difference for the 2 first nodes
+                p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
+                p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
+                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+            } else { // Second order backward difference for all nodes except the 2 first nodes
+                p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
+                p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
+                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+            }
         }
-        else { // Central difference
-            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
-            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-            pz = (p_ijkp1 - p_ijkm1) / (2 * dz);
-        }
-        // Correct velocity
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
-    }
-}
-
-__global__
-void velocity_correction_fw(double *R_new, double *p, double dt, Parameters parameters) {
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int u_index = parameters.field_indexes.u;
-    int v_index = parameters.field_indexes.v;
-    int w_index = parameters.field_indexes.w;
-    double rho = parameters.rho;
-    double dx = parameters.dx;
-    double dy = parameters.dy;
-    double dz = parameters.dz;
-    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2;
-    double px, py, pz;
-    int im1, ip1, jm1, jp1;
-    int size = Nx * Ny * Nz;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ijk = idx; ijk < size; ijk += stride) {
-        int i = ijk / (Ny * Nz);
-        int j = (ijk % (Ny * Nz)) / Nz;
-        int k = ijk % Nz;
-        // Indexes for periodic boundary conditions
-        im1 = (i - 1 + Nx - 1) % (Nx - 1); // i-1
-        jm1 = (j - 1 + Ny - 1) % (Ny - 1); // j-1
-        ip1 = (i + 1) % (Nx - 1); // i+1
-        jp1 = (j + 1) % (Ny - 1); // j+1
-        p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
-        p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
-        p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
-        p_ijp1k = p[IDX(i, jp1, k, Nx, Ny, Nz)]; // p_{i,j+1,k}
-        px = (p_ip1jk - p_im1jk) / (2 * dx);
-        py = (p_ijp1k - p_ijm1k) / (2 * dy);
-        if (k < Nz - 2) { // Second order forward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
-            p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-            pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
-        } else { // Second order backward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-            p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-            pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
-        }
-        // Correct velocity
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
-    }
-}
-
-__global__
-void velocity_correction_bw(double *R_new, double *p, double dt, Parameters parameters) {
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int u_index = parameters.field_indexes.u;
-    int v_index = parameters.field_indexes.v;
-    int w_index = parameters.field_indexes.w;
-    double rho = parameters.rho;
-    double dx = parameters.dx;
-    double dy = parameters.dy;
-    double dz = parameters.dz;
-    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2;
-    double px, py, pz;
-    int im1, ip1, jm1, jp1;
-    int size = Nx * Ny * Nz;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ijk = idx; ijk < size; ijk += stride) {
-        int i = ijk / (Ny * Nz);
-        int j = (ijk % (Ny * Nz)) / Nz;
-        int k = ijk % Nz;
-        // Indexes for periodic boundary conditions
-        im1 = (i - 1 + Nx - 1) % (Nx - 1); // i-1
-        jm1 = (j - 1 + Ny - 1) % (Ny - 1); // j-1
-        ip1 = (i + 1) % (Nx - 1); // i+1
-        jp1 = (j + 1) % (Ny - 1); // j+1
-        p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
-        p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
-        p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
-        p_ijp1k = p[IDX(i, jp1, k, Nx, Ny, Nz)]; // p_{i,j+1,k}
-        px = (p_ip1jk - p_im1jk) / (2 * dx);
-        py = (p_ijp1k - p_ijm1k) / (2 * dy);
-        if (k < 2) { // Second order forward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
-            p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-            pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
-        } else { // Second order backward difference
-            p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-            p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-            pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
-        }
-        // Correct velocity
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
+        // Velocity correction
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * px;
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * py;
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * pz;
     }
 }

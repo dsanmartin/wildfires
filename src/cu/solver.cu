@@ -186,7 +186,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
         checkCuda(cudaGetLastError());
         // Chorin's projection method
-        velocity_correction_fw<<<BLOCKS, THREADS>>>(y_np1, p, dt, parameters);
+        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, p, 1, parameters);
         checkCuda(cudaGetLastError());
         // Boundary conditions
         boundary_conditions<<<BLOCKS, THREADS>>>(y_np1, Nz_Y, cut_nodes, parameters);

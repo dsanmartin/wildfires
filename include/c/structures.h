@@ -122,7 +122,8 @@ typedef struct _parameters {
     double *ky; // Domain in frequency space (y direction)
     double c_p;
     double c_v;
-    double rho;
+    double rho_inf;
+    int constant_density;
     double mu;
     double k;
     double alpha;

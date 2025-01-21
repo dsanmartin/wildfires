@@ -84,11 +84,11 @@ double f_damping(double z, double u_tau, double nu);
  * @param a_v The vegetation area index.
  * @param T_inf The ambient temperature.
  * @param c_p The specific heat capacity.
- * @param rho The air density.
+ * @param rho_inf The air density.
  * @param T_pc The threshold temperature for combustion.
  * @return The source term.
  */
-double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho, double T_pc);
+double source(double T, double Y, double H_R, double A, double T_a, double h, double a_v, double T_inf, double c_p, double rho_inf, double T_pc);
 
 /**
  * @brief Calculates the timestep reports based on the given parameters.

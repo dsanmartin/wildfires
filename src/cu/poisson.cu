@@ -78,7 +78,7 @@ void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in
     double dy = parameters.dy;
     double dz = parameters.dz;
     double dt = parameters.dt;
-    double rho = parameters.rho;
+    double rho_inf = parameters.rho_inf;
     double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
     double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
     double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2, w_ijkph, w_ijkmh;
@@ -130,7 +130,7 @@ void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in
         vy = (v_ijphk - v_ijmhk) / dy; // dv/dy
         if (i < Nx - 1 && j < Ny - 1 && k < Nz - 1) {
             // Compute rho / dt * div(U) and store it for many DFT (contiguous z slices)
-            f = rho * (ux + vy + wz) / dt;
+            f = rho_inf * (ux + vy + wz) / dt;
             f_in[FFTWIDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = make_cuDoubleComplex(f, 0.0);
         }
         // Fill p_top

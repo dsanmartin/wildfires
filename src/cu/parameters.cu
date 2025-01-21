@@ -175,8 +175,8 @@ Parameters read_parameters_file(const char *file_path) {
             sscanf(line + 6, "%lf", &(parameters.c_p));
         }
         // Density rho
-        if (strncmp(line, "rho =", 5) == 0) {
-            sscanf(line + 6, "%lf", &(parameters.rho));
+        if (strncmp(line, "rho_inf =", 9) == 0) {
+            sscanf(line + 10, "%lf", &(parameters.rho_inf));
         }
         // U0 Type
         if (strncmp(line, "U0_type =", 9) == 0) {
@@ -263,6 +263,18 @@ Parameters read_parameters_file(const char *file_path) {
         // Time of temperature source
         if (strncmp(line, "t_source =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.t_source));
+        }
+        // Constant density
+        if (strncmp(line, "constant_density =", 17) == 0) {
+            sscanf(line + 18, "%d", &(parameters.constant_density));
+        }
+        // Optical path length delta
+        if (strncmp(line, "delta =", 6) == 0) {
+            sscanf(line + 7, "%lf", &(parameters.delta));
+        }
+        // Thermal conductivity kappa
+        if (strncmp(line, "kappa =", 6) == 0) {
+            sscanf(line + 7, "%lf", &(parameters.kappa));
         }
     }
     // Initialize x, y, z, t
