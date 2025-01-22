@@ -541,13 +541,16 @@ void velocity_correction(double *R_new, double *p, int fd_z, Parameters paramete
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
+    int T_index = parameters.field_indexes.T;
     double rho_inf = parameters.rho_inf;
+    double T_inf = parameters.T_inf;
     double dx = parameters.dx;
     double dy = parameters.dy;
     double dz = parameters.dz;
     double dt = parameters.dt;
-    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2;
+    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2, T_ijk;
     double px, py, pz;
+    double rho;
     int im1, ip1, jm1, jp1;
     int size = Nx * Ny * Nz;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -562,6 +565,7 @@ void velocity_correction(double *R_new, double *p, int fd_z, Parameters paramete
         ip1 = (i + 1) % (Nx - 1); // i+1
         jp1 = (j + 1) % (Ny - 1); // j+1
         p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
+        T_ijk = R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)]; // T_{i,j,k}
         p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
         p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
         p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
@@ -605,9 +609,15 @@ void velocity_correction(double *R_new, double *p, int fd_z, Parameters paramete
                 pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
             }
         }
+        // Get density
+        if (parameters.variable_density == 0) {
+            rho = rho_inf;
+        } else {
+            rho = rho_inf * T_inf / T_ijk;
+        }
         // Velocity correction
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * px;
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * py;
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho_inf * pz;
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
     }
 }
