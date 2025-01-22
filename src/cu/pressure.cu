@@ -1,5 +1,5 @@
 /**
- * @file poisson.c
+ * @file pressure.c
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
  * @brief Functions for solving the Poisson equation.
  * @version 0.1
@@ -9,7 +9,7 @@
  * 
  */
 
-#include "../../include/cu/poisson.cuh"
+#include "../../include/cu/pressure.cuh"
 
 __global__
 void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters) {
@@ -140,6 +140,132 @@ void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in
     }
 }
 
+__global__
+void compute_f_density(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, double *p, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int u_index = parameters.field_indexes.u;
+    int v_index = parameters.field_indexes.v;
+    int w_index = parameters.field_indexes.w;
+    int T_index = parameters.field_indexes.T;
+    int im1, ip1, jm1, jp1;
+    double dx = parameters.dx;
+    double dy = parameters.dy;
+    double dz = parameters.dz;
+    double dt = parameters.dt;
+    double T_inf = parameters.T_inf;
+    double rho_inf = parameters.rho_inf;
+    double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
+    double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
+    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2, w_ijkph, w_ijkmh;
+    double T_ijk, T_im1jk, T_ip1jk, T_ijm1k, T_ijp1k, T_ijkp1, T_ijkp2, T_ijkm1, T_ijkm2;
+    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkp2, p_ijkm1, p_ijkm2;
+    double rho_ijk, rho_im1jk, rho_ip1jk, rho_ijm1k, rho_ijp1k, rho_ijkp1, rho_ijkp2, rho_ijkm1, rho_ijkm2;
+    double ux, vy, wz, f;
+    double rho, rhox, rhoy, rhoz, px, py, pz;
+    // Loop over nodes to compute f
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    int size = Nx * Ny * Nz;
+    for (int ijk = idx; ijk < size; ijk += stride) {
+        int i = ijk / (Ny * Nz);
+        int j = (ijk % (Ny * Nz)) / Nz;
+        int k = ijk % Nz;               
+        // Indexes for periodic boundary conditions
+        im1 = (i - 1 + Nx - 1) % (Nx - 1);
+        jm1 = (j - 1 + Ny - 1) % (Ny - 1);
+        ip1 = (i + 1) % (Nx - 1);
+        jp1 = (j + 1) % (Ny - 1);                
+        // Local nodes
+        u_ijk = U[u_index + IDX(i, j, k, Nx, Ny, Nz)];
+        v_ijk = U[v_index + IDX(i, j, k, Nx, Ny, Nz)];
+        w_ijk = U[w_index + IDX(i, j, k, Nx, Ny, Nz)];
+        T_ijk = U[T_index + IDX(i, j, k, Nx, Ny, Nz)];
+        p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)];
+        rho_ijk = T_inf * rho_inf / T_ijk;
+        // Periodic boundary conditions on xy
+        u_im1jk = U[u_index + IDX(im1, j, k, Nx, Ny, Nz)];
+        u_ip1jk = U[u_index + IDX(ip1, j, k, Nx, Ny, Nz)];
+        v_ijm1k = U[v_index + IDX(i, jm1, k, Nx, Ny, Nz)];
+        v_ijp1k = U[v_index + IDX(i, jp1, k, Nx, Ny, Nz)];
+        T_im1jk = U[T_index + IDX(im1, j, k, Nx, Ny, Nz)];
+        T_ip1jk = U[T_index + IDX(ip1, j, k, Nx, Ny, Nz)];
+        T_ijm1k = U[T_index + IDX(i, jm1, k, Nx, Ny, Nz)];
+        T_ijp1k = U[T_index + IDX(i, jp1, k, Nx, Ny, Nz)];
+        p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)];
+        p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)];
+        p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)];
+        p_ijp1k = p[IDX(i, jp1, k, Nx, Ny, Nz)];
+        rho_im1jk = T_inf * rho_inf / T_im1jk;
+        rho_ip1jk = T_inf * rho_inf / T_ip1jk;
+        rho_ijm1k = T_inf * rho_inf / T_ijm1k;
+        rho_ijp1k = T_inf * rho_inf / T_ijp1k;
+        // dw/dz 
+        if (k == 0) { // Bottom boundary                    
+            w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            w_ijkp2 = U[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            T_ijkp1 = U[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            T_ijkp2 = U[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)];
+            p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)];
+            rho_ijkp1 = T_inf * rho_inf / T_ijkp1;
+            rho_ijkp2 = T_inf * rho_inf / T_ijkp2;
+            wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz at z = z_min
+            rhoz = (-3 * rho_ijk + 4 * rho_ijkp1 - rho_ijkp2) / (2 * dz);
+            pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+        } else if (k == Nz - 1) { // Top boundary
+            w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            w_ijkm2 = U[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            T_ijkm1 = U[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            T_ijkm2 = U[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)];
+            p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)];
+            rho_ijkm1 = T_inf * rho_inf / T_ijkm1;
+            rho_ijkm2 = T_inf * rho_inf / T_ijkm2;
+            wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz at z = z_max
+            rhoz = (3 * rho_ijk - 4 * rho_ijkm1 + rho_ijkm2) / (2 * dz);
+            pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+        } else { // Interior
+            w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            T_ijkp1 = U[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            T_ijkm1 = U[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            rho_ijkp1 = T_inf * rho_inf / T_ijkp1;
+            rho_ijkm1 = T_inf * rho_inf / T_ijkm1;
+            p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)];
+            p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)];
+            w_ijkph = 0.5 * (w_ijk + w_ijkp1);
+            w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
+            wz = (w_ijkph - w_ijkmh) / dz; // dw/dz at z = z_k
+            rhoz = (rho_ijkp1 - rho_ijkm1) / (2 * dz); // drho/dz at z = z_k
+            pz = (p_ijkp1 - p_ijkm1) / (2 * dz); // dp/dz at z = z_k
+        }
+        // Half derivatives
+        u_iphjk = 0.5 * (u_ip1jk + u_ijk);
+        u_imhjk = 0.5 * (u_ijk + u_im1jk);
+        v_ijphk = 0.5 * (v_ijp1k + v_ijk);
+        v_ijmhk = 0.5 * (v_ijk + v_ijm1k);
+        ux = (u_iphjk - u_imhjk) / dx; // du/dx
+        vy = (v_ijphk - v_ijmhk) / dy; // dv/dy
+        // Density and pressure gradients using central differences
+        rhox = (rho_ip1jk - rho_im1jk) / (2 * dx);
+        rhoy = (rho_ijp1k - rho_ijm1k) / (2 * dy);
+        px = (p_ip1jk - p_im1jk) / (2 * dx);
+        py = (p_ijp1k - p_ijm1k) / (2 * dy);
+        if (i < Nx - 1 && j < Ny - 1 && k < Nz - 1) {
+            // Compute rho / dt * div(U) and store it for many DFT (contiguous z slices)
+            rho = T_inf * rho_inf / T_ijk;
+            f = rho * (ux + vy + wz) / dt + (rhox * px + rhoy * py + rhoz * pz) / rho;
+            f_in[FFTWIDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = make_cuDoubleComplex(f, 0.0);
+        }
+        // Fill p_top
+        if (k == Nz - 1 && j < Ny - 1 && i < Nx - 1) {
+            p_top_in[FFTWIDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)] = make_cuDoubleComplex(p[IDX(i, j, k, Nx, Ny, Nz)], 0.0);
+        }
+    }
+}
+
 __global__ 
 void update_coefficients(double *gamma, double *b,  cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
     int Nx = parameters.Nx;
@@ -210,7 +336,10 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     cufftHandle p_plan = 0, f_plan = 0, p_top_plan = 0;
 
     // Compute f = rho / dt * div(U)
-    compute_f<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
+    if (parameters.variable_density == 0)
+        compute_f<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
+    else
+        compute_f_density<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
     checkCuda(cudaGetLastError());
     
     // Plans for FFT2D
@@ -242,4 +371,34 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     cufftDestroy(p_top_plan);
     cufftDestroy(p_plan);
     cufftDestroy(f_plan);
+}
+
+void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int size = Nx * Ny * Nz;
+    double h_tol, *d_tol; 
+    // Create a temporary array on GPU to store the pressure field
+    double *p_tmp;
+    checkCuda(cudaMalloc((void **)&p_tmp, size * sizeof(double)));
+    // Allocate memory for the tolerance
+    checkCuda(cudaMalloc((void **)&d_tol, sizeof(double)));
+    for (int m = 0; m < parameters.pressure_solver_iter; m++) {
+        // Copy the initial pressure field to the temporary array
+        checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
+        solve_pressure(U, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+        norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
+        checkCuda(cudaGetLastError());
+        checkCuda(cudaMemcpy(&h_tol, d_tol, sizeof(double), cudaMemcpyDeviceToHost));
+        if (parameters.pressure_solver_log == 1) {
+            printf("Iteration %d: %e\n", m, h_tol);
+        }
+        if (h_tol <= parameters.pressure_solver_tol) {
+            break;
+        }        
+    }
+    // Free memory
+    checkCuda(cudaFree(p_tmp));
+    checkCuda(cudaFree(d_tol));
 }

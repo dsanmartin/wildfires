@@ -1,7 +1,7 @@
 /**
- * @file poisson.h
+ * @file pressure.h
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
- * @brief Functions for solving the Poisson equation.
+ * @brief Functions for solving the Pressure equation.
  * @version 0.1
  * @date 2024-07-21
  * 
@@ -9,13 +9,14 @@
  * 
  */
 
-#ifndef POISSON_H
-#define POISSON_H
+#ifndef PRESSURE_H
+#define PRESSURE_H
 
 #include <cufftw.h>
 #include <math.h>
 #include <stdlib.h>
 #include "../c/structures.h"
+#include "functions.cuh"
 #include "utils.cuh"
 
 /**
@@ -73,5 +74,7 @@ void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters);
  * @param parameters The parameters of the mathematical model.
  */
 void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
+
+void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
 
 #endif

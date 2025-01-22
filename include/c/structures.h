@@ -122,8 +122,7 @@ typedef struct _parameters {
     double *ky; // Domain in frequency space (y direction)
     double c_p;
     double c_v;
-    double rho_inf;
-    int constant_density;
+    double rho_inf;    
     double mu;
     double k;
     double alpha;
@@ -194,6 +193,11 @@ typedef struct _parameters {
     double w_dead_nodes;
     double T_dead_nodes;
     double Y_dead_nodes;
+    // Pressure solver parameters
+    int variable_density;
+    double pressure_solver_tol;
+    int pressure_solver_iter;
+    int pressure_solver_log;
     char method[32];
     char save_path[64];
     char sim_id[32];

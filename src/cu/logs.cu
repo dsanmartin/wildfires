@@ -23,7 +23,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "Fuel parameters:\n");
     fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, a_v: %lf\n", parameters.H_R, parameters.c_p, parameters.h, parameters.a_v);
     fprintf(output, "  Y_D: %lf, Y_f: %lf\n", parameters.Y_D, parameters.Y_f);
-    fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf\n", parameters.A, parameters.T_pc, parameters.T_a);
+    fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf, delta: %lf\n", parameters.A, parameters.T_pc, parameters.T_a, parameters.delta);
     fprintf(output, "Wind initial condition:\n");
     fprintf(output, "  Type: %s\n", parameters.U0_type);    
     if (strcmp(parameters.U0_type, "constant") == 0)
@@ -62,6 +62,10 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "Bounds:\n");
     fprintf(output, "  Temperature: [%lf, %lf]\n", parameters.T_min, parameters.T_max);
     fprintf(output, "  Fuel: [%lf, %lf]\n", parameters.Y_min, parameters.Y_max);
+    if (parameters.variable_density == 1) {
+        fprintf(output, "Pressure solver for variable density:\n");
+        fprintf(output, "  Tolerance: %e, Max iterations: %d\n", parameters.pressure_solver_tol, parameters.pressure_solver_iter);
+    }
     if (to_file)
         fclose(output);
 }

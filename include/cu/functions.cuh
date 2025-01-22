@@ -119,5 +119,7 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
 __global__
 void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters);
 
+__global__
+void norm(double *v1, double *v2, double *result, double p, int size);
 
 #endif

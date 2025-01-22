@@ -194,3 +194,24 @@ void temperature_source(double *x, double *y, double *z, double *y_n, Parameters
         }
     }
 }
+
+__global__
+void norm(double *v1, double *v2, double *result, double p, int size) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    double res = 0;
+    if (p == INFINITY) {
+        double max = 0.0;
+        for (int i = idx; i < size; i += stride) {
+            max = MAX(max, fabs(v1[i] - v2[i]));
+        }
+        res = max;
+    } else {
+        double sum = 0.0;
+        for (int i = idx; i < size; i += stride) {
+            sum += pow(fabs(v1[i] - v2[i]), p);
+        }
+        res = pow(sum, 1.0 / p);
+    }
+    *result = res;
+}

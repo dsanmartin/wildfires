@@ -182,10 +182,15 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             log_message(parameters, "Time integration method not found.");
             exit(1);
         }
-        // Solve Poisson problem for pressure (it only uses U^*)
-        solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+        // Solve Poisson problem for pressure 
+        if (parameters.variable_density == 0) { // Constant density, direct solver
+            solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+            
+        } else { // Variable density, iterative solver
+            solve_pressure_iterative(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+        }
         checkCuda(cudaGetLastError());
-        // Chorin's projection method
+        // Chorin's projection method        
         velocity_correction<<<BLOCKS, THREADS>>>(y_np1, p, 1, parameters);
         checkCuda(cudaGetLastError());
         // Boundary conditions

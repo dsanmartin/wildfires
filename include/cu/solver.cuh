@@ -18,7 +18,7 @@
 #include <sys/time.h>
 #include "../c/structures.h"
 #include "output.cuh"
-#include "poisson.cuh"
+#include "pressure.cuh"
 #include "functions.cuh"
 #include "logs.cuh"
 #include "pde.cuh"

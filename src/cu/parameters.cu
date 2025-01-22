@@ -263,19 +263,32 @@ Parameters read_parameters_file(const char *file_path) {
         // Time of temperature source
         if (strncmp(line, "t_source =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.t_source));
-        }
-        // Constant density
-        if (strncmp(line, "constant_density =", 17) == 0) {
-            sscanf(line + 18, "%d", &(parameters.constant_density));
-        }
+        }        
         // Optical path length delta
-        if (strncmp(line, "delta =", 6) == 0) {
-            sscanf(line + 7, "%lf", &(parameters.delta));
+        if (strncmp(line, "delta =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.delta));
         }
         // Thermal conductivity kappa
         if (strncmp(line, "kappa =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.kappa));
         }
+        // Constant density
+        if (strncmp(line, "variable_density =", 17) == 0) {
+            sscanf(line + 18, "%d", &(parameters.variable_density));
+        }
+        // Pressure solver tolerance (pressure_solver_tol)
+        if (strncmp(line, "pressure_solver_tol =", 21) == 0) {
+            sscanf(line + 22, "%lf", &(parameters.pressure_solver_tol));
+        }
+        // Pressure solver maximum iterations (pressure_solver_iter)
+        if (strncmp(line, "pressure_solver_iter =", 22) == 0) {
+            sscanf(line + 23, "%d", &(parameters.pressure_solver_iter));
+        }
+        // Pressure solver log (pressure_solver_log)
+        if (strncmp(line, "pressure_solver_log =", 21) == 0) {
+            sscanf(line + 22, "%d", &(parameters.pressure_solver_log));
+        }
+
     }
     // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
