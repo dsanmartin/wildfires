@@ -89,7 +89,7 @@ directories:
 	$(MKDIR) $(BIN)
 	$(MKDIR) $(DEST)$(FC) 
 	$(MKDIR) $(DEST)$(FCU)
-	$(MKDIR) -p data/output/  
+	$(MKDIR) data/output/  
 
 # # Clean up
 clean:

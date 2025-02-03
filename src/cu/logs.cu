@@ -83,12 +83,14 @@ void log_message(Parameters parameters, const char *message) {
 
 void log_timestep(Parameters parameters, int n, double t_n, double step_time, double CFL, double T_min, double T_max, double Y_min, double Y_max) {
     setbuf(stdout, NULL);
+    printf("\nSimulation checkpoint\n");
     printf("Time step: %6d, Simulation time: %lf s\n", n, t_n);
     printf("CFL: %lf\n", CFL);
     printf("Temperature: Min = %.2f, Max = %.2f\n", T_min, T_max);
     printf("Fuel: Min = %.2f, Max = %.2f\n", Y_min, Y_max);
     printf("Step time: %lf s\n", step_time);
     // printf("Saving data...\n");
+    fprintf(parameters.log_files.log, "\nSimulation checkpoint\n");
     fprintf(parameters.log_files.log, "Time step: %6d, Simulation time: %lf s\n", n, t_n);
     fprintf(parameters.log_files.log, "CFL: %lf\n", CFL);    
     fprintf(parameters.log_files.log, "Temperature: Min = %.2f, Max = %.2f\n", T_min, T_max);

@@ -373,31 +373,36 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     cufftDestroy(f_plan);
 }
 
-void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters) {
+void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
     int size = Nx * Ny * Nz;
     double h_tol, *d_tol; 
+    char solver_log_message[128];
     // Create a temporary array on GPU to store the pressure field
     double *p_tmp;
+    int m;
     checkCuda(cudaMalloc((void **)&p_tmp, size * sizeof(double)));
     // Allocate memory for the tolerance
     checkCuda(cudaMalloc((void **)&d_tol, sizeof(double)));
-    for (int m = 0; m < parameters.pressure_solver_iter; m++) {
+    for (m = 0; m < parameters.pressure_solver_iter; m++) {
         // Copy the initial pressure field to the temporary array
         checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
         solve_pressure(U, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
         norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
         checkCuda(cudaGetLastError());
         checkCuda(cudaMemcpy(&h_tol, d_tol, sizeof(double), cudaMemcpyDeviceToHost));
-        if (parameters.pressure_solver_log == 1) {
-            printf("Iteration %d: %e\n", m, h_tol);
-        }
         if (h_tol <= parameters.pressure_solver_tol) {
             break;
         }        
     }
+    if (parameters.pressure_solver_log == 1) {
+        sprintf(solver_log_message, "Pressure solver: Error = %e, iterations = %d", h_tol, m);
+        log_message(parameters, solver_log_message);
+    }
+    *max_iter = m;
+    *error = h_tol;
     // Free memory
     checkCuda(cudaFree(p_tmp));
     checkCuda(cudaFree(d_tol));

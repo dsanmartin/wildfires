@@ -103,8 +103,10 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y_max;
     int n_save;
     int k_size = (strncmp(parameters.method, "RK4", 3) == 0) ? 4 : 2;
-    double step_time, solver_time;
+    double step_time, solver_time, cum_step_time = 0.0;
     double CFL = 0.0, T_min = 1e9, T_max = -1e9, Y_min = 1e9, Y_max = -1e9;
+    double error;
+    int max_iter;
     double *t = parameters.t;
     double dt = parameters.dt;
     // Host data
@@ -120,6 +122,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     struct timeval start_solver, end_solver, start_ts, end_ts; // Timers
     // Messages
     char solver_time_message[128];
+    char pressure_log_message[128];
     char formatted_time[64];
     // Host memory allocation
     y_np1_host = (double *) malloc(size * sizeof(double));
@@ -181,13 +184,12 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         } else {
             log_message(parameters, "Time integration method not found.");
             exit(1);
-        }
+        }  
         // Solve Poisson problem for pressure 
         if (parameters.variable_density == 0) { // Constant density, direct solver
-            solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
-            
+            solve_pressure(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);            
         } else { // Variable density, iterative solver
-            solve_pressure_iterative(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+            solve_pressure_iterative(y_np1, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
         }
         checkCuda(cudaGetLastError());
         // Chorin's projection method        
@@ -209,7 +211,12 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         gettimeofday(&end_ts, NULL);
         // Compute step time
         // step_time = (double) (step_end - step_start) / CLOCKS_PER_SEC;
-        step_time = ((end_ts.tv_sec  - start_ts.tv_sec) * 1000000u + end_ts.tv_usec - start_ts.tv_usec) / 1.e6;
+        step_time = ((end_ts.tv_sec  - start_ts.tv_sec) * 1000000u + end_ts.tv_usec - start_ts.tv_usec) / 1.e6;        
+        // Show time step and average time each 100 steps
+        cum_step_time += step_time;
+        if (n % 100 == 0) {
+            printf("Time step: %d, Average time: %lf s\n", n, cum_step_time / n);
+        }
         // Save data each NT steps and at the last step
         if (n % NT == 0 || n == Nt) {  
             n_save = n / NT;
@@ -218,6 +225,10 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             cudaMemcpy(p_host, p, Nx * Ny * Nz * sizeof(double), cudaMemcpyDeviceToHost);
             timestep_reports(y_np1_host, &CFL, &Y_min, &Y_max, &T_min, &T_max, parameters);
             log_timestep(parameters, n, t[n], step_time, CFL, T_min, T_max, Y_min, Y_max);
+            if (parameters.variable_density == 1) {
+                sprintf(pressure_log_message, "Pressure solver: Error = %e, iterations = %d", error, max_iter);
+                log_message(parameters, pressure_log_message);
+            }            
             save_data(y_np1_host, p_host, n_save, parameters);
         }
         // Update y_n

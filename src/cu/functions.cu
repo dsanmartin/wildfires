@@ -62,6 +62,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
     double max_v = 0.0;
     double max_w = 0.0;
     double abs_u, abs_v, abs_w;
+    double u, v, w, T, Y;
     // double CFL_tmp = 0.0;
     double Y_min_tmp = 0.0, Y_max_tmp = -1e9;
     double T_min_tmp = 1e9, T_max_tmp = -1e9;
@@ -74,18 +75,29 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
-                abs_u = fabs(y_n[u_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                abs_v = fabs(y_n[v_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                abs_w = fabs(y_n[w_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                u = y_n[u_index + IDX(i, j, k, Nx, Ny, Nz)];
+                v = y_n[v_index + IDX(i, j, k, Nx, Ny, Nz)];
+                w = y_n[w_index + IDX(i, j, k, Nx, Ny, Nz)];
+                T = y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)];
+                Y = 0;
+                if (k < Nz_Y_max) {
+                    Y = y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];
+                    Y_min_tmp = MIN(Y_min_tmp, Y);
+                    Y_max_tmp = MAX(Y_max_tmp, Y);
+                }
+                // Check if any value is NaN
+                if (isnan(u) || isnan(v) || isnan(w) || isnan(T) || isnan(Y)) {
+                    printf("NaN value found. Exiting...\n");
+                    exit(1);
+                }
+                abs_u = fabs(u);
+                abs_v = fabs(v);
+                abs_w = fabs(w);
                 max_u = MAX(max_u, abs_u);
                 max_v = MAX(max_v, abs_v);
                 max_w = MAX(max_w, abs_w);
-                if (k < Nz_Y_max) {
-                    Y_min_tmp = MIN(Y_min_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)]);
-                    Y_max_tmp = MAX(Y_max_tmp, y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)]);
-                }
-                T_min_tmp = MIN(T_min_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
-                T_max_tmp = MAX(T_max_tmp, y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]);
+                T_min_tmp = MIN(T_min_tmp, T);
+                T_max_tmp = MAX(T_max_tmp, T);
             }
         }
     }
