@@ -19,11 +19,13 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
     int size = Nx * Ny * Nz;
     double dx = parameters.dx;
     double dy = parameters.dy;
-    double dz = parameters.dz;
-    double Delta = pow(dx * dy * dz, 1.0 / 3.0);
+    // double dz = parameters.dz;
+    // double Delta = pow(dx * dy * dz, 1.0 / 3.0);
+    double Delta;
     double C_s = parameters.C_s;
     double Pr = parameters.Pr;
-    double l = C_s * Delta;
+    // double l = C_s * Delta;
+    double l;
     double ux, uy, uz, vx, vy, vz, wx, wy, wz, Tx, Ty, Tz;
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
     double uyx, uzx, uxy, uzy, uxz, uyz;
@@ -41,6 +43,7 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
     double sgs_x_no_damp, sgs_y_no_damp, sgs_z_no_damp, sgs_q_no_damp;
     double sgs_x_damp, sgs_y_damp, sgs_z_damp, sgs_q_damp;
     double fw, fwx, fwy, fwz;
+    double dz_km2, dz_km1, dz_k, dz_kp1;
     int im1, ip1, jm1, jp1;
     // Loop over nodes
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -171,7 +174,9 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
         wxy = (wx_ijp1k - wx_ijm1k) / (2.0 * dy);
         fwx = (fw_ip1jk - fw_im1jk) / (2 * dx);
         fwy = (fw_ijp1k - fw_ijm1k) / (2 * dy);
-        if (k == 0) { // Second-order forward difference      
+        if (k == 0) { // Second-order forward difference    
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1];  
             ux_ijkp2 = R_turbulence[parameters.turbulence_indexes.ux + IDX(i, j, k + 2, Nx, Ny, Nz)];
             uy_ijkp2 = R_turbulence[parameters.turbulence_indexes.uy + IDX(i, j, k + 2, Nx, Ny, Nz)];
             vx_ijkp2 = R_turbulence[parameters.turbulence_indexes.vx + IDX(i, j, k + 2, Nx, Ny, Nz)];
@@ -179,14 +184,25 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
             wx_ijkp2 = R_turbulence[parameters.turbulence_indexes.wx + IDX(i, j, k + 2, Nx, Ny, Nz)];
             wy_ijkp2 = R_turbulence[parameters.turbulence_indexes.wy + IDX(i, j, k + 2, Nx, Ny, Nz)];
             fw_ijkp2 = R_turbulence[parameters.turbulence_indexes.fw + IDX(i, j, k + 2, Nx, Ny, Nz)];
-            uxz = (-3 * ux + 4 * ux_ijkp1 - ux_ijkp2) / (2 * dz);
-            uyz = (-3 * uy + 4 * uy_ijkp1 - uy_ijkp2) / (2 * dz);
-            vxz = (-3 * vx + 4 * vx_ijkp1 - vx_ijkp2) / (2 * dz);
-            vyz = (-3 * vy + 4 * vy_ijkp1 - vy_ijkp2) / (2 * dz);
-            wxz = (-3 * wx + 4 * wx_ijkp1 - wx_ijkp2) / (2 * dz);
-            wyz = (-3 * wy + 4 * wy_ijkp1 - wy_ijkp2) / (2 * dz);
-            fwz = (-3 * fw + 4 * fw_ijkp1 - fw_ijkp2) / (2 * dz);
+            // Equispaced grid
+            // uxz = (-3 * ux + 4 * ux_ijkp1 - ux_ijkp2) / (2 * dz);
+            // uyz = (-3 * uy + 4 * uy_ijkp1 - uy_ijkp2) / (2 * dz);
+            // vxz = (-3 * vx + 4 * vx_ijkp1 - vx_ijkp2) / (2 * dz);
+            // vyz = (-3 * vy + 4 * vy_ijkp1 - vy_ijkp2) / (2 * dz);
+            // wxz = (-3 * wx + 4 * wx_ijkp1 - wx_ijkp2) / (2 * dz);
+            // wyz = (-3 * wy + 4 * wy_ijkp1 - wy_ijkp2) / (2 * dz);
+            // fwz = (-3 * fw + 4 * fw_ijkp1 - fw_ijkp2) / (2 * dz);
+            // Non-equispaced grid
+            uxz = - (2 * dz_k + dz_kp1) * ux / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * ux_ijkp1 / (dz_k * dz_kp1) - dz_k * ux_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            uyz = - (2 * dz_k + dz_kp1) * uy / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * uy_ijkp1 / (dz_k * dz_kp1) - dz_k * uy_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            vxz = - (2 * dz_k + dz_kp1) * vx / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * vx_ijkp1 / (dz_k * dz_kp1) - dz_k * vx_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            vyz = - (2 * dz_k + dz_kp1) * vy / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * vy_ijkp1 / (dz_k * dz_kp1) - dz_k * vy_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            wxz = - (2 * dz_k + dz_kp1) * wx / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * wx_ijkp1 / (dz_k * dz_kp1) - dz_k * wx_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            wyz = - (2 * dz_k + dz_kp1) * wy / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * wy_ijkp1 / (dz_k * dz_kp1) - dz_k * wy_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            fwz = - (2 * dz_k + dz_kp1) * fw / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * fw_ijkp1 / (dz_k * dz_kp1) - dz_k * fw_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         } else if (k == Nz - 1) { // Second-order backward difference
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
             ux_ijkm2 = R_turbulence[parameters.turbulence_indexes.ux + IDX(i, j, k - 2, Nx, Ny, Nz)];
             uy_ijkm2 = R_turbulence[parameters.turbulence_indexes.uy + IDX(i, j, k - 2, Nx, Ny, Nz)];
             vx_ijkm2 = R_turbulence[parameters.turbulence_indexes.vx + IDX(i, j, k - 2, Nx, Ny, Nz)];
@@ -194,22 +210,49 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
             wx_ijkm2 = R_turbulence[parameters.turbulence_indexes.wx + IDX(i, j, k - 2, Nx, Ny, Nz)];
             wy_ijkm2 = R_turbulence[parameters.turbulence_indexes.wy + IDX(i, j, k - 2, Nx, Ny, Nz)];
             fw_ijkm2 = R_turbulence[parameters.turbulence_indexes.fw + IDX(i, j, k - 2, Nx, Ny, Nz)];
-            uxz = (3 * ux - 4 * ux_ijkm1 + ux_ijkm2) / (2 * dz);
-            uyz = (3 * uy - 4 * uy_ijkm1 + uy_ijkm2) / (2 * dz);
-            vxz = (3 * vx - 4 * vx_ijkm1 + vx_ijkm2) / (2 * dz);
-            vyz = (3 * vy - 4 * vy_ijkm1 + vy_ijkm2) / (2 * dz);
-            wxz = (3 * wx - 4 * wx_ijkm1 + wx_ijkm2) / (2 * dz);
-            wyz = (3 * wy - 4 * wy_ijkm1 + wy_ijkm2) / (2 * dz);
-            fwz = (3 * fw - 4 * fw_ijkm1 + fw_ijkm2) / (2 * dz);
+            // Equispaced grid
+            // uxz = (3 * ux - 4 * ux_ijkm1 + ux_ijkm2) / (2 * dz);
+            // uyz = (3 * uy - 4 * uy_ijkm1 + uy_ijkm2) / (2 * dz);
+            // vxz = (3 * vx - 4 * vx_ijkm1 + vx_ijkm2) / (2 * dz);
+            // vyz = (3 * vy - 4 * vy_ijkm1 + vy_ijkm2) / (2 * dz);
+            // wxz = (3 * wx - 4 * wx_ijkm1 + wx_ijkm2) / (2 * dz);
+            // wyz = (3 * wy - 4 * wy_ijkm1 + wy_ijkm2) / (2 * dz);
+            // fwz = (3 * fw - 4 * fw_ijkm1 + fw_ijkm2) / (2 * dz);
+            // Non-equispaced grid
+            uxz = dz_km1 * ux_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * ux_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * ux / (dz_km1 * (dz_km2 + dz_km1));
+            uyz = dz_km1 * uy_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * uy_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * uy / (dz_km1 * (dz_km2 + dz_km1));
+            vxz = dz_km1 * vx_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * vx_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * vx / (dz_km1 * (dz_km2 + dz_km1));
+            vyz = dz_km1 * vy_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * vy_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * vy / (dz_km1 * (dz_km2 + dz_km1));
+            wxz = dz_km1 * wx_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * wx_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * wx / (dz_km1 * (dz_km2 + dz_km1));
+            wyz = dz_km1 * wy_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * wy_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * wy / (dz_km1 * (dz_km2 + dz_km1));
+            fwz = dz_km1 * fw_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * fw_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * fw / (dz_km1 * (dz_km2 + dz_km1));
         } else {
-            uxz = (ux_ijkp1 - ux_ijkm1) / (2.0 * dz);
-            uyz = (uy_ijkp1 - uy_ijkm1) / (2.0 * dz);
-            vxz = (vx_ijkp1 - vx_ijkm1) / (2.0 * dz);
-            vyz = (vy_ijkp1 - vy_ijkm1) / (2.0 * dz);
-            wxz = (wx_ijkp1 - wx_ijkm1) / (2.0 * dz);
-            wyz = (wy_ijkp1 - wy_ijkm1) / (2.0 * dz);
-            fwz = (fw_ijkp1 - fw_ijkm1) / (2.0 * dz);
+            dz_km1 = z[k] - z[k - 1];
+            dz_k = z[k + 1] - z[k];
+            // Equispaced grid
+            // uxz = (ux_ijkp1 - ux_ijkm1) / (2.0 * dz);
+            // uyz = (uy_ijkp1 - uy_ijkm1) / (2.0 * dz);
+            // vxz = (vx_ijkp1 - vx_ijkm1) / (2.0 * dz);
+            // vyz = (vy_ijkp1 - vy_ijkm1) / (2.0 * dz);
+            // wxz = (wx_ijkp1 - wx_ijkm1) / (2.0 * dz);
+            // wyz = (wy_ijkp1 - wy_ijkm1) / (2.0 * dz);
+            // fwz = (fw_ijkp1 - fw_ijkm1) / (2.0 * dz);
+            // Non-equispaced grid
+            uxz = (ux_ijkp1 - ux_ijkm1) / (dz_k + dz_km1);
+            uyz = (uy_ijkp1 - uy_ijkm1) / (dz_k + dz_km1);
+            vxz = (vx_ijkp1 - vx_ijkm1) / (dz_k + dz_km1);
+            vyz = (vy_ijkp1 - vy_ijkm1) / (dz_k + dz_km1);
+            wxz = (wx_ijkp1 - wx_ijkm1) / (dz_k + dz_km1);
+            wyz = (wy_ijkp1 - wy_ijkm1) / (dz_k + dz_km1);
+            fwz = (fw_ijkp1 - fw_ijkm1) / (dz_k + dz_km1);
         }
+        // Delta and l
+        if (k < Nz - 1)
+            dz_k = z[k + 1] - z[k];
+        else
+            dz_k = z[k] - z[k - 1];
+        Delta = pow(dx * dy * dz_k, 1.0 / 3.0);
+        l = C_s * Delta;
         // |S| = sqrt(2 * S_ij * S_ij)
         mod_S = sqrt(2.0 * (ux * ux + vy * vy + wz * wz) + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz)) + 1e-16;
         psi_x = 4 * (ux * uxx + vy * vyx + wz * wzx) + 2 * (uz + wx) * (uzx + wxx) + 2 * (vx + uy) * (vxx + uyx) + 2 * (wy + vz) * (wyx + vzx);

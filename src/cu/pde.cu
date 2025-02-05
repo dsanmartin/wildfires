@@ -33,6 +33,7 @@ void boundary_conditions(double *R_new, double *z, int *Nz_Y, int *cut_nodes, Pa
     double w_ijkm1, w_ijkm2;
     double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
     double Y_ijkp1, Y_ijkp2;
+    double dz_k, dz_kp1, dz_Nzm2, dz_Nzm1;
     // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
     int size = Nx * Ny;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -42,6 +43,8 @@ void boundary_conditions(double *R_new, double *z, int *Nz_Y, int *cut_nodes, Pa
         int j = ij % Ny;        
         // Bottom boundary z_k = z_min, k=0
         k = cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; 
+        dz_k = z[k + 1] - z[k];
+        dz_kp1 = z[k + 2] - z[k + 1];
         T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
         T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
         if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
@@ -55,11 +58,15 @@ void boundary_conditions(double *R_new, double *z, int *Nz_Y, int *cut_nodes, Pa
         R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
+        // R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0 (equispaced nodes)
+        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = ((dz_k + dz_kp1) * (dz_k + dz_kp1) * T_ijkp1 - dz_k * dz_k * T_ijkp2) / (dz_kp1 * (2 * dz_k + dz_kp1)); // dT/dz = 0 (non-equispaced nodes)
         if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
-            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0        
+            // R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0 (equispaced nodes)
+            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = ((dz_k + dz_kp1) * (dz_k + dz_kp1) * Y_ijkp1 - dz_k * dz_k * Y_ijkp2) / (dz_kp1 * (2 * dz_k + dz_kp1)); // dY/dz = 0 (non-equispaced nodes)
         // Top boundary z_k = z_max, k=Nz-1
         k = Nz - 1;
+        dz_Nzm1 = z[k] - z[k - 1];
+        dz_Nzm2 = z[k - 1] - z[k - 2];
         u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
         u_ijkm2 = R_new[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
         v_ijkm1 = R_new[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
@@ -68,10 +75,16 @@ void boundary_conditions(double *R_new, double *z, int *Nz_Y, int *cut_nodes, Pa
         w_ijkm2 = R_new[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
         T_ijkm1 = R_new[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
         T_ijkm2 = R_new[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // T_{i,j,k-2}
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
+        // Equispaced nodes
+        // R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
+        // R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
+        // R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
+        // R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
+        // Non-equispaced nodes
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = ((dz_Nzm2 + dz_Nzm1) * (dz_Nzm2 + dz_Nzm1) * u_ijkm1 - dz_Nzm1 * dz_Nzm1 * u_ijkm2) / (dz_Nzm2 * (dz_Nzm2 + 2 * dz_Nzm1)); // du/dz = 0
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = ((dz_Nzm2 + dz_Nzm1) * (dz_Nzm2 + dz_Nzm1) * v_ijkm1 - dz_Nzm1 * dz_Nzm1 * v_ijkm2) / (dz_Nzm2 * (dz_Nzm2 + 2 * dz_Nzm1)); // dv/dz = 0
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = ((dz_Nzm2 + dz_Nzm1) * (dz_Nzm2 + dz_Nzm1) * w_ijkm1 - dz_Nzm1 * dz_Nzm1 * w_ijkm2) / (dz_Nzm2 * (dz_Nzm2 + 2 * dz_Nzm1)); // dw/dz = 0
+        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = ((dz_Nzm2 + dz_Nzm1) * (dz_Nzm2 + dz_Nzm1) * T_ijkm1 - dz_Nzm1 * dz_Nzm1 * T_ijkm2) / (dz_Nzm2 * (dz_Nzm2 + 2 * dz_Nzm1)); // dT/dz = 0   
         // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
         // Set dead nodes values
         for (k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
@@ -472,11 +485,12 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
     double T_inf = parameters.T_inf;
     double dx = parameters.dx;
     double dy = parameters.dy;
-    double dz = parameters.dz;
+    // double dz = parameters.dz;
     double dt = parameters.dt;
     double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2, T_ijk;
     double px, py, pz;
     double rho;
+    double dz_km2, dz_km1, dz_k, dz_kp1;
     int im1, ip1, jm1, jp1;
     int size = Nx * Ny * Nz;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -502,37 +516,70 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
         // Depending on the finite difference scheme used for the z direction
         if (fd_z == 0) {  // Central difference 
             if (k == 0) { // Second order forward difference at the bottom boundary
+                dz_k = z[k + 1] - z[k];
+                dz_kp1 = z[k + 2] - z[k + 1];
                 p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
                 p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+                // pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz); // Equispaced grid
+                pz = - (2 * dz_k + dz_kp1) * p_ijk / (dz_k * (dz_k + dz_kp1)) 
+                    + (dz_k + dz_kp1) * p_ijkp1 / (dz_k * dz_kp1) 
+                    - dz_k * p_ijkp2 / (dz_kp1 * (dz_k + dz_kp1)); // Non equispaced grid
             } else if (k == Nz - 1) { // Second order backward difference at the top boundary
+                dz_km1 = z[k] - z[k - 1];
+                dz_km2 = z[k - 1] - z[k - 2];
                 p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
                 p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+                //pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz); // Equispaced grid
+                pz = dz_km1 * p_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                    - (dz_km2 + dz_km1) * p_ijkm1 / (dz_km2 * dz_km1) 
+                    + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non equispaced grid
             } else { // Inside the domain
+                dz_km1 = z[k] - z[k - 1];
+                dz_k = z[k + 1] - z[k];
                 p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
                 p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
-                pz = (p_ijkp1 - p_ijkm1) / (2 * dz);
+                // pz = (p_ijkp1 - p_ijkm1) / (2 * dz); // Equispaced grid
+                pz = (p_ijkp1 - p_ijkm1) / (dz_km1 + dz_k); // Non equispaced grid
             }
         } else if (fd_z == 1) { // Forward difference
             if (k < Nz - 2) { // Second order forward difference for all nodes except the 2 last nodes
+                dz_k = z[k + 1] - z[k];
+                dz_kp1 = z[k + 2] - z[k + 1];
                 p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
                 p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+                // pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz); // Equispaced grid
+                pz = - (2 * dz_k + dz_kp1) * p_ijk / (dz_k * (dz_k + dz_kp1)) 
+                    + (dz_k + dz_kp1) * p_ijkp1 / (dz_k * dz_kp1) 
+                    - dz_k * p_ijkp2 / (dz_kp1 * (dz_k + dz_kp1)); // Non equispaced grid
             } else { // Second order backward difference for the 2 last nodes
+                dz_km1 = z[k] - z[k - 1];
+                dz_km2 = z[k - 1] - z[k - 2];
                 p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
                 p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+                // pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz); // Equispaced grid
+                pz = dz_km1 * p_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                    - (dz_km2 + dz_km1) * p_ijkm1 / (dz_km2 * dz_km1) 
+                    + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non equispaced grid
             }
         } else if (fd_z == -1) { // Backward difference
             if (k < 2) { // Second order forward difference for the 2 first nodes
+                dz_k = z[k + 1] - z[k];
+                dz_kp1 = z[k + 2] - z[k + 1];
                 p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)]; // p_{i,j,k+1}
                 p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)]; // p_{i,j,k+2}
-                pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+                // pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz); // Equispaced grid
+                pz = - (2 * dz_k + dz_kp1) * p_ijk / (dz_k * (dz_k + dz_kp1)) 
+                    + (dz_k + dz_kp1) * p_ijkp1 / (dz_k * dz_kp1) 
+                    - dz_k * p_ijkp2 / (dz_kp1 * (dz_k + dz_kp1)); // Non equispaced grid
             } else { // Second order backward difference for all nodes except the 2 first nodes
+                dz_km1 = z[k] - z[k - 1];
+                dz_km2 = z[k - 1] - z[k - 2];
                 p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)]; // p_{i,j,k-1}
                 p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)]; // p_{i,j,k-2}
-                pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+                // pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz); // Equispaced grid
+                pz = dz_km1 * p_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                    - (dz_km2 + dz_km1) * p_ijkm1 / (dz_km2 * dz_km1) 
+                    + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non equispaced grid
             }
         }
         // Get density
