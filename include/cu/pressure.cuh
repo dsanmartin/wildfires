@@ -20,6 +20,18 @@
 #include "logs.cuh"
 #include "utils.cuh"
 
+__global__
+void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters);
+
+__global__
+void compute_f_density(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters);
+
+__global__
+void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters);
+
+__global__
+void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters);
+
 /**
  * @brief Implements the Thomas algorithm for solving a tridiagonal linear system.
  *
@@ -40,17 +52,8 @@
  __global__
 void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters);
 
-__global__
-void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, Parameters parameters);
-
-__global__
-void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, double *p, Parameters parameters);
-
 __global__ 
-void update_coefficients(double *gamma, double *b,  cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters);
-
-__global__
-void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters);
+void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters);
 
 /**
  * @brief Solves the pressure equation.
@@ -74,8 +77,8 @@ void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters);
  * @param p_top_out The output array for p_top IFFT.
  * @param parameters The parameters of the mathematical model.
  */
-void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
+void solve_pressure(double *U, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
 
-void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter);
+void solve_pressure_iterative(double *U, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter);
 
 #endif

@@ -12,61 +12,7 @@
 #include "../../include/cu/pressure.cuh"
 
 __global__
-void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters) {
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int size = (Nx - 1) * (Ny - 1);
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ij = idx; ij < size; ij += stride) {
-        int i = ij / (Ny - 1);
-        int j = ij % (Ny - 1);
-        u[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)] = make_cuDoubleComplex(b[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)], 0.0);
-        for (int k = 1; k < Nz - 1; k++) {
-            l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)] = cuCdiv(make_cuDoubleComplex(a[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], 0.0), u[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 1)]); 
-            u[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(make_cuDoubleComplex(b[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], 0.0), cuCmul(l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], make_cuDoubleComplex(c[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], 0.0)));
-        }
-        y[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)] = d[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)];
-        for (int k = 1; k < Nz - 1; k++) {
-            y[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(d[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], cuCmul(l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], y[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 1)]));
-        }
-        x[FFTWIDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCdiv(y[IDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], u[IDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)]);
-        for (int k = Nz - 3; k >= 0; k--) {
-            x[FFTWIDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCdiv(cuCsub(y[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], cuCmul(make_cuDoubleComplex(c[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 2)], 0.0), x[FFTWIDX(i, j, k + 1, Nx - 1, Ny - 1, Nz - 1)])), u[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)]);
-        }
-    }
-}
-
-__global__
-void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, Parameters parameters) {
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    double dz = parameters.dz;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    int size = (Nx - 1) * (Ny - 1) * (Nz - 2);
-    for (int rsk = idx; rsk < size; rsk += stride) {
-        int r = rsk / ((Ny - 1) * (Nz - 2));
-        int s = (rsk % ((Ny - 1) * (Nz - 2))) / (Nz - 2);
-        int k = rsk % (Nz - 2);
-        if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
-            // gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
-            gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
-            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz), 0.0; 
-            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz, 0.0;
-            // c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)]) / dz;
-            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)]) / dz;
-        } else { // The rest of the coefficients a and c
-            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz); 
-            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz);
-        }
-    }
-}
-
-__global__
-void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, double *p, Parameters parameters) {
+void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -141,7 +87,7 @@ void compute_f(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in
 }
 
 __global__
-void compute_f_density(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, double *p, Parameters parameters) {
+void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -266,31 +212,29 @@ void compute_f_density(double *U, cufftDoubleComplex *f_in, cufftDoubleComplex *
     }
 }
 
-__global__ 
-void update_coefficients(double *gamma, double *b,  cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
+__global__
+void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
     double dz = parameters.dz;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
-    int size = (Nx - 1) * (Ny - 1) * (Nz - 1);
+    int size = (Nx - 1) * (Ny - 1) * (Nz - 2);
     for (int rsk = idx; rsk < size; rsk += stride) {
-        int r = rsk / ((Ny - 1) * (Nz - 1));
-        int s = (rsk % ((Ny - 1) * (Nz - 1))) / (Nz - 1);
-        int k = rsk % (Nz - 1);
-        if (k == 0) {
-            // First equation k=0
-            d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = cuCmul(make_cuDoubleComplex(0.5 * dz, 0.0), f_out[FFTWIDX(r, s, 1, Nx - 1, Ny - 1, Nz - 1)]);
-            // Last equation k=Nz-2
-            d[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(f_out[FFTWIDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], cuCdiv(p_top_out[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1)], make_cuDoubleComplex(dz * dz, 0.0)));
-        } else {
-            if (k < Nz - 1) {
-                // b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, 0)] / (dz * dz);
-                b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] / (dz * dz);
-                if (k < Nz - 2)
-                    d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = f_out[FFTWIDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)];
-            }
+        int r = rsk / ((Ny - 1) * (Nz - 2));
+        int s = (rsk % ((Ny - 1) * (Nz - 2))) / (Nz - 2);
+        int k = rsk % (Nz - 2);
+        if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
+            // gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
+            gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz), 0.0; 
+            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz, 0.0;
+            // c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)]) / dz;
+            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)]) / dz;
+        } else { // The rest of the coefficients a and c
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz); 
+            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz);
         }
     }
 }
@@ -321,7 +265,63 @@ void post_fft(double *p, cufftDoubleComplex *p_out, Parameters parameters) {
     }
 }
 
-void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters) {
+__global__
+void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *x, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int size = (Nx - 1) * (Ny - 1);
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int ij = idx; ij < size; ij += stride) {
+        int i = ij / (Ny - 1);
+        int j = ij % (Ny - 1);
+        u[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)] = make_cuDoubleComplex(b[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)], 0.0);
+        for (int k = 1; k < Nz - 1; k++) {
+            l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)] = cuCdiv(make_cuDoubleComplex(a[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], 0.0), u[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 1)]); 
+            u[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(make_cuDoubleComplex(b[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], 0.0), cuCmul(l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], make_cuDoubleComplex(c[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], 0.0)));
+        }
+        y[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)] = d[IDX(i, j, 0, Nx - 1, Ny - 1, Nz - 1)];
+        for (int k = 1; k < Nz - 1; k++) {
+            y[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(d[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], cuCmul(l[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 2)], y[IDX(i, j, k - 1, Nx - 1, Ny - 1, Nz - 1)]));
+        }
+        x[FFTWIDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCdiv(y[IDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], u[IDX(i, j, Nz - 2, Nx - 1, Ny - 1, Nz - 1)]);
+        for (int k = Nz - 3; k >= 0; k--) {
+            x[FFTWIDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)] = cuCdiv(cuCsub(y[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)], cuCmul(make_cuDoubleComplex(c[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 2)], 0.0), x[FFTWIDX(i, j, k + 1, Nx - 1, Ny - 1, Nz - 1)])), u[IDX(i, j, k, Nx - 1, Ny - 1, Nz - 1)]);
+        }
+    }
+}
+
+__global__ 
+void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    double dz = parameters.dz;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    int size = (Nx - 1) * (Ny - 1) * (Nz - 1);
+    for (int rsk = idx; rsk < size; rsk += stride) {
+        int r = rsk / ((Ny - 1) * (Nz - 1));
+        int s = (rsk % ((Ny - 1) * (Nz - 1))) / (Nz - 1);
+        int k = rsk % (Nz - 1);
+        if (k == 0) {
+            // First equation k=0
+            d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = cuCmul(make_cuDoubleComplex(0.5 * dz, 0.0), f_out[FFTWIDX(r, s, 1, Nx - 1, Ny - 1, Nz - 1)]);
+            // Last equation k=Nz-2
+            d[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(f_out[FFTWIDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], cuCdiv(p_top_out[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1)], make_cuDoubleComplex(dz * dz, 0.0)));
+        } else {
+            if (k < Nz - 1) {
+                // b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, 0)] / (dz * dz);
+                b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] / (dz * dz);
+                if (k < Nz - 2)
+                    d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = f_out[FFTWIDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)];
+            }
+        }
+    }
+}
+
+void solve_pressure(double *U, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -337,9 +337,9 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
 
     // Compute f = rho / dt * div(U)
     if (parameters.variable_density == 0)
-        compute_f<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
+        compute_f<<<BLOCKS, THREADS>>>(U, p, z, data_in, p_top_in, parameters);
     else
-        compute_f_density<<<BLOCKS, THREADS>>>(U, data_in, p_top_in, p, parameters);
+        compute_f_density<<<BLOCKS, THREADS>>>(U, p, z, data_in, p_top_in, parameters);
     checkCuda(cudaGetLastError());
     
     // Plans for FFT2D
@@ -352,7 +352,7 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     CHECK(cudaDeviceSynchronize());
 
     // Update coefficients, including f in pseudo-Fourier space
-    update_coefficients<<<BLOCKS, THREADS>>>(gamma, b, d, data_out, p_top_out, parameters);
+    update_coefficients<<<BLOCKS, THREADS>>>(gamma, b, z, d, data_out, p_top_out, parameters);
     checkCuda(cudaGetLastError());
 
     // Compute r,s systems of equations using thomas algorithm
@@ -373,7 +373,7 @@ void solve_pressure(double *U, double *p, double *gamma, double *a, double *b, d
     cufftDestroy(f_plan);
 }
 
-void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter) {
+void solve_pressure_iterative(double *U, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -389,7 +389,7 @@ void solve_pressure_iterative(double *U, double *p, double *gamma, double *a, do
     for (m = 0; m < parameters.pressure_solver_iter; m++) {
         // Copy the initial pressure field to the temporary array
         checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
-        solve_pressure(U, p, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+        solve_pressure(U, p, z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
         norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
         checkCuda(cudaGetLastError());
         checkCuda(cudaMemcpy(&h_tol, d_tol, sizeof(double), cudaMemcpyDeviceToHost));

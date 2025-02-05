@@ -12,7 +12,119 @@
 #include "../../include/cu/pde.cuh"
 
 __global__
-void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z_ibm, int *Nz_Y, Parameters parameters) {
+void boundary_conditions(double *R_new, double *z, int *Nz_Y, int *cut_nodes, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int Nz_Y_max = parameters.Nz_Y_max;
+    int u_index = parameters.field_indexes.u;
+    int v_index = parameters.field_indexes.v;
+    int w_index = parameters.field_indexes.w;
+    int T_index = parameters.field_indexes.T;
+    int Y_index = parameters.field_indexes.Y;
+    int k;
+    double u_dead_nodes = parameters.u_dead_nodes;
+    double v_dead_nodes = parameters.v_dead_nodes;
+    double w_dead_nodes = parameters.w_dead_nodes;
+    double T_dead_nodes = parameters.T_dead_nodes;
+    double Y_dead_nodes = parameters.Y_dead_nodes;
+    double u_ijkm1, u_ijkm2;
+    double v_ijkm1, v_ijkm2;
+    double w_ijkm1, w_ijkm2;
+    double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
+    double Y_ijkp1, Y_ijkp2;
+    // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
+    int size = Nx * Ny;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int ij = idx; ij < size; ij += stride) {
+        int i = ij / Ny;
+        int j = ij % Ny;        
+        // Bottom boundary z_k = z_min, k=0
+        k = cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; 
+        T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
+        T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
+        if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
+            Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
+        else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
+            Y_ijkp1 = 0.0;
+        if (k + 2 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Same as above
+            Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
+        else
+            Y_ijkp2 = 0.0;
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
+        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
+        if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
+            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0        
+        // Top boundary z_k = z_max, k=Nz-1
+        k = Nz - 1;
+        u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
+        u_ijkm2 = R_new[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
+        v_ijkm1 = R_new[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
+        v_ijkm2 = R_new[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
+        w_ijkm1 = R_new[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
+        w_ijkm2 = R_new[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
+        T_ijkm1 = R_new[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
+        T_ijkm2 = R_new[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // T_{i,j,k-2}
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
+        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
+        // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
+        // Set dead nodes values
+        for (k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
+            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
+            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_dead_nodes;
+            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_dead_nodes;
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_dead_nodes;
+            if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_dead_nodes;
+        }
+    }
+}
+
+__global__
+void bounds(double *R_new, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int Nz_Y_max = parameters.Nz_Y_max;
+    int T_index = parameters.field_indexes.T;
+    int Y_index = parameters.field_indexes.Y;
+    double T_min = parameters.T_min;
+    double T_max = parameters.T_max;
+    double Y_min = parameters.Y_min;
+    double Y_max = parameters.Y_max;
+    int size = Nx * Ny * Nz;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int ijk = idx; ijk < size; ijk += stride) {
+        int i = ijk / (Ny * Nz);
+        int j = (ijk % (Ny * Nz)) / Nz;
+        int k = ijk % Nz;
+        // Check if Y_ijk is not valid
+        if (k < Nz_Y_max) {
+            if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] < Y_min) {
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_min;
+            }
+            if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] > Y_max) {
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_max;
+            }
+        }
+        // Check if T_ijk is less than T_inf and higher than T_max
+        if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] < T_min) {
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_min;
+        }
+        if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > T_max) {
+            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_max;
+        }
+    }
+}
+
+__global__
+void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z, double *z_ibm, int *Nz_Y, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -347,194 +459,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     }
 }
 
-void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *z_ibm, int *Nz_Y, int *cut_nodes, Parameters parameters) {
-    RHS<<<BLOCKS, THREADS>>>(t, R_old, R_new, R_turbulence, z_ibm, Nz_Y, parameters);
-    checkCuda(cudaGetLastError());
-    turbulence<<<BLOCKS, THREADS>>>(R_turbulence, R_new, parameters);
-    checkCuda(cudaGetLastError());
-    // bounds<<<BLOCKS, THREADS>>>(R_new, parameters);
-    // checkCuda(cudaGetLastError());
-    boundary_conditions<<<BLOCKS, THREADS>>>(R_new, Nz_Y, cut_nodes, parameters);
-    checkCuda(cudaGetLastError());    
-}
-
 __global__
-void boundary_conditions_v1(double *R_new, Parameters parameters) {
-    // printf("Boundary conditions\n");
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int Nz_Y_max = parameters.Nz_Y_max;
-    int u_index = parameters.field_indexes.u;
-    int v_index = parameters.field_indexes.v;
-    int w_index = parameters.field_indexes.w;
-    int T_index = parameters.field_indexes.T;
-    int Y_index = parameters.field_indexes.Y;
-    int k;
-    double u_ijkm1, u_ijkm2;
-    double v_ijkm1, v_ijkm2;
-    double w_ijkm1, w_ijkm2;
-    double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
-    // double Y_ijkp1, Y_ijkm1, Y_ijkm2, Y_ijkp2;
-    double Y_ijkp1, Y_ijkp2;
-    // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
-    int size = Nx * Ny;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ij = idx; ij < size; ij += stride) {
-        int i = ij / Ny;
-        int j = ij % Ny;
-        // Bottom boundary z_k = z_min, k=0
-        k = 0; 
-        T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
-        T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-        if (k + 1 < Nz_Y_max) // Check if Y_ijkp1 is part of the fuel
-            Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
-        else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
-            Y_ijkp1 = 0.0;
-        if (k + 2 < Nz_Y_max) // Same as above
-            Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
-        else
-            Y_ijkp2 = 0.0;
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
-        R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0
-        // Top boundary z_k = z_max, k=Nz-1
-        k = Nz - 1;
-        u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
-        u_ijkm2 = R_new[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
-        v_ijkm1 = R_new[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
-        v_ijkm2 = R_new[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
-        w_ijkm1 = R_new[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
-        w_ijkm2 = R_new[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
-        T_ijkm1 = R_new[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
-        T_ijkm2 = R_new[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // T_{i,j,k-2}
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
-        // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
-    }
-}
-
-__global__
-void boundary_conditions(double *R_new, int *Nz_Y, int *cut_nodes, Parameters parameters) {
-    // printf("Boundary conditions\n");
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int Nz_Y_max = parameters.Nz_Y_max;
-    int u_index = parameters.field_indexes.u;
-    int v_index = parameters.field_indexes.v;
-    int w_index = parameters.field_indexes.w;
-    int T_index = parameters.field_indexes.T;
-    int Y_index = parameters.field_indexes.Y;
-    int k;
-    double u_dead_nodes = parameters.u_dead_nodes;
-    double v_dead_nodes = parameters.v_dead_nodes;
-    double w_dead_nodes = parameters.w_dead_nodes;
-    double T_dead_nodes = parameters.T_dead_nodes;
-    double Y_dead_nodes = parameters.Y_dead_nodes;
-    double u_ijkm1, u_ijkm2;
-    double v_ijkm1, v_ijkm2;
-    double w_ijkm1, w_ijkm2;
-    double T_ijkp1, T_ijkm1, T_ijkm2, T_ijkp2;
-    // double Y_ijkp1, Y_ijkm1, Y_ijkm2, Y_ijkp2;
-    double Y_ijkp1, Y_ijkp2;
-    // Periodic boundary conditions are included in RHS computation, we only compute in top and bottom boundaries (z=z_min and z=z_max)
-    int size = Nx * Ny;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ij = idx; ij < size; ij += stride) {
-        int i = ij / Ny;
-        int j = ij % Ny;        
-        // Bottom boundary z_k = z_min, k=0
-        k = cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; 
-        T_ijkp1 = R_new[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)]; // T_{i,j,k+1}
-        T_ijkp2 = R_new[T_index + IDX(i, j, k + 2, Nx, Ny, Nz)]; // T_{i,j,k+2}
-        if (k + 1 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Check if Y_ijkp1 is part of the fuel
-            Y_ijkp1 = R_new[Y_index + IDX(i, j, k + 1, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+1}
-        else // If not, set Y_ijkp1 = 0 (because we don't store Y when it's 0)
-            Y_ijkp1 = 0.0;
-        if (k + 2 < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) // Same as above
-            Y_ijkp2 = R_new[Y_index + IDX(i, j, k + 2, Nx, Ny, Nz_Y_max)]; // Y_{i,j,k+2}
-        else
-            Y_ijkp2 = 0.0;
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // u = 0
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // v = 0
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = 0; // w = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkp1 - T_ijkp2) / 3; // dT/dz = 0
-        if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
-            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = (4 * Y_ijkp1 - Y_ijkp2) / 3; // dY/dz = 0        
-        // Top boundary z_k = z_max, k=Nz-1
-        k = Nz - 1;
-        u_ijkm1 = R_new[u_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // u_{i,j,k-1}
-        u_ijkm2 = R_new[u_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // u_{i,j,k-2}
-        v_ijkm1 = R_new[v_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // v_{i,j,k-1}
-        v_ijkm2 = R_new[v_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // v_{i,j,k-2}
-        w_ijkm1 = R_new[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // w_{i,j,k-1}
-        w_ijkm2 = R_new[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // w_{i,j,k-2}
-        T_ijkm1 = R_new[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)]; // T_{i,j,k-1}
-        T_ijkm2 = R_new[T_index + IDX(i, j, k - 2, Nx, Ny, Nz)]; // T_{i,j,k-2}
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * u_ijkm1 - u_ijkm2) / 3; // du/dz = 0
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * v_ijkm1 - v_ijkm2) / 3; // dv/dz = 0
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * w_ijkm1 - w_ijkm2) / 3; // dw/dz = 0
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = (4 * T_ijkm1 - T_ijkm2) / 3; // dT/dz = 0   
-        // Actually we don't need to set Y at the top boundary, because it's not used in the computation of the RHS 
-        // Set dead nodes values
-        for (k = 0; k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]; k++) {
-            R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
-            R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_dead_nodes;
-            R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_dead_nodes;
-            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_dead_nodes;
-            if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)])
-                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_dead_nodes;
-        }
-    }
-}
-
-__global__
-void bounds(double *R_new, Parameters parameters) {
-    int Nx = parameters.Nx;
-    int Ny = parameters.Ny;
-    int Nz = parameters.Nz;
-    int Nz_Y_max = parameters.Nz_Y_max;
-    int T_index = parameters.field_indexes.T;
-    int Y_index = parameters.field_indexes.Y;
-    double T_min = parameters.T_min;
-    double T_max = parameters.T_max;
-    double Y_min = parameters.Y_min;
-    double Y_max = parameters.Y_max;
-    int size = Nx * Ny * Nz;
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = gridDim.x * blockDim.x;
-    for (int ijk = idx; ijk < size; ijk += stride) {
-        int i = ijk / (Ny * Nz);
-        int j = (ijk % (Ny * Nz)) / Nz;
-        int k = ijk % Nz;
-        // Check if Y_ijk is not valid
-        if (k < Nz_Y_max) {
-            if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] < Y_min) {
-                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_min;
-            }
-            if (R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] > Y_max) {
-                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_max;
-            }
-        }
-        // Check if T_ijk is less than T_inf and higher than T_max
-        if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] < T_min) {
-            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_min;
-        }
-        if (R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] > T_max) {
-            R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_max;
-        }
-    }
-}
-
-__global__
-void velocity_correction(double *R_new, double *p, int fd_z, Parameters parameters) {
+void velocity_correction(double *R_new, double *p, double *z, int fd_z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -620,4 +546,13 @@ void velocity_correction(double *R_new, double *p, int fd_z, Parameters paramete
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
     }
+}
+
+void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, Parameters parameters) {
+    RHS<<<BLOCKS, THREADS>>>(t, R_old, R_new, R_turbulence, z, z_ibm, Nz_Y, parameters);
+    checkCuda(cudaGetLastError());
+    turbulence<<<BLOCKS, THREADS>>>(R_turbulence, R_new, z, parameters);
+    checkCuda(cudaGetLastError());
+    boundary_conditions<<<BLOCKS, THREADS>>>(R_new, z, Nz_Y, cut_nodes, parameters);
+    checkCuda(cudaGetLastError());    
 }

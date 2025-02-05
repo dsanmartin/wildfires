@@ -12,8 +12,7 @@
 #include "../../include/cu/turbulence.cuh"
 
 __global__ 
-void turbulence(double *R_turbulence, double *R_new, Parameters parameters) {
-    // printf("Turbulence\n");
+void turbulence(double *R_turbulence, double *R_new, double *z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;

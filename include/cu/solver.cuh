@@ -37,6 +37,54 @@ __global__
 void euler_step(double dt, double *y_n, double *y_np1, double *F, int size);
 
 /**
+ * @brief Performs a single step of the second-order Runge-Kutta method (RK2).
+ *
+ * This function calculates the next state of the system using the RK2 method.
+ *
+ * @param dt The time step size.
+ * @param y_n The current state of the system.
+ * @param y_np1 The next state of the system (output).
+ * @param k1 Temporary variable for intermediate calculations.
+ * @param k2 Temporary variable for intermediate calculations.
+ * @param size The size of the arrays.
+ */
+ __global__
+ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int size);
+
+/**
+ * @brief Performs a single step of the fourth-order Runge-Kutta method (RK4).
+ *
+ * This function calculates the next state of the system using the RK4 method.
+ *
+ * @param dt The time step size.
+ * @param y_n The current state of the system.
+ * @param y_np1 The next state of the system (output).
+ * @param k1 Temporary variable for intermediate calculations.
+ * @param k2 Temporary variable for intermediate calculations.
+ * @param k3 Temporary variable for intermediate calculations.
+ * @param k4 Temporary variable for intermediate calculations.
+ * @param size The size of the arrays.
+ */
+ __global__
+ void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, double *k3, double *k4, int size);
+
+/**
+ * @brief Creates the initial condition for the variable y_0.
+ *
+ * This function takes arrays of variables u, v, w, T, Y, and computes the initial condition for the variable y_0.
+ * The computed result is stored in the array y_0.
+ *
+ * @param u         Array of variables u.
+ * @param v         Array of variables v.
+ * @param w         Array of variables w.
+ * @param T         Array of variables T.
+ * @param Y         Array of variables Y.
+ * @param y_0       Array to store the computed initial condition for y_0.
+ * @param parameters Pointer to the Parameters struct containing additional parameters.
+ */
+ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters parameters);
+
+/**
  * @brief Performs an Euler integration step for a partial differential equation (PDE).
  *
  * This function calculates the solution at time t_n+1 using the Euler method, given the solution at time t_n,
@@ -51,22 +99,7 @@ void euler_step(double dt, double *y_n, double *y_np1, double *F, int size);
  * @param size The size of the problem.
  * @param parameters The parameters for the PDE.
  */
-void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
-
-/**
- * @brief Performs a single step of the second-order Runge-Kutta method (RK2).
- *
- * This function calculates the next state of the system using the RK2 method.
- *
- * @param dt The time step size.
- * @param y_n The current state of the system.
- * @param y_np1 The next state of the system (output).
- * @param k1 Temporary variable for intermediate calculations.
- * @param k2 Temporary variable for intermediate calculations.
- * @param size The size of the arrays.
- */
-__global__
-void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int size);
+void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
 
 /**
  * @brief Performs a second-order Runge-Kutta (RK2) integration step.
@@ -84,24 +117,7 @@ void RK2_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, int
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
-
-/**
- * @brief Performs a single step of the fourth-order Runge-Kutta method (RK4).
- *
- * This function calculates the next state of the system using the RK4 method.
- *
- * @param dt The time step size.
- * @param y_n The current state of the system.
- * @param y_np1 The next state of the system (output).
- * @param k1 Temporary variable for intermediate calculations.
- * @param k2 Temporary variable for intermediate calculations.
- * @param k3 Temporary variable for intermediate calculations.
- * @param k4 Temporary variable for intermediate calculations.
- * @param size The size of the arrays.
- */
-__global__
-void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, double *k3, double *k4, int size);
+void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
 
 /**
  * @brief Performs a fourth-order Runge-Kutta (RK4) integration step.
@@ -119,23 +135,7 @@ void RK4_step(double dt, double *y_n, double *y_np1, double *k1, double *k2, dou
  * @param size The size of the arrays.
  * @param parameters The struct containing additional parameters.
  */
-void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
-
-/**
- * @brief Creates the initial condition for the variable y_0.
- *
- * This function takes arrays of variables u, v, w, T, Y, and computes the initial condition for the variable y_0.
- * The computed result is stored in the array y_0.
- *
- * @param u         Array of variables u.
- * @param v         Array of variables v.
- * @param w         Array of variables w.
- * @param T         Array of variables T.
- * @param Y         Array of variables Y.
- * @param y_0       Array to store the computed initial condition for y_0.
- * @param parameters Pointer to the Parameters struct containing additional parameters.
- */
-void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y_0, Parameters parameters);
+void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters);
 
 /**
  * @brief Solves the partial differential equation (PDE) using the method of lines (MOL).
