@@ -144,7 +144,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     int Nz_Y_max = parameters.Nz_Y_max;
     double dx = parameters.dx;
     double dy = parameters.dy;
-    double dz = parameters.dz;
+    // double dz = parameters.dz;
     // Model parameters
     double nu = parameters.nu;
     // double alpha = parameters.alpha;

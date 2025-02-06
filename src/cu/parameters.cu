@@ -319,23 +319,28 @@ Parameters read_parameters_file(const char *file_path) {
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
         if (i < parameters.Nx - 1) {
-            parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / (parameters.x_max - parameters.x_min);
+            // parameters.kx[i] = 2 * M_PI * parameters.r[i] * parameters.dz / (parameters.x_max - parameters.x_min);
+            parameters.kx[i] = 2 * M_PI * parameters.r[i] / (parameters.x_max - parameters.x_min);
         }
     }
     for (int j = 0; j < parameters.Ny; j++) {
         parameters.y[j] = parameters.y_min + j * parameters.dy;
         if (j < parameters.Ny - 1) {
-            parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / (parameters.y_max - parameters.y_min);
+            // parameters.ky[j] = 2 * M_PI * parameters.s[j] * parameters.dz / (parameters.y_max - parameters.y_min);
+            parameters.ky[j] = 2 * M_PI * parameters.s[j] / (parameters.y_max - parameters.y_min);
         }
     }
-    for (int k = 0; k < parameters.Nz; k++) {
-        parameters.z[k] = parameters.z_min + k * parameters.dz;
-        // Get the index of z where Y_h is located
-        // if (parameters.z[k] <= parameters.Y_h) {
-        //     parameters.k_Y_h = k;
-        //     parameters.Nz_Y = k + 1;
-        // }
-    }
+    // for (int k = 0; k < parameters.Nz; k++) {
+    //     parameters.z[k] = parameters.z_min + k * parameters.dz;
+    //     // Get the index of z where Y_h is located
+    //     // if (parameters.z[k] <= parameters.Y_h) {
+    //     //     parameters.k_Y_h = k;
+    //     //     parameters.Nz_Y = k + 1;
+    //     // }
+    // }
+    // Get z domain
+    equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.dz);
+    // non_equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, 0.1);
     for (int n = 0; n <= parameters.Nt; n++) {
         parameters.t[n] = parameters.t_min + n * parameters.dt;
     }

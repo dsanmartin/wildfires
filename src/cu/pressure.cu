@@ -261,7 +261,7 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
 }
 
 __global__
-void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters) {
+void gammas_and_coefficients_v1(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -276,13 +276,47 @@ void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, d
         if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
             // gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
             gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] = -2 - kx[r] * kx[r] - ky[s] * ky[s];
-            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz), 0.0; 
-            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz, 0.0;
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz); 
+            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz;
             // c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[FFTWIDX(r, s, k, Nx - 1, Ny - 1, 0)]) / dz;
             c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (2.0 + 0.5 * gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)]) / dz;
         } else { // The rest of the coefficients a and c
             a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz); 
             c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 1.0 / (dz * dz);
+        }
+    }
+}
+
+__global__
+void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    // double dz = parameters.dz;
+    double dz_km1, dz_k, dz_kp1, dz_Nzm2, dz_Nzm1;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    int size = (Nx - 1) * (Ny - 1) * (Nz - 2);
+    for (int rsk = idx; rsk < size; rsk += stride) {
+        int r = rsk / ((Ny - 1) * (Nz - 2));
+        int s = (rsk % ((Ny - 1) * (Nz - 2))) / (Nz - 2);
+        int k = rsk % (Nz - 2);
+        dz_k = z[k + 1] - z[k];
+        if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
+            dz_kp1 = z[k + 2] - z[k + 1];
+            dz_Nzm2 = z[Nz - 2] - z[Nz - 3];
+            dz_Nzm1 = z[Nz - 1] - z[Nz - 2];
+            // gamma[IDX(r, s, k, Nx - 1, Ny - 1, 1)] = kx[r] * kx[r] - ky[s] * ky[s];
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_k + dz_kp1)); 
+            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz_k;
+            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (dz_k + dz_kp1) / (dz_k * dz_kp1) - 0.5 * dz_k * (kx[r] * kx[r] + ky[s] * ky[s]) - 1 / dz_kp1;
+            // Last equation for b z=Nz-1
+            b[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = - (kx[r] * kx[r] + ky[s] * ky[s] + 2 / (dz_Nzm2 * dz_Nzm1));
+        } else { // The rest of the coefficients a and c
+            dz_km1 = z[k] - z[k - 1];
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_km1 * (dz_km1 + dz_k));
+            c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_km1 + dz_k));
+            b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = - (kx[r] * kx[r] + ky[s] * ky[s] + 2 / (dz_km1 * dz_k));
         }
     }
 }
@@ -341,7 +375,7 @@ void thomas_algorithm(double *a, double *b, double *c, cufftDoubleComplex *d, cu
 }
 
 __global__ 
-void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
+void update_coefficients_v1(double *gamma, double *b, double *z, cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -360,11 +394,43 @@ void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex
             d[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(f_out[FFTWIDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], cuCdiv(p_top_out[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1)], make_cuDoubleComplex(dz * dz, 0.0)));
         } else {
             if (k < Nz - 1) {
-                // b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, 0)] / (dz * dz);
                 b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = gamma[IDX(r, s, 0, Nx - 1, Ny - 1, 1)] / (dz * dz);
                 if (k < Nz - 2)
                     d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = f_out[FFTWIDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)];
             }
+        }
+    }
+}
+
+__global__ 
+void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex *d, cufftDoubleComplex *f_out, cufftDoubleComplex *p_top_out, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    // double dz = parameters.dz;
+    double dz_k, dz_Nzm2, dz_Nzm1;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    int size = (Nx - 1) * (Ny - 1) * (Nz - 1);
+    for (int rsk = idx; rsk < size; rsk += stride) {
+        int r = rsk / ((Ny - 1) * (Nz - 1));
+        int s = (rsk % ((Ny - 1) * (Nz - 1))) / (Nz - 1);
+        int k = rsk % (Nz - 1);
+        if (k == 0) {
+            dz_k = z[k + 1] - z[k]; 
+            dz_Nzm2 = z[Nz - 2] - z[Nz - 3];
+            dz_Nzm1 = z[Nz - 1] - z[Nz - 2];
+            // First equation k=0
+            d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = cuCmul(make_cuDoubleComplex(0.5 * dz_k, 0.0), f_out[FFTWIDX(r, s, 1, Nx - 1, Ny - 1, Nz - 1)]);
+            // Last equation k=Nz-1
+            d[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = cuCsub(
+                f_out[FFTWIDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)], 
+                cuCdiv(p_top_out[FFTWIDX(r, s, 0, Nx - 1, Ny - 1, Nz - 1)], 
+                make_cuDoubleComplex(2 /(dz_Nzm1 * (dz_Nzm2 + dz_Nzm1)), 0.0))
+            );
+        } else {
+            if (k < Nz - 2) 
+                d[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = f_out[FFTWIDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)];
         }
     }
 }

@@ -122,4 +122,8 @@ void temperature_source(double *x, double *y, double *z, double *y_n, Parameters
 __global__
 void norm(double *v1, double *v2, double *result, double p, int size);
 
+void equispaced_domain(double *z, int Nz, double z_min, double dz);
+
+void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double k);
+
 #endif

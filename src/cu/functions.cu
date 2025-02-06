@@ -42,6 +42,21 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
     return H_R * Y * K(T, A, T_a) * H(T, T_pc) / c_p - h * a_v * (T - T_inf) / (c_p * rho_inf);
 }
 
+double non_uniform_z(double z, double z_min, double z_max, double k) {
+    return (z_max - z_min) * (exp(k * (z - z_min) / (z_max - z_min)) - 1) / (exp(k) - 1) + z_min;
+}
+
+void equispaced_domain(double *z, int Nz, double z_min, double dz) {
+    for (int k = 0; k < Nz; k++) 
+        z[k] = z_min + k * dz;
+}
+
+void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double k) {
+    double dz = (z_max - z_min) / (Nz - 1);
+    for (int k = 0; k < Nz; k++) 
+        z[k] = (z_max - z_min) * (exp(k * ((z_min + k * dz) - z_min) / (z_max - z_min)) - 1) / (exp(k) - 1) + z_min;
+}
+
 void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters) {
     // printf("Timestep reports\n");
     int Nx = parameters.Nx;
