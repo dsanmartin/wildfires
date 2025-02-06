@@ -194,6 +194,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double mod_U;
     double F_x, F_y, F_z;
     double H_step, K_T;
+    double dz_km3, dz_km2, dz_km1, dz_k, dz_kp1, dz_kp2;
     int i, j, k;
     int im1, ip1, jm1, jp1;
     int im2, ip2, jm2, jp2;
@@ -215,7 +216,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         ip2 = (i + 2) % (Nx - 1);
         jp1 = (j + 1) % (Ny - 1);
         jp2 = (j + 2) % (Ny - 1);
-        
         // Current nodes \phi_{i,j,k}
         u_ijk = R_old[u_index + IDX(i, j, k, Nx, Ny, Nz)];
         v_ijk = R_old[v_index + IDX(i, j, k, Nx, Ny, Nz)];
@@ -257,6 +257,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_ijp2k = R_old[u_index + IDX(i, jp2, k, Nx, Ny, Nz)];
         v_ijp2k = R_old[v_index + IDX(i, jp2, k, Nx, Ny, Nz)];
         w_ijp2k = R_old[w_index + IDX(i, jp2, k, Nx, Ny, Nz)];
+        // Get dz values
         // \phi_{i,j,k-1}
         u_ijkm1 = 0, v_ijkm1 = 0, w_ijkm1 = 0, T_ijkm1 = 0;
         if (k > 0) {
@@ -326,23 +327,75 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         w_jp = (-3 * w_ijk + 4 * w_ijp1k - w_ijp2k) / (2 * dy);
         // Second order forward difference at k=0 and k=1
         if (k <= 1) {
-            u_km = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz);
-            v_km = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
-            w_km = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1]; 
+            // Equispaced
+            // u_km = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz);
+            // v_km = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
+            // w_km = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
+            // Non-equispaced grid
+            u_km = - (2 * dz_k + dz_kp1) * u_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * u_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * u_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            v_km = - (2 * dz_k + dz_kp1) * v_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * v_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * v_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            w_km = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         } else {
-            u_km = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz);
-            v_km = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
-            w_km = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
+            // Equispaced
+            // u_km = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz);
+            // v_km = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
+            // w_km = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
+            // Non-equispaced grid
+            u_km = dz_km1 * u_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * u_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * u_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            v_km = dz_km1 * v_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * v_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * v_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            w_km = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
         }
         // Second order backward difference at k=Nz-2 and k=Nz-1
         if (k >= Nz - 2) {
-            u_kp = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz);
-            v_kp = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
-            w_kp = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
+            // Equispaced
+            // u_kp = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz);
+            // v_kp = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz);
+            // w_kp = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz);
+            // Non-equispaced grid
+            u_kp = dz_km1 * u_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * u_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * u_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            v_kp = dz_km1 * v_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * v_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * v_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            w_kp = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
         } else {
-            u_kp = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz);
-            v_kp = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
-            w_kp = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1]; 
+            // Equispaced
+            // u_kp = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz);
+            // v_kp = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz);
+            // w_kp = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz);
+            // Non-equispaced
+            u_kp = - (2 * dz_k + dz_kp1) * u_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * u_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * u_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            v_kp = - (2 * dz_k + dz_kp1) * v_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * v_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * v_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            w_kp = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         }
         /* Compute first partial derivatives */
         // Upwind scheme for velocity
@@ -375,32 +428,110 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         Txx = (T_ip1jk - 2.0 * T_ijk + T_im1jk) / (dx * dx); // d^2T/dx^2 
         Tyy = (T_ijp1k - 2.0 * T_ijk + T_ijm1k) / (dy * dy); // d^2T/dy^2
         if (k == 0) { // Forward difference
-            uz = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz); // du/dz
-            vz = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz); // dv/dz
-            wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz
-            Tz = (-3.0 * T_ijk + 4.0 * T_ijkp1 - T_ijkp2) / (2.0 * dz); // dT/dz
-            uzz = (2 * u_ijk - 5 * u_ijkp1 + 4 * u_ijkp2 - u_ijkp3) / (dz * dz); // d^2u/dz^2
-            vzz = (2 * v_ijk - 5 * v_ijkp1 + 4 * v_ijkp2 - v_ijkp3) / (dz * dz); // d^2v/dz^2
-            wzz = (2 * w_ijk - 5 * w_ijkp1 + 4 * w_ijkp2 - w_ijkp3) / (dz * dz); // d^2w/dz^2
-            Tzz = (2 * T_ijk - 5 * T_ijkp1 + 4 * T_ijkp2 - T_ijkp3) / (dz * dz); // d^2T/dz^2
+            dz_k = z[k + 1] - z[k]; 
+            dz_kp1 = z[k + 2] - z[k + 1]; 
+            dz_kp2 = z[k + 3] - z[k + 2];
+            // Equispaced grid
+            // uz = (-3 * u_ijk + 4 * u_ijkp1 - u_ijkp2) / (2 * dz); // du/dz
+            // vz = (-3 * v_ijk + 4 * v_ijkp1 - v_ijkp2) / (2 * dz); // dv/dz
+            // wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz
+            // Tz = (-3.0 * T_ijk + 4.0 * T_ijkp1 - T_ijkp2) / (2.0 * dz); // dT/dz
+            // uzz = (2 * u_ijk - 5 * u_ijkp1 + 4 * u_ijkp2 - u_ijkp3) / (dz * dz); // d^2u/dz^2
+            // vzz = (2 * v_ijk - 5 * v_ijkp1 + 4 * v_ijkp2 - v_ijkp3) / (dz * dz); // d^2v/dz^2
+            // wzz = (2 * w_ijk - 5 * w_ijkp1 + 4 * w_ijkp2 - w_ijkp3) / (dz * dz); // d^2w/dz^2
+            // Tzz = (2 * T_ijk - 5 * T_ijkp1 + 4 * T_ijkp2 - T_ijkp3) / (dz * dz); // d^2T/dz^2
+            // Non-equispaced grid
+            uz = - (2 * dz_k + dz_kp1) * u_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * u_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * u_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            vz = - (2 * dz_k + dz_kp1) * v_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * v_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * v_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            wz = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            Tz = - (2 * dz_k + dz_kp1) * T_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * T_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * T_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            uzz = (6 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * u_ijk / (dz_k * (dz_k + dz_kp1) * (dz_k + dz_kp1 + dz_kp2))
+                - (4 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * u_ijkp1 / (dz_k * dz_kp1 * (dz_kp1 + dz_kp2))
+                + (4 * dz_k + 2 * dz_kp1 + 2 * dz_kp2) * u_ijkp2 / (dz_kp1 * dz_kp2 * (dz_k + dz_kp1))
+                - (4 * dz_k + 2 * dz_kp1) * u_ijkp3 / (dz_kp2 * (dz_kp1 + dz_kp2) * (dz_k + dz_kp1 + dz_kp2));
+            vzz = (6 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * v_ijk / (dz_k * (dz_k + dz_kp1) * (dz_k + dz_kp1 + dz_kp2))
+                - (4 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * v_ijkp1 / (dz_k * dz_kp1 * (dz_kp1 + dz_kp2))
+                + (4 * dz_k + 2 * dz_kp1 + 2 * dz_kp2) * v_ijkp2 / (dz_kp1 * dz_kp2 * (dz_k + dz_kp1))
+                - (4 * dz_k + 2 * dz_kp1) * v_ijkp3 / (dz_kp2 * (dz_kp1 + dz_kp2) * (dz_k + dz_kp1 + dz_kp2));
+            wzz = (6 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * w_ijk / (dz_k * (dz_k + dz_kp1) * (dz_k + dz_kp1 + dz_kp2))
+                - (4 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * w_ijkp1 / (dz_k * dz_kp1 * (dz_kp1 + dz_kp2))
+                + (4 * dz_k + 2 * dz_kp1 + 2 * dz_kp2) * w_ijkp2 / (dz_kp1 * dz_kp2 * (dz_k + dz_kp1))
+                - (4 * dz_k + 2 * dz_kp1) * w_ijkp3 / (dz_kp2 * (dz_kp1 + dz_kp2) * (dz_k + dz_kp1 + dz_kp2));
+            Tzz = (6 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * T_ijk / (dz_k * (dz_k + dz_kp1) * (dz_k + dz_kp1 + dz_kp2))
+                - (4 * dz_k + 4 * dz_kp1 + 2 * dz_kp2) * T_ijkp1 / (dz_k * dz_kp1 * (dz_kp1 + dz_kp2))
+                + (4 * dz_k + 2 * dz_kp1 + 2 * dz_kp2) * T_ijkp2 / (dz_kp1 * dz_kp2 * (dz_k + dz_kp1))
+                - (4 * dz_k + 2 * dz_kp1) * T_ijkp3 / (dz_kp2 * (dz_kp1 + dz_kp2) * (dz_k + dz_kp1 + dz_kp2));
         } else if (k == Nz - 1) {
-            uz = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz); // du/dz
-            vz = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz); // dv/dz
-            wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz
-            Tz = (3.0 * T_ijk - 4.0 * T_ijkm1 + T_ijkm2) / (2.0 * dz); // dT/dz
-            uzz = (2 * u_ijk - 5 * u_ijkm1 + 4 * u_ijkm2 - u_ijkm3) / (dz * dz); // d^2u/dz^2
-            vzz = (2 * v_ijk - 5 * v_ijkm1 + 4 * v_ijkm2 - v_ijkm3) / (dz * dz); // d^2v/dz^2
-            wzz = (2 * w_ijk - 5 * w_ijkm1 + 4 * w_ijkm2 - w_ijkm3) / (dz * dz); // d^2w/dz^2
-            Tzz = (2 * T_ijk - 5 * T_ijkm1 + 4 * T_ijkm2 - T_ijkm3) / (dz * dz); // d^2T/dz^2
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
+            dz_km3 = z[k - 2] - z[k - 3];
+            // Equispaced grid
+            // uz = (3 * u_ijk - 4 * u_ijkm1 + u_ijkm2) / (2 * dz); // du/dz
+            // vz = (3 * v_ijk - 4 * v_ijkm1 + v_ijkm2) / (2 * dz); // dv/dz
+            // wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz
+            // Tz = (3.0 * T_ijk - 4.0 * T_ijkm1 + T_ijkm2) / (2.0 * dz); // dT/dz
+            // uzz = (2 * u_ijk - 5 * u_ijkm1 + 4 * u_ijkm2 - u_ijkm3) / (dz * dz); // d^2u/dz^2
+            // vzz = (2 * v_ijk - 5 * v_ijkm1 + 4 * v_ijkm2 - v_ijkm3) / (dz * dz); // d^2v/dz^2
+            // wzz = (2 * w_ijk - 5 * w_ijkm1 + 4 * w_ijkm2 - w_ijkm3) / (dz * dz); // d^2w/dz^2
+            // Tzz = (2 * T_ijk - 5 * T_ijkm1 + 4 * T_ijkm2 - T_ijkm3) / (dz * dz); // d^2T/dz^2
+            // Non-equispaced grid
+            uz = dz_km1 * u_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * u_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * u_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            vz = dz_km1 * v_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * v_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * v_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            wz = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            Tz = dz_km1 * T_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * T_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * T_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            uzz = - (2 * dz_km2 + 4 * dz_km1) * u_ijkm3 / (dz_km3 * (dz_km3 + dz_km2) * (dz_km3 + dz_km2 + dz_km1))
+                + (2 * dz_km3 + 2 * dz_km2 + 4 * dz_km1) * u_ijkm2 / (dz_km3 * dz_km2 * (dz_km2 + dz_km1))
+                - (2 * dz_km3 + 4 * dz_km2 + 4 * dz_km1) * u_ijkm1 / (dz_km2 * dz_km1 * (dz_km3 + dz_km2))
+                + (2 * dz_km3 + 4 * dz_km2 + 6 * dz_km1) * u_ijk / (dz_km1 * (dz_km2 + dz_km1) * (dz_km3 + dz_km2 + dz_km1)); 
+            vzz = - (2 * dz_km2 + 4 * dz_km1) * v_ijkm3 / (dz_km3 * (dz_km3 + dz_km2) * (dz_km3 + dz_km2 + dz_km1))
+                + (2 * dz_km3 + 2 * dz_km2 + 4 * dz_km1) * v_ijkm2 / (dz_km3 * dz_km2 * (dz_km2 + dz_km1))
+                - (2 * dz_km3 + 4 * dz_km2 + 4 * dz_km1) * v_ijkm1 / (dz_km2 * dz_km1 * (dz_km3 + dz_km2))
+                + (2 * dz_km3 + 4 * dz_km2 + 6 * dz_km1) * v_ijk / (dz_km1 * (dz_km2 + dz_km1) * (dz_km3 + dz_km2 + dz_km1)); 
+            wzz = - (2 * dz_km2 + 4 * dz_km1) * w_ijkm3 / (dz_km3 * (dz_km3 + dz_km2) * (dz_km3 + dz_km2 + dz_km1))
+                + (2 * dz_km3 + 2 * dz_km2 + 4 * dz_km1) * w_ijkm2 / (dz_km3 * dz_km2 * (dz_km2 + dz_km1))
+                - (2 * dz_km3 + 4 * dz_km2 + 4 * dz_km1) * w_ijkm1 / (dz_km2 * dz_km1 * (dz_km3 + dz_km2))
+                + (2 * dz_km3 + 4 * dz_km2 + 6 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1) * (dz_km3 + dz_km2 + dz_km1)); 
+            Tzz = - (2 * dz_km2 + 4 * dz_km1) * T_ijkm3 / (dz_km3 * (dz_km3 + dz_km2) * (dz_km3 + dz_km2 + dz_km1))
+                + (2 * dz_km3 + 2 * dz_km2 + 4 * dz_km1) * T_ijkm2 / (dz_km3 * dz_km2 * (dz_km2 + dz_km1))
+                - (2 * dz_km3 + 4 * dz_km2 + 4 * dz_km1) * T_ijkm1 / (dz_km2 * dz_km1 * (dz_km3 + dz_km2))
+                + (2 * dz_km3 + 4 * dz_km2 + 6 * dz_km1) * T_ijk / (dz_km1 * (dz_km2 + dz_km1) * (dz_km3 + dz_km2 + dz_km1)); 
         } else {
-            uz  = (u_ijkp1 - u_ijkm1) / (2 * dz); // du/dz
-            vz  = (v_ijkp1 - v_ijkm1) / (2 * dz); // dv/dz
-            wz  = (w_ijkp1 - w_ijkm1) / (2 * dz); // dw/dz
-            Tz  = (T_ijkp1 - T_ijkm1) / (2.0 * dz); // dT/dz
-            uzz = (u_ijkp1 - 2.0 * u_ijk + u_ijkm1) / (dz * dz); // d^2u/dz^2
-            vzz = (v_ijkp1 - 2.0 * v_ijk + v_ijkm1) / (dz * dz); // d^2v/dz^2
-            wzz = (w_ijkp1 - 2.0 * w_ijk + w_ijkm1) / (dz * dz); // d^2w/dz^2
-            Tzz = (T_ijkp1 - 2.0 * T_ijk + T_ijkm1) / (dz * dz); // d^2T/dz^2
+            dz_km1 = z[k] - z[k-1];
+            dz_k = z[k + 1] - z[k];
+            // Equispaced grid
+            // uz  = (u_ijkp1 - u_ijkm1) / (2 * dz); // du/dz
+            // vz  = (v_ijkp1 - v_ijkm1) / (2 * dz); // dv/dz
+            // wz  = (w_ijkp1 - w_ijkm1) / (2 * dz); // dw/dz
+            // Tz  = (T_ijkp1 - T_ijkm1) / (2.0 * dz); // dT/dz
+            // uzz = (u_ijkp1 - 2.0 * u_ijk + u_ijkm1) / (dz * dz); // d^2u/dz^2
+            // vzz = (v_ijkp1 - 2.0 * v_ijk + v_ijkm1) / (dz * dz); // d^2v/dz^2
+            // wzz = (w_ijkp1 - 2.0 * w_ijk + w_ijkm1) / (dz * dz); // d^2w/dz^2
+            // Tzz = (T_ijkp1 - 2.0 * T_ijk + T_ijkm1) / (dz * dz); // d^2T/dz^2
+            // Non-equispaced grid
+            uz = (u_ijkp1 - u_ijkm1) / (dz_km1 + dz_k); // du/dz
+            vz = (v_ijkp1 - v_ijkm1) / (dz_km1 + dz_k); // dv/dz
+            wz = (w_ijkp1 - w_ijkm1) / (dz_km1 + dz_k); // dw/dz
+            Tz = (T_ijkp1 - T_ijkm1) / (dz_km1 + dz_k); // dT/dz
+            uzz = 2 * u_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * u_ijk / (dz_km1 * dz_k) + 2 * u_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2u/dz^2
+            vzz = 2 * v_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * v_ijk / (dz_km1 * dz_k) + 2 * v_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2v/dz^2
+            wzz = 2 * w_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * w_ijk / (dz_km1 * dz_k) + 2 * w_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2w/dz^2
+            Tzz = 2 * T_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * T_ijk / (dz_km1 * dz_k) + 2 * T_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2T/dz^2
         }
         // Damping function
         tau_p = 0.0;
@@ -532,7 +663,7 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
                 //pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz); // Equispaced grid
                 pz = dz_km1 * p_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
                     - (dz_km2 + dz_km1) * p_ijkm1 / (dz_km2 * dz_km1) 
-                    + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non equispaced grid
+                    + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non-equispaced grid
             } else { // Inside the domain
                 dz_km1 = z[k] - z[k - 1];
                 dz_k = z[k + 1] - z[k];

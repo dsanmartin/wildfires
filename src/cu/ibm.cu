@@ -59,9 +59,10 @@ void ibm_parameters(Parameters *parameters) {
     int Ny = parameters->Ny;
     int Nz = parameters->Nz;
     double *z = parameters->z;
-    double dz = parameters->dz;
+    // double dz = parameters->dz;
     double Y_h = parameters->Y_h;
     double topo;
+    double dz;
     int Nz_Y_max = 0;
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
@@ -70,7 +71,11 @@ void ibm_parameters(Parameters *parameters) {
             // Initialize the cut nodes and Nz_Y
             parameters->cut_nodes[IDX(i, j, 0, Nx, Ny, 1)] = 0;
             parameters->Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] = 0;
-            for (int k = 0; k < Nz; k++) {                
+            for (int k = 0; k < Nz; k++) {      
+                if (k < Nz - 1)
+                    dz = z[k + 1] - z[k];
+                else
+                    dz = z[k] - z[k - 1];          
                 // Find the cut nodes indexes
                 if ((topo - dz) <= z[k] && z[k] <= topo) {
                     parameters->cut_nodes[IDX(i, j, 0, Nx, Ny, 1)] = k;

@@ -22,13 +22,14 @@ void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftD
     int im1, ip1, jm1, jp1;
     double dx = parameters.dx;
     double dy = parameters.dy;
-    double dz = parameters.dz;
+    // double dz = parameters.dz;
     double dt = parameters.dt;
     double rho_inf = parameters.rho_inf;
     double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
     double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
-    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2, w_ijkph, w_ijkmh;
+    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;//, w_ijkph, w_ijkmh;
     double ux, vy, wz, f;
+    double dz_km2, dz_km1, dz_k, dz_kp1;
     // Loop over nodes to compute f
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
@@ -52,20 +53,33 @@ void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftD
         v_ijm1k = U[v_index + IDX(i, jm1, k, Nx, Ny, Nz)];
         v_ijp1k = U[v_index + IDX(i, jp1, k, Nx, Ny, Nz)];
         // dw/dz 
-        if (k == 0) { // Bottom boundary                    
+        if (k == 0) { // Bottom boundary dw/dz at z = z_min      
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1];
             w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
             w_ijkp2 = U[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
-            wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz at z = z_min
-        } else if (k == Nz - 1) { // Top boundary
+            // wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // Equispaced
+            wz = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1)); // Non-equispaced grid
+        } else if (k == Nz - 1) { // Top boundary dw/dz at z = z_max
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
             w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
             w_ijkm2 = U[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
-            wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz at z = z_max
-        } else { // Interior
+            // wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // Equispaced
+            wz = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1)); // Non-equispaced grid
+        } else { // Interior dw/dz at z = z_k
+            dz_km1 = z[k] - z[k - 1];
+            dz_k = z[k + 1] - z[k];
             w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
             w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
-            w_ijkph = 0.5 * (w_ijk + w_ijkp1);
-            w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
-            wz = (w_ijkph - w_ijkmh) / dz; // dw/dz at z = z_k
+            // w_ijkph = 0.5 * (w_ijk + w_ijkp1);
+            // w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
+            // wz = (w_ijkph - w_ijkmh) / dz; // Equispaced
+            wz = (w_ijkp1 - w_ijkm1) / (dz_k + dz_km1); // Non-equispaced grid
         }
         // Half derivatives
         u_iphjk = 0.5 * (u_ip1jk + u_ijk);
@@ -98,18 +112,19 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
     int im1, ip1, jm1, jp1;
     double dx = parameters.dx;
     double dy = parameters.dy;
-    double dz = parameters.dz;
+    // double dz = parameters.dz;
     double dt = parameters.dt;
     double T_inf = parameters.T_inf;
     double rho_inf = parameters.rho_inf;
     double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
     double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
-    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2, w_ijkph, w_ijkmh;
+    double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;//, w_ijkph, w_ijkmh;
     double T_ijk, T_im1jk, T_ip1jk, T_ijm1k, T_ijp1k, T_ijkp1, T_ijkp2, T_ijkm1, T_ijkm2;
     double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkp2, p_ijkm1, p_ijkm2;
     double rho_ijk, rho_im1jk, rho_ip1jk, rho_ijm1k, rho_ijp1k, rho_ijkp1, rho_ijkp2, rho_ijkm1, rho_ijkm2;
     double ux, vy, wz, f;
     double rho, rhox, rhoy, rhoz, px, py, pz;
+    double dz_km2, dz_km1, dz_k, dz_kp1;
     // Loop over nodes to compute f
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
@@ -148,7 +163,9 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
         rho_ijm1k = T_inf * rho_inf / T_ijm1k;
         rho_ijp1k = T_inf * rho_inf / T_ijp1k;
         // dw/dz 
-        if (k == 0) { // Bottom boundary                    
+        if (k == 0) { // Bottom boundary       
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1];             
             w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
             w_ijkp2 = U[w_index + IDX(i, j, k + 2, Nx, Ny, Nz)];
             T_ijkp1 = U[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
@@ -157,10 +174,23 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
             p_ijkp2 = p[IDX(i, j, k + 2, Nx, Ny, Nz)];
             rho_ijkp1 = T_inf * rho_inf / T_ijkp1;
             rho_ijkp2 = T_inf * rho_inf / T_ijkp2;
-            wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz at z = z_min
-            rhoz = (-3 * rho_ijk + 4 * rho_ijkp1 - rho_ijkp2) / (2 * dz);
-            pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+            // Equispaced grid
+            // wz = (-3 * w_ijk + 4 * w_ijkp1 - w_ijkp2) / (2 * dz); // dw/dz at z = z_min
+            // rhoz = (-3 * rho_ijk + 4 * rho_ijkp1 - rho_ijkp2) / (2 * dz);
+            // pz = (-3 * p_ijk + 4 * p_ijkp1 - p_ijkp2) / (2 * dz);
+            // Non-equispaced grid
+            wz = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            rhoz = - (2 * dz_k + dz_kp1) * rho_ijk / (dz_k * (dz_k + dz_kp1))
+                + (dz_k + dz_kp1) * rho_ijkp1 / (dz_k * dz_kp1)
+                - dz_k * rho_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            pz = - (2 * dz_k + dz_kp1) * p_ijk / (dz_k * (dz_k + dz_kp1))
+                + (dz_k + dz_kp1) * p_ijkp1 / (dz_k * dz_kp1)
+                - dz_k * p_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         } else if (k == Nz - 1) { // Top boundary
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
             w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
             w_ijkm2 = U[w_index + IDX(i, j, k - 2, Nx, Ny, Nz)];
             T_ijkm1 = U[T_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
@@ -169,10 +199,23 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
             p_ijkm2 = p[IDX(i, j, k - 2, Nx, Ny, Nz)];
             rho_ijkm1 = T_inf * rho_inf / T_ijkm1;
             rho_ijkm2 = T_inf * rho_inf / T_ijkm2;
-            wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz at z = z_max
-            rhoz = (3 * rho_ijk - 4 * rho_ijkm1 + rho_ijkm2) / (2 * dz);
-            pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+            // Equispaced grid
+            // wz = (3 * w_ijk - 4 * w_ijkm1 + w_ijkm2) / (2 * dz); // dw/dz at z = z_max
+            // rhoz = (3 * rho_ijk - 4 * rho_ijkm1 + rho_ijkm2) / (2 * dz);
+            // pz = (3 * p_ijk - 4 * p_ijkm1 + p_ijkm2) / (2 * dz);
+            // Non-equispaced grid
+            wz = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
+                - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            rhoz = dz_km1 * rho_ijkm2 / (dz_km2 * (dz_km2 + dz_km1))
+                - (dz_km2 + dz_km1) * rho_ijkm1 / (dz_km2 * dz_km1)
+                + (dz_km2 + 2 * dz_km1) * rho_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            pz = dz_km1 * p_ijkm2 / (dz_km2 * (dz_km2 + dz_km1))
+                - (dz_km2 + dz_km1) * p_ijkm1 / (dz_km2 * dz_km1)
+                + (dz_km2 + 2 * dz_km1) * p_ijk / (dz_km1 * (dz_km2 + dz_km1));
         } else { // Interior
+            dz_km1 = z[k] - z[k - 1];
+            dz_k = z[k + 1] - z[k];
             w_ijkp1 = U[w_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
             w_ijkm1 = U[w_index + IDX(i, j, k - 1, Nx, Ny, Nz)];
             T_ijkp1 = U[T_index + IDX(i, j, k + 1, Nx, Ny, Nz)];
@@ -181,11 +224,16 @@ void compute_f_density(double *U, double *p, double *z,cufftDoubleComplex *f_in,
             rho_ijkm1 = T_inf * rho_inf / T_ijkm1;
             p_ijkp1 = p[IDX(i, j, k + 1, Nx, Ny, Nz)];
             p_ijkm1 = p[IDX(i, j, k - 1, Nx, Ny, Nz)];
-            w_ijkph = 0.5 * (w_ijk + w_ijkp1);
-            w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
-            wz = (w_ijkph - w_ijkmh) / dz; // dw/dz at z = z_k
-            rhoz = (rho_ijkp1 - rho_ijkm1) / (2 * dz); // drho/dz at z = z_k
-            pz = (p_ijkp1 - p_ijkm1) / (2 * dz); // dp/dz at z = z_k
+            // w_ijkph = 0.5 * (w_ijk + w_ijkp1);
+            // w_ijkmh = 0.5 * (w_ijk + w_ijkm1);
+            // // Equispaced
+            // wz = (w_ijkph - w_ijkmh) / dz; // dw/dz at z = z_k
+            // rhoz = (rho_ijkp1 - rho_ijkm1) / (2 * dz); // drho/dz at z = z_k
+            // pz = (p_ijkp1 - p_ijkm1) / (2 * dz); // dp/dz at z = z_k
+            // Non-equispaced
+            wz = (w_ijkp1 - w_ijkm1) / (dz_k + dz_km1); 
+            rhoz = (rho_ijkp1 - rho_ijkm1) / (dz_k + dz_km1);
+            pz = (p_ijkp1 - p_ijkm1) / (dz_k + dz_km1);
         }
         // Half derivatives
         u_iphjk = 0.5 * (u_ip1jk + u_ijk);
@@ -334,39 +382,31 @@ void solve_pressure(double *U, double *p, double *z, double *gamma, double *a, d
     int *inembed = NULL;
     int *onembed = NULL;
     cufftHandle p_plan = 0, f_plan = 0, p_top_plan = 0;
-
     // Compute f = rho / dt * div(U)
     if (parameters.variable_density == 0)
         compute_f<<<BLOCKS, THREADS>>>(U, p, z, data_in, p_top_in, parameters);
     else
         compute_f_density<<<BLOCKS, THREADS>>>(U, p, z, data_in, p_top_in, parameters);
     checkCuda(cudaGetLastError());
-    
     // Plans for FFT2D
     CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany)); // FFT2(f_k) for each z slice
     CHECK_CUFFT(cufftPlan2d(&p_top_plan, Nx - 1, Ny - 1, CUFFT_Z2Z)); // FFT2(p_top)
-
     // Compute FFT2D
     CHECK_CUFFT(cufftExecZ2Z(p_top_plan, p_top_in, p_top_out, CUFFT_FORWARD)); // FFT2(p_top)
     CHECK_CUFFT(cufftExecZ2Z(p_plan, data_in, data_out, CUFFT_FORWARD)); // FFT2D(f_k) for each z slice
     CHECK(cudaDeviceSynchronize());
-
     // Update coefficients, including f in pseudo-Fourier space
     update_coefficients<<<BLOCKS, THREADS>>>(gamma, b, z, d, data_out, p_top_out, parameters);
     checkCuda(cudaGetLastError());
-
     // Compute r,s systems of equations using thomas algorithm
     thomas_algorithm<<<BLOCKS, THREADS>>>(a, b, c, d, data_in, l, u, y, parameters);
     checkCuda(cudaGetLastError());
-
     // Compute IFFT2D
     CHECK_CUFFT(cufftExecZ2Z(p_plan, data_in, data_out, CUFFT_INVERSE));
     CHECK(cudaDeviceSynchronize());
-
     // Post FFT
     post_fft<<<BLOCKS, THREADS>>>(p, data_out, parameters);
     checkCuda(cudaGetLastError());
-
     // Destroy plans
     cufftDestroy(p_top_plan);
     cufftDestroy(p_plan);
