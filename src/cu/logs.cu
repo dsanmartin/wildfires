@@ -2,6 +2,7 @@
 
 void log_parameters_report(Parameters parameters, int to_file) {
     FILE *output;
+    double dz_min = INFINITY, dz_max = -INFINITY;
     setbuf(stdout, NULL);
     if (to_file) 
         output = parameters.log_files.parameters;
@@ -14,7 +15,15 @@ void log_parameters_report(Parameters parameters, int to_file) {
         parameters.z_min, parameters.z_max, parameters.t_min, parameters.t_max);
     fprintf(output, "Grid size:\n");
     fprintf(output, "  Nx: %d, Ny: %d, Nz: %d, Nt: %d\n", parameters.Nx, parameters.Ny, parameters.Nz, parameters.Nt);
-    fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters.dx, parameters.dy, parameters.dz, parameters.dt);
+    if (parameters.z_uniform == 1) {
+        fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters.dx, parameters.dy, parameters.dz, parameters.dt);
+    } else {
+        for (int k = 0; k < parameters.Nz - 1; k++) {
+            dz_min = MIN(dz_min, parameters.z[k + 1] - parameters.z[k]);
+            dz_max = MAX(dz_max, parameters.z[k + 1] - parameters.z[k]);
+        }
+        fprintf(output, "  dx: %lf, dy: %lf, dz: [%lf, %lf], dt: %lf\n", parameters.dx, parameters.dy, dz_min, dz_max, parameters.dt);
+    }
     fprintf(output, "  Time samples: %d\n", parameters.NT);
     fprintf(output, "Time integration: %s\n", parameters.method);
     fprintf(output, "Fluid parameters:\n");

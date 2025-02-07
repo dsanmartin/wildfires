@@ -288,6 +288,15 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "pressure_solver_log =", 21) == 0) {
             sscanf(line + 22, "%d", &(parameters.pressure_solver_log));
         }
+        // Test
+        // Check if z in uniform z_uniform parameter
+        if (strncmp(line, "z_uniform =", 10) == 0) {
+            sscanf(line + 11, "%d", &(parameters.z_uniform));
+        }
+        // Find k_nu_grid parameter
+        if (strncmp(line, "k_nu_grid =", 11) == 0) {
+            sscanf(line + 12, "%lf", &(parameters.k_nu_grid));
+        }
 
     }
     // Initialize x, y, z, t
@@ -316,6 +325,11 @@ Parameters read_parameters_file(const char *file_path) {
     fft_freq(parameters.r, parameters.Nx - 1, 1.0 / (parameters.Nx - 1));
     fft_freq(parameters.s, parameters.Ny - 1, 1.0 / (parameters.Ny - 1));
     // Physical domain and frequency domain
+    // t
+    for (int n = 0; n <= parameters.Nt; n++) {
+        parameters.t[n] = parameters.t_min + n * parameters.dt;
+    }
+    // x and kx
     for (int i = 0; i < parameters.Nx; i++) {
         parameters.x[i] = parameters.x_min + i * parameters.dx;
         if (i < parameters.Nx - 1) {
@@ -323,6 +337,7 @@ Parameters read_parameters_file(const char *file_path) {
             parameters.kx[i] = 2 * M_PI * parameters.r[i] / (parameters.x_max - parameters.x_min);
         }
     }
+    // y and ky
     for (int j = 0; j < parameters.Ny; j++) {
         parameters.y[j] = parameters.y_min + j * parameters.dy;
         if (j < parameters.Ny - 1) {
@@ -330,20 +345,11 @@ Parameters read_parameters_file(const char *file_path) {
             parameters.ky[j] = 2 * M_PI * parameters.s[j] / (parameters.y_max - parameters.y_min);
         }
     }
-    // for (int k = 0; k < parameters.Nz; k++) {
-    //     parameters.z[k] = parameters.z_min + k * parameters.dz;
-    //     // Get the index of z where Y_h is located
-    //     // if (parameters.z[k] <= parameters.Y_h) {
-    //     //     parameters.k_Y_h = k;
-    //     //     parameters.Nz_Y = k + 1;
-    //     // }
-    // }
-    // Get z domain
-    equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.dz);
-    // non_equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, 0.1);
-    for (int n = 0; n <= parameters.Nt; n++) {
-        parameters.t[n] = parameters.t_min + n * parameters.dt;
-    }
+    // z
+    if (parameters.z_uniform == 1)
+        equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.dz);
+    else
+        non_equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, parameters.k_nu_grid);
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;
     parameters.T0_y_center = (parameters.T0_y_start + parameters.T0_y_end) / 2;

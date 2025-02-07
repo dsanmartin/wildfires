@@ -229,6 +229,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
                 log_message(parameters, pressure_log_message);
             }            
             save_data(y_np1_host, p_host, n_save, parameters);
+            printf("\n");
         }
         // Update y_n
         copy<<<BLOCKS, THREADS>>>(y_n, y_np1, size);

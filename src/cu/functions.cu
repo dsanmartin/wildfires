@@ -51,10 +51,11 @@ void equispaced_domain(double *z, int Nz, double z_min, double dz) {
         z[k] = z_min + k * dz;
 }
 
-void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double k) {
+void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double nu) {
     double dz = (z_max - z_min) / (Nz - 1);
-    for (int k = 0; k < Nz; k++) 
-        z[k] = (z_max - z_min) * (exp(k * ((z_min + k * dz) - z_min) / (z_max - z_min)) - 1) / (exp(k) - 1) + z_min;
+    for (int k = 0; k < Nz; k++) {
+        z[k] = (z_max - z_min) * (exp(nu * k * dz / (z_max - z_min)) - 1) / (exp(nu) - 1) + z_min;
+    }
 }
 
 void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters) {

@@ -302,19 +302,21 @@ void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, d
         int s = (rsk % ((Ny - 1) * (Nz - 2))) / (Nz - 2);
         int k = rsk % (Nz - 2);
         dz_k = z[k + 1] - z[k];
-        if (k == 0) { // Use k = 0 to fill gamma matrix and first coefficients of a, b and c
+        if (k == 0) { // Use k = 0 to fill first coefficients of a, b and c
             dz_kp1 = z[k + 2] - z[k + 1];
             dz_Nzm2 = z[Nz - 2] - z[Nz - 3];
             dz_Nzm1 = z[Nz - 1] - z[Nz - 2];
             // gamma[IDX(r, s, k, Nx - 1, Ny - 1, 1)] = kx[r] * kx[r] - ky[s] * ky[s];
-            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_k + dz_kp1)); 
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_k + dz_kp1)); // a_0
             b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = -1.0 / dz_k;
             c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = (dz_k + dz_kp1) / (dz_k * dz_kp1) - 0.5 * dz_k * (kx[r] * kx[r] + ky[s] * ky[s]) - 1 / dz_kp1;
             // Last equation for b z=Nz-1
             b[IDX(r, s, Nz - 2, Nx - 1, Ny - 1, Nz - 1)] = - (kx[r] * kx[r] + ky[s] * ky[s] + 2 / (dz_Nzm2 * dz_Nzm1));
         } else { // The rest of the coefficients a and c
             dz_km1 = z[k] - z[k - 1];
-            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_km1 * (dz_km1 + dz_k));
+            dz_kp1 = z[k + 2] - z[k + 1];
+            // a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_km1 * (dz_km1 + dz_k));
+            a[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_k + dz_kp1));
             c[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 2)] = 2 / (dz_k * (dz_km1 + dz_k));
             b[IDX(r, s, k, Nx - 1, Ny - 1, Nz - 1)] = - (kx[r] * kx[r] + ky[s] * ky[s] + 2 / (dz_km1 * dz_k));
         }
