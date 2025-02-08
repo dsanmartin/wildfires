@@ -289,15 +289,22 @@ Parameters read_parameters_file(const char *file_path) {
             sscanf(line + 22, "%d", &(parameters.pressure_solver_log));
         }
         // Test
-        // Check if z in uniform z_uniform parameter
-        if (strncmp(line, "z_uniform =", 10) == 0) {
-            sscanf(line + 11, "%d", &(parameters.z_uniform));
+        // Check z domain
+        if (strncmp(line, "z_domain =", 10) == 0) {
+            sscanf(line + 11, "%d", &(parameters.z_domain));
         }
         // Find k_nu_grid parameter
         if (strncmp(line, "k_nu_grid =", 11) == 0) {
             sscanf(line + 12, "%lf", &(parameters.k_nu_grid));
         }
-
+        // Find k_transition parameter
+        if (strncmp(line, "k_transition =", 14) == 0) {
+            sscanf(line + 15, "%d", &(parameters.k_transition));
+        }
+        // Find z_transition parameter
+        if (strncmp(line, "z_transition =", 14) == 0) {
+            sscanf(line + 15, "%lf", &(parameters.z_transition));
+        }
     }
     // Initialize x, y, z, t
     parameters.x = (double *) malloc(parameters.Nx * sizeof(double));
@@ -346,10 +353,17 @@ Parameters read_parameters_file(const char *file_path) {
         }
     }
     // z
-    if (parameters.z_uniform == 1)
+    if (parameters.z_domain == 0) {
         equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.dz);
-    else
-        non_equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, parameters.k_nu_grid);
+    } else {
+        if (parameters.z_domain == 1) {
+            non_equispaced_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, parameters.k_nu_grid);
+        } else {
+            if (parameters.z_domain == 2) {
+                transition_domain(parameters.z, parameters.Nz, parameters.z_min, parameters.z_max, parameters.z_transition, parameters.k_transition);
+            }
+        }
+    }
     // Computer T0 centers and dimensiones
     parameters.T0_x_center = (parameters.T0_x_start + parameters.T0_x_end) / 2;
     parameters.T0_y_center = (parameters.T0_y_start + parameters.T0_y_end) / 2;

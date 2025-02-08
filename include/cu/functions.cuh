@@ -126,4 +126,6 @@ void equispaced_domain(double *z, int Nz, double z_min, double dz);
 
 void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double k);
 
+void transition_domain(double *z, int Nz, double z_min, double z_max, double z_t, int k_t);
+
 #endif

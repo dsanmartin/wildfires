@@ -58,6 +58,18 @@ void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double
     }
 }
 
+void transition_domain(double *z, int Nz, double z_min, double z_max, double z_t, int k_t) {
+    double dz_1 = (z_t - z_min) / (k_t - 1);
+    double dz_2 = (z_max - z_t) / (Nz - k_t - 1);
+    for (int k = 0; k < Nz; k++) {
+        if (k <= k_t) {
+            z[k] = z_min + k * dz_1;
+        } else {
+            z[k] = z_t + (k - k_t) * dz_2;
+        }
+    }
+}
+
 void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters) {
     // printf("Timestep reports\n");
     int Nx = parameters.Nx;

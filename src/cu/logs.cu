@@ -15,7 +15,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
         parameters.z_min, parameters.z_max, parameters.t_min, parameters.t_max);
     fprintf(output, "Grid size:\n");
     fprintf(output, "  Nx: %d, Ny: %d, Nz: %d, Nt: %d\n", parameters.Nx, parameters.Ny, parameters.Nz, parameters.Nt);
-    if (parameters.z_uniform == 1) {
+    if (parameters.z_domain == 0) {
         fprintf(output, "  dx: %lf, dy: %lf, dz: %lf, dt: %lf\n", parameters.dx, parameters.dy, parameters.dz, parameters.dt);
     } else {
         for (int k = 0; k < parameters.Nz - 1; k++) {

@@ -202,8 +202,10 @@ typedef struct _parameters {
     char save_path[64];
     char sim_id[32];
     int n_threads;
-    int z_uniform;
+    int z_domain;
     double k_nu_grid;
+    int k_transition;
+    double z_transition;
     size_t threads_per_block;
     size_t number_of_blocks;
     FieldIndexes field_indexes;
