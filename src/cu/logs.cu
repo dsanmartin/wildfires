@@ -30,8 +30,8 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "  rho_inf: %lf, nu: %e, k: %e, T_inf: %lf,  g: %lf\n", parameters.rho_inf, parameters.nu, parameters.kappa, parameters.T_inf, parameters.g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters.C_s, parameters.Pr);
     fprintf(output, "Fuel parameters:\n");
-    fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, a_v: %lf\n", parameters.H_R, parameters.c_p, parameters.h, parameters.a_v);
-    fprintf(output, "  Y_D: %lf, Y_f: %lf\n", parameters.Y_D, parameters.Y_f);
+    fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, alpha_s: %lf, sigma_s: %lf\n", parameters.H_R, parameters.c_p, parameters.h, parameters.alpha_s, parameters.sigma_s);
+    fprintf(output, "  C_d: %lf, Y_f: %lf\n", parameters.C_d, parameters.Y_f);
     fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf, delta: %lf\n", parameters.A, parameters.T_pc, parameters.T_a, parameters.delta);
     fprintf(output, "Wind initial condition:\n");
     fprintf(output, "  Type: %s\n", parameters.U0_type);    

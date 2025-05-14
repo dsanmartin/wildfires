@@ -79,6 +79,9 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "nu =", 4) == 0) {
             sscanf(line + 5, "%lf", &(parameters.nu));
         } 
+        if (strncmp(line, "mu =", 4) == 0) {
+            sscanf(line + 5, "%lf", &(parameters.nu));
+        } 
         if (strncmp(line, "u_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.u_r));
         }
@@ -142,9 +145,17 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "Y_f =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.Y_f));
         }
-        // Fuel drag Y_D
-        if (strncmp(line, "Y_D =", 5) == 0) {
-            sscanf(line + 6, "%lf", &(parameters.Y_D));
+        // Fuel drag C_d
+        if (strncmp(line, "C_d =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.C_d));
+        }
+        // Solid volume fraction alpha_s
+        if (strncmp(line, "alpha_s =", 9) == 0) {
+            sscanf(line + 10, "%lf", &(parameters.alpha_s));
+        }
+        // Surface-to-volume ratio sigma_s
+        if (strncmp(line, "sigma_s =", 9) == 0) {
+            sscanf(line + 10, "%lf", &(parameters.sigma_s));
         }
         // Read H_R 
         if (strncmp(line, "H_R =", 5) == 0) {
@@ -166,10 +177,10 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "h =", 3) == 0) {
             sscanf(line + 4, "%lf", &(parameters.h));
         }
-        // Volumetric heat capacity a_v
-        if (strncmp(line, "a_v =", 5) == 0) {
-            sscanf(line + 6, "%lf", &(parameters.a_v));
-        }
+        // // Volumetric heat capacity a_v
+        // if (strncmp(line, "a_v =", 5) == 0) {
+        //     sscanf(line + 6, "%lf", &(parameters.a_v));
+        // }
         // Heat capacity c_p
         if (strncmp(line, "c_p =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.c_p));
@@ -388,31 +399,50 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.field_indexes.T = 3 * size;
     parameters.field_indexes.Y = 4 * size;
     // Fill turbulence indexes
-    parameters.turbulence_indexes.ux = 0;
-    parameters.turbulence_indexes.uy = size;
-    parameters.turbulence_indexes.uz = 2 * size;
-    parameters.turbulence_indexes.vx = 3 * size;
-    parameters.turbulence_indexes.vy = 4 * size;
-    parameters.turbulence_indexes.vz = 5 * size;
-    parameters.turbulence_indexes.wx = 6 * size;
-    parameters.turbulence_indexes.wy = 7 * size;
-    parameters.turbulence_indexes.wz = 8 * size;
-    parameters.turbulence_indexes.Tx = 9 * size;
-    parameters.turbulence_indexes.Ty = 10 * size;
-    parameters.turbulence_indexes.Tz = 11 * size;
-    parameters.turbulence_indexes.uxx = 12 * size;
-    parameters.turbulence_indexes.uyy = 13 * size;
-    parameters.turbulence_indexes.uzz = 14 * size;
-    parameters.turbulence_indexes.vxx = 15 * size;
-    parameters.turbulence_indexes.vyy = 16 * size;
-    parameters.turbulence_indexes.vzz = 17 * size;
-    parameters.turbulence_indexes.wxx = 18 * size;
-    parameters.turbulence_indexes.wyy = 19 * size;
-    parameters.turbulence_indexes.wzz = 20 * size;
-    parameters.turbulence_indexes.Txx = 21 * size;
-    parameters.turbulence_indexes.Tyy = 22 * size;
-    parameters.turbulence_indexes.Tzz = 23 * size;
-    parameters.turbulence_indexes.fw = 24 * size;
+    parameters.turbulence_indexes.rho = 0;
+    parameters.turbulence_indexes.Tx = size;
+    parameters.turbulence_indexes.Ty = 2 * size;
+    parameters.turbulence_indexes.Tz = 3 * size;
+    parameters.turbulence_indexes.Txx = 4 * size;
+    parameters.turbulence_indexes.Tyy = 5 * size;
+    parameters.turbulence_indexes.Tzz = 6 * size;
+    parameters.turbulence_indexes.mu_sgs = 7 * size;
+    parameters.turbulence_indexes.S_11 = 8 * size;
+    parameters.turbulence_indexes.S_12 = 9 * size;
+    parameters.turbulence_indexes.S_13 = 10 * size;
+    parameters.turbulence_indexes.S_21 = 11 * size;
+    parameters.turbulence_indexes.S_22 = 12 * size;
+    parameters.turbulence_indexes.S_23 = 13 * size;
+    parameters.turbulence_indexes.S_31 = 14 * size;
+    parameters.turbulence_indexes.S_32 = 15 * size;
+    parameters.turbulence_indexes.S_33 = 16 * size;
+    // parameters.turbulence_indexes.ux = 0;
+    // parameters.turbulence_indexes.uy = size;
+    // parameters.turbulence_indexes.uz = 2 * size;
+    // parameters.turbulence_indexes.vx = 3 * size;
+    // parameters.turbulence_indexes.vy = 4 * size;
+    // parameters.turbulence_indexes.vz = 5 * size;
+    // parameters.turbulence_indexes.wx = 6 * size;
+    // parameters.turbulence_indexes.wy = 7 * size;
+    // parameters.turbulence_indexes.wz = 8 * size;
+    // parameters.turbulence_indexes.Tx = 9 * size;
+    // parameters.turbulence_indexes.Ty = 10 * size;
+    // parameters.turbulence_indexes.Tz = 11 * size;
+    // parameters.turbulence_indexes.uxx = 12 * size;
+    // parameters.turbulence_indexes.uyy = 13 * size;
+    // parameters.turbulence_indexes.uzz = 14 * size;
+    // parameters.turbulence_indexes.vxx = 15 * size;
+    // parameters.turbulence_indexes.vyy = 16 * size;
+    // parameters.turbulence_indexes.vzz = 17 * size;
+    // parameters.turbulence_indexes.wxx = 18 * size;
+    // parameters.turbulence_indexes.wyy = 19 * size;
+    // parameters.turbulence_indexes.wzz = 20 * size;
+    // parameters.turbulence_indexes.Txx = 21 * size;
+    // parameters.turbulence_indexes.Tyy = 22 * size;
+    // parameters.turbulence_indexes.Tzz = 23 * size;
+    // parameters.turbulence_indexes.fw = 24 * size;
+    // parameters.turbulence_indexes.mu_sgs = 25 * size;
+    // parameters.turbulence_indexes.S_11 = 26 * size;
     // Close file
     fclose(parameters_file);
     return parameters;

@@ -21,6 +21,165 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
     double dy = parameters.dy;
     // double dz = parameters.dz;
     // double Delta = pow(dx * dy * dz, 1.0 / 3.0);
+    // double Delta;
+    // double C_s = parameters.C_s;
+    double Pr = parameters.Pr;
+    double Tx, Ty, Tz, Txx, Tyy, Tzz;
+    double rho;
+    double mu_sgs_ijk, mu_sgs_ip1jk, mu_sgs_im1jk, mu_sgs_ijp1k, mu_sgs_ijm1k, mu_sgs_ijkp1, mu_sgs_ijkm1;
+    double mu_sgs_ijkp2, mu_sgs_ijkm2;
+    double S_11_ijk, S_12_ijk, S_13_ijk, S_21_ijk, S_22_ijk, S_23_ijk, S_31_ijk, S_32_ijk, S_33_ijk;
+    double S_11_ip1jk, S_11_im1jk, S_12_ip1jk, S_12_im1jk, S_13_ip1jk, S_13_im1jk;
+    double S_21_ijp1k, S_21_ijm1k, S_22_ijp1k, S_22_ijm1k, S_23_ijp1k, S_23_ijm1k;
+    double S_31_ijkp1, S_31_ijkm1, S_31_ijkp2, S_31_ijkm2, S_32_ijkp1, S_32_ijkm1, S_32_ijkp2, S_32_ijkm2, S_33_ijkp1, S_33_ijkm1, S_33_ijkp2, S_33_ijkm2;
+    double mu_sgs_x, mu_sgs_y, mu_sgs_z;
+    double S_11_x, S_12_x, S_13_x, S_21_y, S_22_y, S_23_y, S_31_z, S_32_z, S_33_z;
+    double div_S_x, div_S_y, div_S_z;
+    double sgs_x, sgs_y, sgs_z, sgs_q;
+    double dz_km2, dz_km1, dz_k, dz_kp1;
+    int im1, ip1, jm1, jp1;
+    // Loop over nodes
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int ijk = idx; ijk < size; ijk += stride) {
+        int i = ijk / (Ny * Nz);
+        int j = (ijk % (Ny * Nz)) / Nz;
+        int k = ijk % Nz;
+        // Indexes for periodic boundary conditions
+        im1 = (i - 1 + Nx - 1) % (Nx - 1);
+        jm1 = (j - 1 + Ny - 1) % (Ny - 1);
+        ip1 = (i + 1) % (Nx - 1);
+        jp1 = (j + 1) % (Ny - 1);
+        // Velocity gradients from R
+        rho = R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)];
+        Tx = R_turbulence[parameters.turbulence_indexes.Tx + IDX(i, j, k, Nx, Ny, Nz)];
+        Ty = R_turbulence[parameters.turbulence_indexes.Ty + IDX(i, j, k, Nx, Ny, Nz)];
+        Tz = R_turbulence[parameters.turbulence_indexes.Tz + IDX(i, j, k, Nx, Ny, Nz)];
+        Txx = R_turbulence[parameters.turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)];
+        Tyy = R_turbulence[parameters.turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)];
+        Tzz = R_turbulence[parameters.turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)];
+        mu_sgs_ijk = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k, Nx, Ny, Nz)];
+        S_11_ijk = R_turbulence[parameters.turbulence_indexes.S_11 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_12_ijk = R_turbulence[parameters.turbulence_indexes.S_12 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_13_ijk = R_turbulence[parameters.turbulence_indexes.S_13 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_21_ijk = R_turbulence[parameters.turbulence_indexes.S_21 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_22_ijk = R_turbulence[parameters.turbulence_indexes.S_22 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_23_ijk = R_turbulence[parameters.turbulence_indexes.S_23 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_31_ijk = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_32_ijk = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k, Nx, Ny, Nz)];
+        S_33_ijk = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)];
+        mu_sgs_ip1jk = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(ip1, j, k, Nx, Ny, Nz)];
+        mu_sgs_im1jk = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(im1, j, k, Nx, Ny, Nz)];
+        mu_sgs_ijp1k = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, jp1, k, Nx, Ny, Nz)];
+        mu_sgs_ijm1k = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, jm1, k, Nx, Ny, Nz)];
+        S_11_ip1jk = R_turbulence[parameters.turbulence_indexes.S_11 + IDX(ip1, j, k, Nx, Ny, Nz)];
+        S_11_im1jk = R_turbulence[parameters.turbulence_indexes.S_11 + IDX(im1, j, k, Nx, Ny, Nz)];
+        S_12_ip1jk = R_turbulence[parameters.turbulence_indexes.S_12 + IDX(ip1, j, k, Nx, Ny, Nz)];
+        S_12_im1jk = R_turbulence[parameters.turbulence_indexes.S_12 + IDX(im1, j, k, Nx, Ny, Nz)];
+        S_13_ip1jk = R_turbulence[parameters.turbulence_indexes.S_13 + IDX(ip1, j, k, Nx, Ny, Nz)];
+        S_13_im1jk = R_turbulence[parameters.turbulence_indexes.S_13 + IDX(im1, j, k, Nx, Ny, Nz)];
+        S_21_ijp1k = R_turbulence[parameters.turbulence_indexes.S_21 + IDX(i, jp1, k, Nx, Ny, Nz)];
+        S_21_ijm1k = R_turbulence[parameters.turbulence_indexes.S_21 + IDX(i, jm1, k, Nx, Ny, Nz)];
+        S_22_ijp1k = R_turbulence[parameters.turbulence_indexes.S_22 + IDX(i, jp1, k, Nx, Ny, Nz)];
+        S_22_ijm1k = R_turbulence[parameters.turbulence_indexes.S_22 + IDX(i, jm1, k, Nx, Ny, Nz)];
+        S_23_ijp1k = R_turbulence[parameters.turbulence_indexes.S_23 + IDX(i, jp1, k, Nx, Ny, Nz)];
+        S_23_ijm1k = R_turbulence[parameters.turbulence_indexes.S_23 + IDX(i, jm1, k, Nx, Ny, Nz)];
+        mu_sgs_ijkm1 = 0.0, S_31_ijkm1 = 0.0, S_32_ijkm1 = 0.0, S_33_ijkm1 = 0.0;
+        mu_sgs_ijkp1 = 0.0, S_31_ijkp1 = 0.0, S_32_ijkp1 = 0.0, S_33_ijkp1 = 0.0;
+        if (k > 0) {
+            mu_sgs_ijkm1 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            S_31_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            S_32_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            S_33_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k - 1, Nx, Ny, Nz)];
+        } 
+        if (k < Nz - 1) {
+            mu_sgs_ijkp1 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            S_31_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            S_32_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            S_33_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k + 1, Nx, Ny, Nz)];
+        } 
+        // Compute grad(mu_sgs)
+        mu_sgs_x = (mu_sgs_ip1jk - mu_sgs_im1jk) / (2 * dx);
+        mu_sgs_y = (mu_sgs_ijp1k - mu_sgs_ijm1k) / (2 * dy);
+        // div(S) 
+        S_11_x = (S_11_ip1jk - S_11_im1jk) / (2.0 * dx);
+        S_12_x = (S_12_ip1jk - S_12_im1jk) / (2.0 * dx);
+        S_13_x = (S_13_ip1jk - S_13_im1jk) / (2.0 * dx);
+        S_21_y = (S_21_ijp1k - S_21_ijm1k) / (2.0 * dy);
+        S_22_y = (S_22_ijp1k - S_22_ijm1k) / (2.0 * dy);
+        S_23_y = (S_23_ijp1k - S_23_ijm1k) / (2.0 * dy);
+        if (k == 0) { // Second-order forward difference    
+            dz_k = z[k + 1] - z[k];
+            dz_kp1 = z[k + 2] - z[k + 1];  
+            mu_sgs_ijkp2 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            S_31_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            S_32_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            S_33_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            // Non-equispaced grid
+            mu_sgs_z = - (2 * dz_k + dz_kp1) * mu_sgs_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * mu_sgs_ijkp1 / (dz_k * dz_kp1) - dz_k * mu_sgs_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            S_31_z = - (2 * dz_k + dz_kp1) * S_31_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * S_31_ijkp1 / (dz_k * dz_kp1) - dz_k * S_31_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            S_32_z = - (2 * dz_k + dz_kp1) * S_32_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * S_32_ijkp1 / (dz_k * dz_kp1) - dz_k * S_32_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            S_33_z = - (2 * dz_k + dz_kp1) * S_33_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * S_33_ijkp1 / (dz_k * dz_kp1) - dz_k * S_33_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+        } else if (k == Nz - 1) { // Second-order backward difference
+            dz_km1 = z[k] - z[k - 1];
+            dz_km2 = z[k - 1] - z[k - 2];
+            mu_sgs_ijkm2 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            S_31_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            S_32_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            S_33_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            // Non-equispaced grid
+            mu_sgs_z = dz_km1 * mu_sgs_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * mu_sgs_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * mu_sgs_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            S_31_z = dz_km1 * S_31_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * S_31_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * S_31_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            S_32_z = dz_km1 * S_32_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * S_32_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * S_32_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            S_33_z = dz_km1 * S_33_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * S_33_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * S_33_ijk / (dz_km1 * (dz_km2 + dz_km1));
+        } else {
+            dz_km1 = z[k] - z[k - 1];
+            dz_k = z[k + 1] - z[k];
+            // Non-equispaced grid
+            mu_sgs_z = (mu_sgs_ijkp1 - mu_sgs_ijkm1) / (dz_k + dz_km1);
+            S_31_z = (S_31_ijkp1 - S_31_ijkm1) / (dz_k + dz_km1);
+            S_32_z = (S_32_ijkp1 - S_32_ijkm1) / (dz_k + dz_km1);
+            S_33_z = (S_33_ijkp1 - S_33_ijkm1) / (dz_k + dz_km1);
+        }
+        // Divergence of S
+        div_S_x = S_11_x + S_21_y + S_31_z;
+        div_S_y = S_12_x + S_22_y + S_32_z;
+        div_S_z = S_13_x + S_23_y + S_33_z;
+        // Compute SGS model
+        sgs_x = -2 * (
+            mu_sgs_x * S_11_ijk + mu_sgs_y * S_21_ijk + mu_sgs_z * S_31_ijk + 
+            mu_sgs_ijk * div_S_x 
+        ) / rho;
+        sgs_y = -2 * (
+            mu_sgs_x * S_12_ijk + mu_sgs_y * S_22_ijk + mu_sgs_z * S_32_ijk +
+            mu_sgs_ijk * div_S_y
+        ) / rho;
+        sgs_z = -2 * (
+            mu_sgs_x * S_13_ijk + mu_sgs_y * S_23_ijk + mu_sgs_z * S_33_ijk +
+            mu_sgs_ijk *  div_S_z
+        ) / rho;
+        // q^{sgs} = -c_p/Pr * (div(mu_sgs)\dot\grad(T) + mu_sgs * \nabla^2(T))
+        // c_p is ommited because it divides the whole term
+        sgs_q = -(mu_sgs_x * Tx + mu_sgs_y * Ty + mu_sgs_z * Tz + mu_sgs_ijk * (Txx + Tyy + Tzz)) / (rho * Pr);
+        // Add SGS model to R
+        R_new[parameters.field_indexes.u + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_x;
+        R_new[parameters.field_indexes.v + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_y;
+        R_new[parameters.field_indexes.w + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_z;
+        R_new[parameters.field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_q;
+    }
+}
+
+/*
+__global__ 
+void turbulence_old(double *R_turbulence, double *R_new, double *z, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int size = Nx * Ny * Nz;
+    double dx = parameters.dx;
+    double dy = parameters.dy;
+    // double dz = parameters.dz;
+    // double Delta = pow(dx * dy * dz, 1.0 / 3.0);
     double Delta;
     double C_s = parameters.C_s;
     double Pr = parameters.Pr;
@@ -278,3 +437,4 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
         R_new[parameters.field_indexes.T + IDX(i, j, k, Nx, Ny, Nz)] -= sgs_q;
     }
 }
+*/
