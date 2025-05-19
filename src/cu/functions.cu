@@ -22,8 +22,8 @@ double parallelepiped(double x, double y, double z, double x_min, double x_max, 
     }
 }
 
-double K(double T, double A, double T_a) {
-    return A * exp(-T_a / T);
+double K(double T, double A, double T_act) {
+    return A * exp(-T_act / T);
 }
 
 double H(double x, double T_pc) {
@@ -153,7 +153,7 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     double sx = parameters.T0_length;
     double sy = parameters.T0_width;
     double sz = parameters.T0_height;
-    double T_hot = parameters.T_hot;
+    double T_source = parameters.T_source;
     double T_inf = parameters.T_inf;
     double T0_x_start = parameters.T0_x_start;
     double T0_x_end = parameters.T0_x_end;
@@ -182,11 +182,11 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                 v[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 w[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 if (strcmp(parameters.T0_shape, "gaussian") == 0) {
-                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
                 } else if (strcmp(parameters.T0_shape, "parallelepiped") == 0) {
-                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_hot - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
+                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
                 }
-                // T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_hot - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                // T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
                 if (k == Nz - 1) {
                     p[IDX(i, j, k, Nx, Ny, Nz)] = p_top;
                 } else {
@@ -215,7 +215,7 @@ void temperature_source(double *x, double *y, double *z, double *y_n, Parameters
     int Ny = paramenters.Ny;
     int Nz = paramenters.Nz;
     int T_index = paramenters.field_indexes.T;
-    double T_hot = paramenters.T_hot;
+    double T_source = paramenters.T_source;
     double T0_x_start = paramenters.T0_x_start;
     double T0_x_end = paramenters.T0_x_end;
     double T0_y_start = paramenters.T0_y_start;
@@ -230,7 +230,7 @@ void temperature_source(double *x, double *y, double *z, double *y_n, Parameters
         int j = (ijk % (Ny * Nz)) / Nz;
         int k = ijk % Nz;
         if (x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end) {
-            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_hot;
+            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source;
         }
     }
 }

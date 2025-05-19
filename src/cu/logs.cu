@@ -27,12 +27,13 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "  Time samples: %d\n", parameters.NT);
     fprintf(output, "Time integration: %s\n", parameters.method);
     fprintf(output, "Fluid parameters:\n");
-    fprintf(output, "  rho_inf: %lf, nu: %e, k: %e, T_inf: %lf,  g: %lf\n", parameters.rho_inf, parameters.nu, parameters.kappa, parameters.T_inf, parameters.g);
+    fprintf(output, "  mu: %e, kappa: %e, c_p: %lf\n", parameters.mu, parameters.kappa, parameters.c_p);
+    fprintf(output, "  rho_inf: %lf, T_inf: %lf,  g: %lf\n", parameters.rho_inf, parameters.T_inf, parameters.g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters.C_s, parameters.Pr);
     fprintf(output, "Fuel parameters:\n");
-    fprintf(output, "  H_R: %e, c_p: %lf, h: %lf, alpha_s: %lf, sigma_s: %lf\n", parameters.H_R, parameters.c_p, parameters.h, parameters.alpha_s, parameters.sigma_s);
+    fprintf(output, "  h_c: %lf, alpha_s: %lf, sigma_s: %lf, delta: %lf\n", parameters.h_c, parameters.alpha_s, parameters.sigma_s, parameters.delta);    
+    fprintf(output, "  H_C: %e, A: %e, T_pc: %lf, T_act: %lf\n", parameters.H_C, parameters.A, parameters.T_pc, parameters.T_act);
     fprintf(output, "  C_d: %lf, Y_f: %lf\n", parameters.C_d, parameters.Y_f);
-    fprintf(output, "  A: %e, T_pc: %lf, T_a: %lf, delta: %lf\n", parameters.A, parameters.T_pc, parameters.T_a, parameters.delta);
     fprintf(output, "Wind initial condition:\n");
     fprintf(output, "  Type: %s\n", parameters.U0_type);    
     if (strcmp(parameters.U0_type, "constant") == 0)
@@ -43,7 +44,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
         fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters.u_r, parameters.z_r, parameters.alpha_u);
     fprintf(output, "Temperature initial condition:\n");
     fprintf(output, "  Shape: %s\n", parameters.T0_shape);
-    fprintf(output, "  T_hot: %lf\n", parameters.T_hot);
+    fprintf(output, "  T_source: %lf\n", parameters.T_source);
     fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
         parameters.T0_x_start, parameters.T0_x_end, 
         parameters.T0_y_start, parameters.T0_y_end, 

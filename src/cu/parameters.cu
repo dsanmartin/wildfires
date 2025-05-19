@@ -78,27 +78,44 @@ Parameters read_parameters_file(const char *file_path) {
         } 
         if (strncmp(line, "nu =", 4) == 0) {
             sscanf(line + 5, "%lf", &(parameters.nu));
-        } 
+        } else { // Default value
+            parameters.nu = 1.47e-5; // Air at 15 °C
+        }
+        // Dynamic viscosity of air in kg/(m*s)
         if (strncmp(line, "mu =", 4) == 0) {
-            sscanf(line + 5, "%lf", &(parameters.nu));
-        } 
+            sscanf(line + 5, "%lf", &(parameters.mu));
+        } else { // Default value
+            parameters.mu = 1.802e-5; // Air at 15 °C
+        }
         if (strncmp(line, "u_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.u_r));
         }
+        // Reference height for the velocity field in m
         if (strncmp(line, "z_r =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.z_r));
+        } else { // Default value
+            parameters.z_r = 2.0; 
         }
+        // Reference height for the velocity field in m
         if (strncmp(line, "alpha_u =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.alpha_u));
+        } else { // Default value
+            parameters.alpha_u = 1.0 / 7.0; 
         }
+        // Thermal diffusivity of air in m^2/s
         if (strncmp(line, "alpha =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.alpha));
+        } else { // Default value
+            parameters.alpha = 2.009e-5; // Air at 15 °C 
         }
+        // Reference temperature in K
         if (strncmp(line, "T_inf =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.T_inf));
+        } else { // Default value
+            parameters.T_inf = 288.15; // Air at 15 °C
         }
-        if (strncmp(line, "T_hot =", 7) == 0) {
-            sscanf(line + 8, "%lf", &(parameters.T_hot));
+        if (strncmp(line, "T_source =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.T_source));
         }
         if (strncmp(line, "T0_shape =", 10) == 0) {
             sscanf(line + 11, "%s", parameters.T0_shape);
@@ -139,15 +156,18 @@ Parameters read_parameters_file(const char *file_path) {
         // if (strncmp(line, "T0_height =", 11) == 0) {
         //     sscanf(line + 12, "%lf", &(parameters.T0_height));
         // }
+        // Fuel height in m
         if (strncmp(line, "Y_h =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.Y_h));
         }
         if (strncmp(line, "Y_f =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.Y_f));
         }
-        // Fuel drag C_d
+        // Solid fuel fraction drag coefficient (C_d)
         if (strncmp(line, "C_d =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.C_d));
+        } else { // Default value
+            parameters.C_d = 0.15; 
         }
         // Solid volume fraction alpha_s
         if (strncmp(line, "alpha_s =", 9) == 0) {
@@ -157,25 +177,35 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "sigma_s =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.sigma_s));
         }
-        // Read H_R 
-        if (strncmp(line, "H_R =", 5) == 0) {
-            sscanf(line + 6, "%lf", &(parameters.H_R));
+        // Heat of combustion H_C in J/kg
+        if (strncmp(line, "H_C =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.H_C));
+        } else { // Default value
+            parameters.H_C = 21e6; 
         }
-        // Read A
+        // Pre-exponential factor in 1/s
         if (strncmp(line, "A =", 3) == 0) {
             sscanf(line + 4, "%lf", &(parameters.A));
+        } else { // Default value
+            parameters.A = 1e9; 
         }
-        // Read activation temperature T_a
-        if (strncmp(line, "T_a =", 5) == 0) {
-            sscanf(line + 6, "%lf", &(parameters.T_a));
+        // Activation temperature in K
+        if (strncmp(line, "T_act =", 7) == 0) {
+            sscanf(line + 8, "%lf", &(parameters.T_act));
+        } else { // Default value
+            parameters.T_act = 18040.8533; 
         }
         // Temperature phase-change T_pc
         if (strncmp(line, "T_pc =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.T_pc));
+        } else { // Default value
+            parameters.T_pc = 523.0; 
         }
         // Convective heat transfer coefficient h
-        if (strncmp(line, "h =", 3) == 0) {
-            sscanf(line + 4, "%lf", &(parameters.h));
+        if (strncmp(line, "h_c =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.h_c));
+        } else { // Default value
+            parameters.h_c = 1.42; // It's used for a convective model
         }
         // // Volumetric heat capacity a_v
         // if (strncmp(line, "a_v =", 5) == 0) {
@@ -184,10 +214,14 @@ Parameters read_parameters_file(const char *file_path) {
         // Heat capacity c_p
         if (strncmp(line, "c_p =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.c_p));
+        } else { // Default value
+            parameters.c_p = 1007.0; // Air at 15 °C
         }
-        // Density rho
+        // Reference density rho_0
         if (strncmp(line, "rho_inf =", 9) == 0) {
             sscanf(line + 10, "%lf", &(parameters.rho_inf));
+        } else { // Default value
+            parameters.rho_inf = 1.225; // Air at 15 °C
         }
         // U0 Type
         if (strncmp(line, "U0_type =", 9) == 0) {
@@ -197,17 +231,23 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "T0_shape =", 10) == 0) {
             sscanf(line + 11, "%s", (char *) &(parameters.T0_shape));
         }
-        // Acceleration due to gravity g
+        // Acceleration due to gravity g in m/s^2
         if (strncmp(line, "g =", 3) == 0) {
             sscanf(line + 4, "%lf", &(parameters.g));
+        } else { // Default value
+            parameters.g = -9.807; // Typical value for Earth
         }
-        // Smagorinsky constant C_s
+        // Smagorinsky coefficient C_s
         if (strncmp(line, "C_s =", 5) == 0) {
             sscanf(line + 6, "%lf", &(parameters.C_s));
+        } else { // Default value
+            parameters.C_s = 0.2; // Typical value for Smagorinsky model
         }
         // Prandtl number Pr
         if (strncmp(line, "Pr =", 4) == 0) {
             sscanf(line + 5, "%lf", &(parameters.Pr));
+        } else { // Default value
+            parameters.Pr = 0.7329;
         }
         // p_top
         if (strncmp(line, "p_top =", 7) == 0) {
@@ -220,40 +260,60 @@ Parameters read_parameters_file(const char *file_path) {
         // Number of threads
         if (strncmp(line, "threads =", 9) == 0) {
             sscanf(line + 10, "%d", &(parameters.n_threads));
+        } else { // Default value
+            parameters.n_threads = 1; // Default value
         }
         // Temperature bounds
         if (strncmp(line, "T_min =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.T_min));
+        } else { // Default value
+            parameters.T_min = 288.15;
         }
         if (strncmp(line, "T_max =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.T_max));
+        } else { // Default value
+            parameters.T_max = 2500.0; // Adiabatic flame temperature
         }
         // Fuel bounds
         if (strncmp(line, "Y_min =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.Y_min));
+        } else { // Default value
+            parameters.Y_min = 0.0;
         }
         if (strncmp(line, "Y_max =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.Y_max));
+        } else { // Default value
+            parameters.Y_max = 1.0;
         }
         // Topography shape
         if (strncmp(line, "topo_shape =", 11) == 0) {
             sscanf(line + 12, "%s", (char *) &(parameters.topo_shape));
         }
-        // Dead nodes values
+        // IBM dead nodes values
         if (strncmp(line, "u_dead_nodes =", 13) == 0) {
             sscanf(line + 14, "%lf", &(parameters.u_dead_nodes));
+        } else { // Default value
+            parameters.u_dead_nodes = 0.0; // No velocity
         }
         if (strncmp(line, "v_dead_nodes =", 13) == 0) {
             sscanf(line + 14, "%lf", &(parameters.v_dead_nodes));
+        } else { // Default value
+            parameters.v_dead_nodes = 0.0; // No velocity
         }
         if (strncmp(line, "w_dead_nodes =", 13) == 0) {
             sscanf(line + 14, "%lf", &(parameters.w_dead_nodes));
+        } else { // Default value
+            parameters.w_dead_nodes = 0.0; // No velocity
         }
         if (strncmp(line, "T_dead_nodes =", 13) == 0) {
             sscanf(line + 14, "%lf", &(parameters.T_dead_nodes));
+        } else { // Default value
+            parameters.T_dead_nodes = 288.15; // Reference temperature
         }
         if (strncmp(line, "Y_dead_nodes =", 13) == 0) {
             sscanf(line + 14, "%lf", &(parameters.Y_dead_nodes));
+        } else { // Default value
+            parameters.Y_dead_nodes = 0.0; // No fuel
         }
         // Hill parameters
         if (strncmp(line, "hill_center_x =", 14) == 0) {
@@ -275,29 +335,41 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "t_source =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.t_source));
         }        
-        // Optical path length delta
+        // Optical path length (\delta) in m
         if (strncmp(line, "delta =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.delta));
+        } else { // Default value
+            parameters.delta = 0.1; // FDS default value
         }
-        // Thermal conductivity kappa
+        // Thermal conductivity (\kappa) in W/(m*K)
         if (strncmp(line, "kappa =", 6) == 0) {
             sscanf(line + 7, "%lf", &(parameters.kappa));
+        } else { // Default value
+            parameters.kappa = 0.02476; // Value for air
         }
-        // Constant density
+        // Variable or constant density
         if (strncmp(line, "variable_density =", 17) == 0) {
             sscanf(line + 18, "%d", &(parameters.variable_density));
+        } else { // Default value
+            parameters.variable_density = 1; 
         }
         // Pressure solver tolerance (pressure_solver_tol)
         if (strncmp(line, "pressure_solver_tol =", 21) == 0) {
             sscanf(line + 22, "%lf", &(parameters.pressure_solver_tol));
+        } else { // Default value
+            parameters.pressure_solver_tol = 1e-10;
         }
         // Pressure solver maximum iterations (pressure_solver_iter)
         if (strncmp(line, "pressure_solver_iter =", 22) == 0) {
             sscanf(line + 23, "%d", &(parameters.pressure_solver_iter));
+        } else { // Default value
+            parameters.pressure_solver_iter = 50;
         }
         // Pressure solver log (pressure_solver_log)
         if (strncmp(line, "pressure_solver_log =", 21) == 0) {
             sscanf(line + 22, "%d", &(parameters.pressure_solver_log));
+        } else { // Default value
+            parameters.pressure_solver_log = 0;
         }
         // Test
         // Check z domain
@@ -416,6 +488,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.turbulence_indexes.S_31 = 14 * size;
     parameters.turbulence_indexes.S_32 = 15 * size;
     parameters.turbulence_indexes.S_33 = 16 * size;
+    parameters.turbulence_indexes.div_U = 17 * size;
     // parameters.turbulence_indexes.ux = 0;
     // parameters.turbulence_indexes.uy = size;
     // parameters.turbulence_indexes.uz = 2 * size;

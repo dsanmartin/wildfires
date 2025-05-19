@@ -150,11 +150,11 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     // double alpha = parameters.alpha;
     double kappa = parameters.kappa;
     double Y_f = parameters.Y_f;
-    double H_R = parameters.H_R;
+    double H_C = parameters.H_C;
     double A = parameters.A;
-    double T_a = parameters.T_a;
+    double T_act = parameters.T_act;
     double T_pc = parameters.T_pc;
-    double h = parameters.h;
+    double h_c = parameters.h_c;
     // double a_v = parameters.a_v;
     double alpha_s = parameters.alpha_s;
     double sigma_s = parameters.sigma_s;
@@ -194,14 +194,15 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
     double uux, vuy, wuz, uvx, vvy, wvz, uwx, vwy, wwz;
     double lap_u, lap_v, lap_w, lap_T;
-    double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, q;    
+    double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, q, T_RHS_tmp;
     double mod_U, nu;
     double F_x, F_y, F_z;
     double H_step, K_T;
     double dz_km3, dz_km2, dz_km1, dz_k, dz_kp1, dz_kp2;
-    double u_tau, tau_p, fw;
+    double u_tau, tau_w, fw;
     double S_11, S_12, S_13, S_21, S_22, S_23, S_31, S_32, S_33;
     double mod_S, mu_sgs;
+    double T_gas, T_solid;
     int i, j, k;
     int im1, ip1, jm1, jp1;
     int im2, ip2, jm2, jp2;
@@ -229,6 +230,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         w_ijk = R_old[w_index + IDX(i, j, k, Nx, Ny, Nz)];
         T_ijk = R_old[T_index + IDX(i, j, k, Nx, Ny, Nz)];
         rho_ijk = T_inf * rho_inf / T_ijk; // Density
+        Y_ijk = 0.0; // Solid fuel fraction
         // \phi_{i-1,j,k}
         u_im1jk = R_old[u_index + IDX(im1, j, k, Nx, Ny, Nz)];
         v_im1jk = R_old[v_index + IDX(im1, j, k, Nx, Ny, Nz)];
@@ -541,14 +543,25 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             wzz = 2 * w_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * w_ijk / (dz_km1 * dz_k) + 2 * w_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2w/dz^2
             Tzz = 2 * T_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * T_ijk / (dz_km1 * dz_k) + 2 * T_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2T/dz^2
         }
+        /* Turbulence components */
+        nu = mu / rho_ijk;
         // Damping function
-        tau_p = 0.0;
-        if (k == 0) {
-            tau_p = sqrt((nu * 0.5 * (uz + wx)) * (nu * 0.5 * (uz + wx)) + (nu * 0.5 * (vz + wy)) * (nu * 0.5 * (vz + wy)));
-        }
-        u_tau = sqrt(tau_p);
-        fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / 25 / nu);
-        // Get strain rate tensor
+        // tau_w = 0.0;
+        // if (k == 0) {
+        //     tau_w = sqrt((mu * 0.5 * (uz + wx)) * (mu * 0.5 * (uz + wx)) + (mu * 0.5 * (vz + wy)) * (mu * 0.5 * (vz + wy)));
+        // }
+        /*
+        tau_w = sqrt((mu * 0.5 * (uz + wx)) * (mu * 0.5 * (uz + wx)) + (mu * 0.5 * (vz + wy)) * (mu * 0.5 * (vz + wy)));
+        u_tau = sqrt(pow(tau_w / rho_ijk, 2.0));
+        if (z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / nu > 5.0) {
+            u_tau = 0.0;
+        } */
+        tau_w = 0.0;
+        if (k == 0)
+            tau_w = sqrt((mu * 0.5 * (uz + wx)) * (mu * 0.5 * (uz + wx)) + (mu * 0.5 * (vz + wy)) * (mu * 0.5 * (vz + wy)));
+        u_tau = sqrt(pow(tau_w / rho_ijk, 2.0)); 
+        fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / 26 / nu);
+        // Modified strain rate tensor S'
         S_11 = 2 * ux / 3 - (vy + wz) / 3;
         S_22 = 2 * vy / 3 - (uz + wx) / 3;
         S_33 = 2 * wz / 3 - (ux + vy) / 3;
@@ -558,6 +571,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         S_21 = S_12;
         S_31 = S_13;
         S_32 = S_23;
+        // |S'| = |2 S_ij S_ij - 1/3 S_kk S_ij|
         mod_S = sqrt(
             2.0 * (ux * ux + vy * vy + wz * wz) 
             + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz) 
@@ -568,34 +582,75 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             dz_k = z[k + 1] - z[k];
         else
             dz_k = z[k] - z[k - 1];
+        // Turbulent viscosity
         mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S; 
-        // Copy to turbulence array
-        // R_turbulence[parameters.turbulence_indexes.ux  + IDX(i, j, k, Nx, Ny, Nz)] = ux;
-        // R_turbulence[parameters.turbulence_indexes.uy  + IDX(i, j, k, Nx, Ny, Nz)] = uy;
-        // R_turbulence[parameters.turbulence_indexes.uz  + IDX(i, j, k, Nx, Ny, Nz)] = uz;
-        // R_turbulence[parameters.turbulence_indexes.vx  + IDX(i, j, k, Nx, Ny, Nz)] = vx;
-        // R_turbulence[parameters.turbulence_indexes.vy  + IDX(i, j, k, Nx, Ny, Nz)] = vy;
-        // R_turbulence[parameters.turbulence_indexes.vz  + IDX(i, j, k, Nx, Ny, Nz)] = vz;
-        // R_turbulence[parameters.turbulence_indexes.wx  + IDX(i, j, k, Nx, Ny, Nz)] = wx;
-        // R_turbulence[parameters.turbulence_indexes.wy  + IDX(i, j, k, Nx, Ny, Nz)] = wy;
-        // R_turbulence[parameters.turbulence_indexes.wz  + IDX(i, j, k, Nx, Ny, Nz)] = wz;
+        // if (isnan(fw)) {
+        //     printf("NAN detected in fw at i=%d, j=%d, k=%d\n", i, j, k);
+        //     printf("nu: %f\n", nu);
+        //     printf("fw: %f\n", fw);
+        //     printf("u_tau: %f\n", u_tau);
+        //     printf("tau_w: %f\n", tau_w);
+        //     break;
+        // }
+        /* Compute fuel and source term */
+        H_step = (T_ijk > T_pc) ? 1.0 : 0.0;
+        K_T = A * exp(-T_act / T_ijk);
+        // Convection out of the solid zone and the next gas zone cancels the reaction because T_gas = T_solid = T_ijk and because there is no solid fuel
+        T_gas = T_ijk;
+        T_solid = T_ijk;
+        // Solid fuel zone and gas zone
+        if (k <= Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+            // Solid fuel zone
+            if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+                Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];          
+                Y_RHS = -Y_f * K_T * H_step * Y_ijk;
+                R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
+            } 
+            // Gas zone next to the solid zone (k+1) or inside the solid zone but with no solid fuel
+            if (Y_ijk > 0.0) {
+                T_gas = T_pc + (T_ijk - T_pc);
+            } else {
+                T_gas = T_ijk;
+            }
+        }
+        // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+        //     Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];        
+        //     Y_RHS = -Y_f * K_T * H_step * Y_ijk;
+        //     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
+        // }
+        // Compute source and force terms
+        h_c = h_c * dz_k * pow((T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
+        // q = H_R * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_ijk - T_inf) / (c_p * rho_inf);
+        q = H_C * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
+        mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
+        // Force terms
+        // F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
+        // F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;
+        // F_z = - g * (T_ijk - T_inf) / (T_ijk + 1e-16) - Y_D * a_v * Y_ijk * mod_U * w_ijk;
+        F_x = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * u_ijk;
+        F_y = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * v_ijk;
+        F_z = g * (rho_ijk - rho_inf) / rho_ijk - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * w_ijk;
+        // Compute Laplacian terms
+        lap_u = uxx + uyy + uzz;
+        lap_v = vxx + vyy + vzz;
+        lap_w = wxx + wyy + wzz;
+        lap_T = Txx + Tyy + Tzz;
+        // Compute RHS        
+        u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
+        v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
+        w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
+        // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
+        // Temperature RHS with radiation and conduction
+        T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
+        T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        // Copy to turbulence array. These calculations will be used in the next step to include the turbulence model
         R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)] = rho_ijk;
         R_turbulence[parameters.turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;
         R_turbulence[parameters.turbulence_indexes.Ty  + IDX(i, j, k, Nx, Ny, Nz)] = Ty;
         R_turbulence[parameters.turbulence_indexes.Tz  + IDX(i, j, k, Nx, Ny, Nz)] = Tz;
-        // R_turbulence[parameters.turbulence_indexes.uxx + IDX(i, j, k, Nx, Ny, Nz)] = uxx;
-        // R_turbulence[parameters.turbulence_indexes.uyy + IDX(i, j, k, Nx, Ny, Nz)] = uyy;
-        // R_turbulence[parameters.turbulence_indexes.uzz + IDX(i, j, k, Nx, Ny, Nz)] = uzz;
-        // R_turbulence[parameters.turbulence_indexes.vxx + IDX(i, j, k, Nx, Ny, Nz)] = vxx;
-        // R_turbulence[parameters.turbulence_indexes.vyy + IDX(i, j, k, Nx, Ny, Nz)] = vyy;
-        // R_turbulence[parameters.turbulence_indexes.vzz + IDX(i, j, k, Nx, Ny, Nz)] = vzz;
-        // R_turbulence[parameters.turbulence_indexes.wxx + IDX(i, j, k, Nx, Ny, Nz)] = wxx;
-        // R_turbulence[parameters.turbulence_indexes.wyy + IDX(i, j, k, Nx, Ny, Nz)] = wyy;
-        // R_turbulence[parameters.turbulence_indexes.wzz + IDX(i, j, k, Nx, Ny, Nz)] = wzz;
         R_turbulence[parameters.turbulence_indexes.Txx + IDX(i, j, k, Nx, Ny, Nz)] = Txx;
         R_turbulence[parameters.turbulence_indexes.Tyy + IDX(i, j, k, Nx, Ny, Nz)] = Tyy;
         R_turbulence[parameters.turbulence_indexes.Tzz + IDX(i, j, k, Nx, Ny, Nz)] = Tzz;
-        // R_turbulence[parameters.turbulence_indexes.fw  + IDX(i, j, k, Nx, Ny, Nz)] = fw;
         R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k, Nx, Ny, Nz)] = mu_sgs;
         R_turbulence[parameters.turbulence_indexes.S_11 + IDX(i, j, k, Nx, Ny, Nz)] = S_11;
         R_turbulence[parameters.turbulence_indexes.S_12 + IDX(i, j, k, Nx, Ny, Nz)] = S_12;
@@ -606,40 +661,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k, Nx, Ny, Nz)] = S_31;
         R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k, Nx, Ny, Nz)] = S_32;
         R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)] = S_33;
-        /* Compute fuel and source term */
-        H_step = (T_ijk > T_pc) ? 1.0 : 0.0;
-        K_T = A * exp(-T_a / T_ijk);
-        Y_ijk = 0.0;
-        if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
-            Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];
-            Y_RHS = -Y_f * K_T * H_step * Y_ijk;
-            R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
-        }
-        // Compute source and force terms
-        q = H_R * Y_ijk * K_T * H_step / c_p - h * alpha_s * sigma_s * (T_ijk - T_inf) / (c_p * rho_inf);
-        mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
-        // Force terms
-        // F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
-        // F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;                             
-        // F_z = - g * (T_ijk - T_inf) / (T_ijk + 1e-16) - Y_D * a_v * Y_ijk * mod_U * w_ijk;
-        F_x = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * u_ijk;
-        F_y = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * v_ijk;
-        F_z = g * (rho_ijk - rho_inf) / rho_ijk - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * w_ijk;
-        // Compute Laplacian terms
-        lap_u = uxx + uyy + uzz;
-        lap_v = vxx + vyy + vzz;
-        lap_w = wxx + wyy + wzz;
-        lap_T = Txx + Tyy + Tzz;
-        // Compute RHS
-        nu = mu / rho_ijk;
-        u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
-        v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
-        w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
-        // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
-        // Temperature RHS with radiation and conduction
-        T_RHS = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz)
-                    + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) 
-                    - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + q;
+        R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
         // Save RHS into R_new
         R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
@@ -649,7 +671,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
 }
 
 __global__
-void velocity_correction(double *R_new, double *p, double *z, int fd_z, Parameters parameters) {
+void velocity_correction(double *R_new, double *R_old, double *p, double *z, int fd_z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -663,9 +685,8 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
     double dy = parameters.dy;
     // double dz = parameters.dz;
     double dt = parameters.dt;
-    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2, T_ijk;
+    double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkm1, p_ijkp2, p_ijkm2, rho_ijk;
     double px, py, pz;
-    double rho;
     double dz_km2, dz_km1, dz_k, dz_kp1;
     int im1, ip1, jm1, jp1;
     int size = Nx * Ny * Nz;
@@ -681,7 +702,7 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
         ip1 = (i + 1) % (Nx - 1); // i+1
         jp1 = (j + 1) % (Ny - 1); // j+1
         p_ijk = p[IDX(i, j, k, Nx, Ny, Nz)]; // p_{i,j,k}
-        T_ijk = R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)]; // T_{i,j,k}
+        rho_ijk = T_inf * rho_inf / R_old[T_index + IDX(i, j, k, Nx, Ny, Nz)]; // \rho_{i,j,k}
         p_im1jk = p[IDX(im1, j, k, Nx, Ny, Nz)]; // p_{i-1,j,k}
         p_ip1jk = p[IDX(ip1, j, k, Nx, Ny, Nz)]; // p_{i+1,j,k}
         p_ijm1k = p[IDX(i, jm1, k, Nx, Ny, Nz)]; // p_{i,j-1,k}
@@ -760,14 +781,12 @@ void velocity_correction(double *R_new, double *p, double *z, int fd_z, Paramete
         }
         // Get density
         if (parameters.variable_density == 0) {
-            rho = rho_inf;
-        } else {
-            rho = rho_inf * T_inf / T_ijk;
-        }
+            rho_ijk = rho_inf;
+        } 
         // Velocity correction
-        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * px;
-        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * py;
-        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt / rho * pz;
+        R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt * px / rho_ijk;
+        R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt * py / rho_ijk;
+        R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] -= dt * pz / rho_ijk;
     }
 }
 

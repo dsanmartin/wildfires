@@ -113,7 +113,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     // Device data
     double *d_x, *d_y, *d_z, *y_np1, *F, *k, *R_turbulence, *z_ibm, *kx, *ky, *gamma;
     int *Nz_Y, *cut_nodes;
-    // Arrays for pressure Poisson Problema
+    // Arrays for pressure problem
     double *a, *b, *c;
     cufftDoubleComplex *d, *l, *u, *y;
     cufftDoubleComplex *data_in, *data_out, *p_top_in, *p_top_out;
@@ -134,14 +134,14 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&F, size * sizeof(double)));
     CHECK(cudaMalloc((void **)&k, k_size * size * sizeof(double)));
     // CHECK(cudaMalloc((void **)&R_turbulence, 25 * Nx * Ny * Nz * sizeof(double)));
-    CHECK(cudaMalloc((void **)&R_turbulence, 17 * Nx * Ny * Nz * sizeof(double)));
+    CHECK(cudaMalloc((void **)&R_turbulence, 18 * Nx * Ny * Nz * sizeof(double)));
     CHECK(cudaMalloc((void **)&z_ibm, Nx * Ny * Nz * sizeof(double)));
     CHECK(cudaMalloc((void **)&Nz_Y, Nx * Ny * sizeof(int)));
     CHECK(cudaMalloc((void **)&cut_nodes, Nx * Ny * sizeof(int)));
     CHECK(cudaMalloc((void **)&kx, (Nx - 1) * sizeof(double)));
     CHECK(cudaMalloc((void **)&ky, (Ny - 1) * sizeof(double)));
     CHECK(cudaMalloc((void **)&gamma, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
-    // Allocate memory for Poisson problem
+    // Allocate memory for pressure problem
     CHECK(cudaMalloc((void **)&a, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
     CHECK(cudaMalloc((void **)&b, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(double)));
     CHECK(cudaMalloc((void **)&c, (Nx - 1) * (Ny - 1) * (Nz - 2) * sizeof(double)));
@@ -185,15 +185,17 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             log_message(parameters, "Time integration method not found.");
             exit(1);
         }  
-        // Solve Poisson problem for pressure 
+        // Pressure solver
         if (parameters.variable_density == 0) { // Constant density, direct solver
-            solve_pressure(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);            
+            // solve_pressure(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);  
+            solve_pressure(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);            
         } else { // Variable density, iterative solver
-            solve_pressure_iterative(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
+            // solve_pressure_iterative(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
+            solve_pressure_iterative(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
         }
         checkCuda(cudaGetLastError());
         // Chorin's projection method        
-        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, p, d_z, 1, parameters);
+        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, y_n, p, d_z, 1, parameters);
         checkCuda(cudaGetLastError());
         // Boundary conditions
         boundary_conditions<<<BLOCKS, THREADS>>>(y_np1, d_z, Nz_Y, cut_nodes, parameters);
@@ -256,7 +258,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     cudaFree(F);
     cudaFree(R_turbulence);
     cudaFree(k);
-    // Free memory for Poisson problem
+    // Free memory for pressure problem
     cudaFree(a);
     cudaFree(b);
     cudaFree(c);

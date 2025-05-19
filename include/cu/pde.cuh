@@ -74,7 +74,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
   * @param parameters Pointer to the structure containing the parameters.
   */
   __global__
-  void velocity_correction(double *R_new, double *p, double *z, int fd_z, Parameters parameters);
+  void velocity_correction(double *R_new, double *R_old, double *p, double *z, int fd_z, Parameters parameters);
   
 /**
  * @brief Function evaluation for method of lines (MOL) time integration.

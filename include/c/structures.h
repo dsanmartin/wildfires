@@ -77,6 +77,7 @@ typedef struct _turbulence_indexes {
     int S_31;
     int S_32;
     int S_33;
+    int div_U;
     // int fwx;
     // int fwy;
     // int fwz;
@@ -136,6 +137,7 @@ typedef struct _parameters {
     double rho_inf;    
     double mu;
     double k;
+    double kappa;
     double alpha;
     double delta;
     double nu;
@@ -147,14 +149,14 @@ typedef struct _parameters {
     double alpha_s;
     double sigma_s;
     double T_pc;
-    double H_R;
+    double H_C;
     double A;
     double E_A;
-    double T_a;
-    double h;
+    double T_act;
+    double h_c;
     double Y_D;
     double Y_f;
-    double T_hot;
+    double T_source;
     double Y_h;
     int k_Y_h;
     int Nz_Y_max; // Maximum number of grid points in z for Y variable
@@ -167,7 +169,6 @@ typedef struct _parameters {
     double u_z0;
     double d;
     double u_ast;
-    double kappa;
     double u_r;
     double z_r;
     double alpha_u;
