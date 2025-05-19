@@ -101,14 +101,16 @@ void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftD
 }
 
 __global__
-void compute_f_density(double *y_np1, double *y_n, double *p, double *z,cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters) {
+void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz_Y, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
+    int Nz_Y_max = parameters.Nz_Y_max;
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
     int T_index = parameters.field_indexes.T;
+    int Y_index = parameters.field_indexes.Y;
     int im1, ip1, jm1, jp1;
     double dx = parameters.dx;
     double dy = parameters.dy;
@@ -119,12 +121,20 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z,cufftDou
     double kappa = parameters.kappa;
     double delta = parameters.delta;
     double c_p = parameters.c_p;
+    double alpha_s = parameters.alpha_s;
+    double sigma_s = parameters.sigma_s;
+    double h_c = parameters.h_c;
+    double T_pc = parameters.T_pc;
+    double A = parameters.A;
+    double T_act = parameters.T_act;
+    double H_C = parameters.H_C;
     double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
     double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
     double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;//, w_ijkph, w_ijkmh;
     double T_ijk, T_im1jk, T_ip1jk, T_ijm1k, T_ijp1k, T_ijkp1, T_ijkp2, T_ijkp3, T_ijkm1, T_ijkm2, T_ijkm3;
     double p_ijk, p_im1jk, p_ip1jk, p_ijm1k, p_ijp1k, p_ijkp1, p_ijkp2, p_ijkm1, p_ijkm2;
     double rho_ijk, rho_im1jk, rho_ip1jk, rho_ijm1k, rho_ijp1k, rho_ijkp1, rho_ijkp2, rho_ijkm1, rho_ijkm2;
+    double Y_ijk, T_gas, T_solid, H_step, K_T;
     double ux, vy, wz, f, Tx, Ty, Tz, Txx, Tyy, Tzz, lap_T, div_U_temp, q;
     double rhox, rhoy, rhoz, px, py, pz;
     double dz_km3, dz_km2, dz_km1, dz_k, dz_kp1, dz_kp2;
@@ -272,8 +282,31 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z,cufftDou
             Tzz = 2 * T_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * T_ijk / (dz_km1 * dz_k) + 2 * T_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2T/dz^2
         }
         lap_T = Txx + Tyy + Tzz;
+        /* Compute fuel and source term */
         q = 0;
-        div_U_temp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T + q) / (c_p * T_inf * rho_inf / T_ijk);
+        Y_ijk = 0;
+        H_step = (T_ijk > T_pc) ? 1.0 : 0.0;
+        K_T = A * exp(-T_act / T_ijk) * H_step;
+        // Convection out of the solid zone and the next gas zone cancels the reaction because T_gas = T_solid = T_ijk and because there is no solid fuel
+        T_gas = T_ijk;
+        T_solid = T_ijk;
+        // Solid fuel zone and gas zone
+        if (k <= Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+            // Solid fuel zone
+            if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+                Y_ijk = y_np1[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];          
+            } 
+            // Gas zone next to the solid zone (k+1) or inside the solid zone but with no solid fuel
+            if (Y_ijk > 0.0) {
+                T_gas = T_pc + (T_ijk - T_pc);
+            } else {
+                T_gas = T_ijk;
+            }
+        }
+        // Compute source and force terms
+        h_c = h_c * dz_k * pow((T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
+        q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
+        div_U_temp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (c_p * T_inf * rho_inf) + q / T_ijk;
         if (i < Nx - 1 && j < Ny - 1 && k < Nz - 1) {
             // Compute rho / dt * div(U) and store it for many DFT (contiguous z slices)            
             f = rho_ijk * (ux + vy + wz - div_U_temp) / dt + (rhox * px + rhoy * py + rhoz * pz) / rho_ijk;
@@ -463,7 +496,7 @@ void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex
     }
 }
 
-void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters) {
+void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, int *Nz_Y, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -480,7 +513,7 @@ void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *ga
     if (parameters.variable_density == 0)
         compute_f<<<BLOCKS, THREADS>>>(y_np1, p, z, data_in, p_top_in, parameters);
     else
-        compute_f_density<<<BLOCKS, THREADS>>>(y_np1, y_n, p, z, data_in, p_top_in, parameters);
+        compute_f_density<<<BLOCKS, THREADS>>>(y_np1, y_n, p, z, Nz_Y, data_in, p_top_in, parameters);
     checkCuda(cudaGetLastError());
     // Plans for FFT2D
     CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany)); // FFT2(f_k) for each z slice
@@ -507,7 +540,7 @@ void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *ga
     cufftDestroy(f_plan);
 }
 
-void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter) {
+void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, int *Nz_Y, Parameters parameters, double *error, int *max_iter) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -523,7 +556,7 @@ void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, 
     for (m = 0; m < parameters.pressure_solver_iter; m++) {
         // Copy the initial pressure field to the temporary array
         checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
-        solve_pressure(y_np1, y_n, p, z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);
+        solve_pressure(y_np1, y_n, p, z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters);
         norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
         checkCuda(cudaGetLastError());
         checkCuda(cudaMemcpy(&h_tol, d_tol, sizeof(double), cudaMemcpyDeviceToHost));

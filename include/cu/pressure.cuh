@@ -24,7 +24,7 @@ __global__
 void compute_f(double *U, double *p, double *z, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters);
 
 __global__
-void compute_f_density(double *y_np1, double *y_n, double *p, double *z, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters);
+void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz_Y, cufftDoubleComplex *f_in, cufftDoubleComplex *p_top_in, Parameters parameters);
 
 __global__
 void gammas_and_coefficients(double *kx, double *ky, double *gamma, double *a, double *b, double *c, double *z, Parameters parameters);
@@ -77,8 +77,8 @@ void update_coefficients(double *gamma, double *b, double *z, cufftDoubleComplex
  * @param p_top_out The output array for p_top IFFT.
  * @param parameters The parameters of the mathematical model.
  */
-void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters);
+void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, int *Nz_Y, Parameters parameters);
 
-void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, Parameters parameters, double *error, int *max_iter);
+void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, double *gamma, double *a, double *b, double *c, cufftDoubleComplex *d, cufftDoubleComplex *l, cufftDoubleComplex *u, cufftDoubleComplex *y, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out, cufftDoubleComplex *p_top_in, cufftDoubleComplex *p_top_out, int *Nz_Y, Parameters parameters, double *error, int *max_iter);
 
 #endif

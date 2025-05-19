@@ -563,7 +563,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / 26 / nu);
         // Modified strain rate tensor S'
         S_11 = 2 * ux / 3 - (vy + wz) / 3;
-        S_22 = 2 * vy / 3 - (uz + wx) / 3;
+        S_22 = 2 * vy / 3 - (ux + wz) / 3;
         S_33 = 2 * wz / 3 - (ux + vy) / 3;
         S_12 = 0.5 * (uy + vx);
         S_13 = 0.5 * (uz + wx);
@@ -594,7 +594,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // }
         /* Compute fuel and source term */
         H_step = (T_ijk > T_pc) ? 1.0 : 0.0;
-        K_T = A * exp(-T_act / T_ijk);
+        K_T = A * exp(-T_act / T_ijk) * H_step;
         // Convection out of the solid zone and the next gas zone cancels the reaction because T_gas = T_solid = T_ijk and because there is no solid fuel
         T_gas = T_ijk;
         T_solid = T_ijk;
@@ -603,7 +603,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             // Solid fuel zone
             if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
                 Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];          
-                Y_RHS = -Y_f * K_T * H_step * Y_ijk;
+                Y_RHS = -Y_f * K_T * Y_ijk;
                 R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
             } 
             // Gas zone next to the solid zone (k+1) or inside the solid zone but with no solid fuel
@@ -613,15 +613,10 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
                 T_gas = T_ijk;
             }
         }
-        // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
-        //     Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];        
-        //     Y_RHS = -Y_f * K_T * H_step * Y_ijk;
-        //     R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
-        // }
         // Compute source and force terms
         h_c = h_c * dz_k * pow((T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
         // q = H_R * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_ijk - T_inf) / (c_p * rho_inf);
-        q = H_C * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
+        q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
         mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
         // Force terms
         // F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
@@ -661,12 +656,13 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k, Nx, Ny, Nz)] = S_31;
         R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k, Nx, Ny, Nz)] = S_32;
         R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)] = S_33;
-        R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
+        // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
+        R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * (ux + vy + wz);
         // Save RHS into R_new
         R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_RHS;
-        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;  
+        R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;
     }
 }
 

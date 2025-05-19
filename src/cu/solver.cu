@@ -188,14 +188,14 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         // Pressure solver
         if (parameters.variable_density == 0) { // Constant density, direct solver
             // solve_pressure(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);  
-            solve_pressure(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);            
+            solve_pressure(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters);            
         } else { // Variable density, iterative solver
             // solve_pressure_iterative(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
-            solve_pressure_iterative(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters, &error, &max_iter);
+            solve_pressure_iterative(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters, &error, &max_iter);
         }
         checkCuda(cudaGetLastError());
         // Chorin's projection method        
-        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, y_n, p, d_z, 1, parameters);
+        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, y_n, p, d_z, 0, parameters);
         checkCuda(cudaGetLastError());
         // Boundary conditions
         boundary_conditions<<<BLOCKS, THREADS>>>(y_np1, d_z, Nz_Y, cut_nodes, parameters);
