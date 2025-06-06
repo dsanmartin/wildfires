@@ -23,6 +23,9 @@ void log_parameters_report(Parameters parameters, int to_file) {
             dz_max = MAX(dz_max, parameters.z[k + 1] - parameters.z[k]);
         }
         fprintf(output, "  dx: %lf, dy: %lf, dz: [%lf, %lf], dt: %lf\n", parameters.dx, parameters.dy, dz_min, dz_max, parameters.dt);
+        if (parameters.z_domain == 1) {
+            fprintf(output, "  Stretched grid in z-direction, k: %lf\n", parameters.k_nu_grid);
+        }
     }
     fprintf(output, "  Time samples: %d\n", parameters.NT);
     fprintf(output, "Time integration: %s\n", parameters.method);
@@ -62,6 +65,11 @@ void log_parameters_report(Parameters parameters, int to_file) {
     //     parameters.T0_z_start, parameters.T0_z_end, parameters.T0_z_center, parameters.T0_height);
     fprintf(output, "Fuel initial condition:\n");
     fprintf(output, "  Fuel height: %lf\n", parameters.Y_h);
+    fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf]\n", 
+        parameters.Y0_x_start, parameters.Y0_x_end, 
+        parameters.Y0_y_start, parameters.Y0_y_end);
+    fprintf(output, "  Fuel smooth x: %lf, y: %lf\n", parameters.Y0_xa, parameters.Y0_ya);
+    // fprintf(output, "  Fuel relax: %d\n", parameters.fuel_relax);
     // Topography
     fprintf(output, "Topography:\n");
     fprintf(output, "  Shape: %s\n", parameters.topo_shape);

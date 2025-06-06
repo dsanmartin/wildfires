@@ -185,6 +185,14 @@ typedef struct _parameters {
     double T0_z_end;
     double T0_z_center;
     double T0_height;
+    // Fuel initial conditions
+    double Y0_x_start;
+    double Y0_x_end;
+    double Y0_y_start;
+    double Y0_y_end;
+    double Y0_xa;
+    double Y0_ya;
+    // int fuel_relax;
     char topo_shape[32]; // Topography shape (simple_hill or flat)
     double *topography; // Topography field
     double hill_center_x; 

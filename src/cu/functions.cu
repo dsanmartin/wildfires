@@ -161,10 +161,21 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     double T0_y_end = parameters.T0_y_end;
     double T0_z_start = parameters.T0_z_start;
     double T0_z_end = parameters.T0_z_end;
+    double Y0_x_start = parameters.Y0_x_start;
+    double Y0_x_end = parameters.Y0_x_end;
+    double Y0_y_start = parameters.Y0_y_start;
+    double Y0_y_end = parameters.Y0_y_end;
+    // int fuel_relax = parameters.fuel_relax;
+    double xa = parameters.Y0_xa;
+    double ya = parameters.Y0_ya;
+    double Y_h = parameters.Y_h;
+    double z_bottom, z_top, z_left, z_right;
     /* Spatial domain */
     double *x = parameters.x;
     double *y = parameters.y;
     double *z = parameters.z;
+    // double dx = parameters.dx;
+    // double dy = parameters.dy;
     /* Pressure paramenters */
     double p_top = parameters.p_top;
     /* IBM parameters */
@@ -192,9 +203,62 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                 } else {
                     p[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 }
-                if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] && x[i] > -1.0 && x[i] < 201 && y[j] > -1.0 && y[j] < 201) {
-                    Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
+                // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] && x[i] > -1.0 && x[i] < 201 && y[j] > -1.0 && y[j] < 201) {
+                //     Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
+                // }
+                if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
+                    z_bottom = Y_h * (y[j] - Y0_y_start + ya) / ya;
+                    z_top = Y_h * (Y0_y_end + ya - y[j]) / ya;
+                    z_left = Y_h * (x[i] - Y0_x_start + xa) / xa;
+                    z_right = Y_h * (Y0_x_end + xa - x[i]) / xa;
+                    if ((Y0_x_start <= x[i] && x[i] <= Y0_x_end) && (Y0_y_start <= y[j] && y[j] <= Y0_y_end) && (0 <= z[k] && z[k] <= Y_h))
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
+                    else if ((Y0_y_start - ya <= y[j] && y[j] < Y0_y_start) && (Y0_x_start - xa <= x[i] && x[i] <= Y0_x_end + xa) && (0 <= z[k] && z[k] <= z_bottom))
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_bottom / Y_h;
+                    else if ((Y0_y_end < y[j] && y[j] <= Y0_y_end + ya) && (Y0_x_start - xa <= x[i] && x[i] <= Y0_x_end + xa) && (0 <= z[k] && z[k] <= z_top))
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_top / Y_h;
+                    else if ((Y0_x_start - xa <= x[i] && x[i] < Y0_x_start) && (Y0_y_start - ya <= y[j] && y[j] <= Y0_y_end + ya) && (0 <= z[k] && z[k] <= z_left))
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_left / Y_h;
+                    else if ((Y0_x_end < x[i] && x[i] <= Y0_x_end + xa) && (Y0_y_start - ya <= y[j] && y[j] <= Y0_y_end + ya) && (0 <= z[k] && z[k] <= z_right))
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_right / Y_h;
                 }
+                // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] && x[i] >= Y0_x_start && x[i] <= Y0_x_end && y[j] >= Y0_y_start && y[j] <= Y0_y_end) {
+                //     Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
+                // }
+                // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 1 && 
+                //     x[i] >= Y0_x_start - fuel_relax * dx && x[i] < Y0_x_start && x[i] > Y0_x_end && x[i] < Y0_x_end + fuel_relax * dx &&
+                //     y[j] >= Y0_y_start - fuel_relax * dy && y[j] < Y0_y_start && y[j] > Y0_y_end && y[j] < Y0_y_end+ fuel_relax * dy) {
+                //         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.75;
+                // }
+                // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 2 && 
+                //     x[i] >= Y0_x_start - 2 * fuel_relax * dx && x[i] < Y0_x_start - fuel_relax * dx && x[i] > Y0_x_end + fuel_relax * dx && x[i] < Y0_x_end + 2 * fuel_relax * dx &&
+                //     y[j] >= Y0_y_start - 2 * fuel_relax * dy && y[j] < Y0_y_start - fuel_relax * dy && y[j] > Y0_y_end + fuel_relax * dy && y[j] < Y0_y_end + 2 * fuel_relax * dy) {
+                //         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.5;
+                // }
+                // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 3 && 
+                //     x[i] >= Y0_x_start - 3 * fuel_relax * dx && x[i] < Y0_x_start - 2 * fuel_relax * dx && x[i] > Y0_x_end + 2 * fuel_relax * dx && x[i] < Y0_x_end + 3 * fuel_relax * dx &&
+                //     y[j] >= Y0_y_start - 3 * fuel_relax * dy && y[j] < Y0_y_start - 2 * fuel_relax * dy && y[j] > Y0_y_end + 2 * fuel_relax * dy && y[j] < Y0_y_end + 3 * fuel_relax * dy) {
+                //         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.25;
+                // }
+                // } else {
+                //     if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 1 && 
+                //         x[i] >= 0.0 - fuel_relax * dx && x[i] < 0.0 && x[i] > 200 && x[i] < 200 + fuel_relax * dx &&
+                //         y[j] >= 0.0 - fuel_relax * dy && y[j] < 0.0 && y[j] > 200 && y[j] < 200 + fuel_relax * dy) {
+                //             Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.75;
+                //     } else {
+                //         if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 2 && 
+                //             x[i] >= 0.0 - 2 * fuel_relax * dx && x[i] < - fuel_relax * dx && x[i] > 200 + fuel_relax * dx && x[i] < 200 + 2 * fuel_relax * dx &&
+                //             y[j] >= 0.0 - 2 * fuel_relax * dy && y[j] < - fuel_relax * dy && y[j] > 200 + fuel_relax * dy && y[j] < 200 + 2 * fuel_relax * dy) {
+                //                 Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.5;
+                //         } else {
+                //             if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] - 3 && 
+                //                 x[i] >= 0.0 - 3 * fuel_relax * dx && x[i] < -2 * fuel_relax * dx && x[i] > 200 + 2 * fuel_relax * dx && x[i] < 200 + 3 * fuel_relax * dx &&
+                //                 y[j] >= 0.0 - 3 * fuel_relax * dy && y[j] < -2 * fuel_relax * dy && y[j] > 200 + 2 * fuel_relax * dy && y[j] < 200 + 3 * fuel_relax * dy) {
+                //                     Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 0.25;
+                //             }
+                //         }
+                //     }
+                // }
                 // Set dead nodes
                 if (k < cut_nodes[IDX(i, j, 0, Nx, Ny, 1)]) {
                     u[IDX(i, j, k, Nx, Ny, Nz)] = u_dead_nodes;
