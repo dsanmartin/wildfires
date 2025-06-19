@@ -115,7 +115,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
                 }
                 // Check if any value is NaN
                 if (isnan(u) || isnan(v) || isnan(w) || isnan(T) || isnan(Y)) {
-                    printf("NaN value found. Exiting...\n");
+                    log_message(parameters, "NaN value found. Exiting...");
                     exit(1);
                 }
                 abs_u = fabs(u);
@@ -214,13 +214,13 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                     if ((Y0_x_start <= x[i] && x[i] <= Y0_x_end) && (Y0_y_start <= y[j] && y[j] <= Y0_y_end) && (0 <= z[k] && z[k] <= Y_h))
                         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
                     else if ((Y0_y_start - ya <= y[j] && y[j] < Y0_y_start) && (Y0_x_start - xa <= x[i] && x[i] <= Y0_x_end + xa) && (0 <= z[k] && z[k] <= z_bottom))
-                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_bottom / Y_h;
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0; //z_bottom / Y_h;
                     else if ((Y0_y_end < y[j] && y[j] <= Y0_y_end + ya) && (Y0_x_start - xa <= x[i] && x[i] <= Y0_x_end + xa) && (0 <= z[k] && z[k] <= z_top))
-                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_top / Y_h;
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0; //z_top / Y_h;
                     else if ((Y0_x_start - xa <= x[i] && x[i] < Y0_x_start) && (Y0_y_start - ya <= y[j] && y[j] <= Y0_y_end + ya) && (0 <= z[k] && z[k] <= z_left))
-                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_left / Y_h;
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0; //z_left / Y_h;
                     else if ((Y0_x_end < x[i] && x[i] <= Y0_x_end + xa) && (Y0_y_start - ya <= y[j] && y[j] <= Y0_y_end + ya) && (0 <= z[k] && z[k] <= z_right))
-                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = z_right / Y_h;
+                        Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0; //z_right / Y_h;
                 }
                 // if (k < Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] && x[i] >= Y0_x_start && x[i] <= Y0_x_end && y[j] >= Y0_y_start && y[j] <= Y0_y_end) {
                 //     Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;

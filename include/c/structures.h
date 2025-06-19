@@ -221,6 +221,7 @@ typedef struct _parameters {
     int pressure_solver_log;
     char method[32];
     char save_path[64];
+    char input_path[64];
     char sim_id[32];
     int n_threads;
     int z_domain;

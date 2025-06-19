@@ -29,7 +29,7 @@ MAIN   = cu/main.cu
 CODC = #poisson2.c
 # CODC = $(wildcard $(CSRC)*.c) 
 CODOMP = #$(wildcard $(OMP)*.c)
-CODCU = functions.cu ibm.cu logs.cu output.cu parameters.cu pde.cu pressure.cu solver.cu turbulence.cu utils.cu
+CODCU = functions.cu ibm.cu logs.cu input.cu output.cu parameters.cu pde.cu pressure.cu solver.cu turbulence.cu utils.cu
 else ifeq ($(COMPILATION), "C")
 # CFLAGS	+= -lfftw3
 EXE = wildfires_c

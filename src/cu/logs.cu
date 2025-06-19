@@ -37,39 +37,45 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "  h_c: %lf, alpha_s: %lf, sigma_s: %lf, delta: %lf\n", parameters.h_c, parameters.alpha_s, parameters.sigma_s, parameters.delta);    
     fprintf(output, "  H_C: %e, A: %e, T_pc: %lf, T_act: %lf\n", parameters.H_C, parameters.A, parameters.T_pc, parameters.T_act);
     fprintf(output, "  C_d: %lf, Y_f: %lf\n", parameters.C_d, parameters.Y_f);
-    fprintf(output, "Wind initial condition:\n");
-    fprintf(output, "  Type: %s\n", parameters.U0_type);    
-    if (strcmp(parameters.U0_type, "constant") == 0)
-        fprintf(output, "  u_r: %lf\n", parameters.u_r);
-    else if (strcmp(parameters.U0_type, "log") == 0)
-        fprintf(output, "  u_z0: %lf, kappa: %lf, d: %lf, u_ast: %lf\n", parameters.u_z0, KAPPA, parameters.d, parameters.u_ast);
-    else if (strcmp(parameters.U0_type, "power_law") == 0)
-        fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters.u_r, parameters.z_r, parameters.alpha_u);
-    fprintf(output, "Temperature initial condition:\n");
-    fprintf(output, "  Shape: %s\n", parameters.T0_shape);
-    fprintf(output, "  T_source: %lf\n", parameters.T_source);
-    fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
-        parameters.T0_x_start, parameters.T0_x_end, 
-        parameters.T0_y_start, parameters.T0_y_end, 
-        parameters.T0_z_start, parameters.T0_z_end);
-    fprintf(output, "  Center: [%lf, %lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
-        parameters.T0_x_center, parameters.T0_y_center, parameters.T0_z_center,
-        parameters.T0_length, parameters.T0_width, parameters.T0_height);
-    if (parameters.t_source > 0)
-        fprintf(output, "  Source time: %lf\n", parameters.t_source);  
-    // fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
-    //     parameters.T0_x_start, parameters.T0_x_end, parameters.T0_x_center, parameters.T0_length);
-    // fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
-    //     parameters.T0_y_start, parameters.T0_y_end, parameters.T0_y_center, parameters.T0_width);
-    // fprintf(output, "  T0_z_start: %lf, T0_z_end: %lf, T0_z_center: %lf, T0_height: %lf\n",
-    //     parameters.T0_z_start, parameters.T0_z_end, parameters.T0_z_center, parameters.T0_height);
-    fprintf(output, "Fuel initial condition:\n");
-    fprintf(output, "  Fuel height: %lf\n", parameters.Y_h);
-    fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf]\n", 
-        parameters.Y0_x_start, parameters.Y0_x_end, 
-        parameters.Y0_y_start, parameters.Y0_y_end);
-    fprintf(output, "  Fuel smooth x: %lf, y: %lf\n", parameters.Y0_xa, parameters.Y0_ya);
-    // fprintf(output, "  Fuel relax: %d\n", parameters.fuel_relax);
+    // Check if input_path is empty
+    if (parameters.input_path[0] == '\0') {
+        fprintf(output, "Wind initial condition:\n");
+        fprintf(output, "  Type: %s\n", parameters.U0_type);    
+        if (strcmp(parameters.U0_type, "constant") == 0)
+            fprintf(output, "  u_r: %lf\n", parameters.u_r);
+        else if (strcmp(parameters.U0_type, "log") == 0)
+            fprintf(output, "  u_z0: %lf, kappa: %lf, d: %lf, u_ast: %lf\n", parameters.u_z0, KAPPA, parameters.d, parameters.u_ast);
+        else if (strcmp(parameters.U0_type, "power_law") == 0)
+            fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters.u_r, parameters.z_r, parameters.alpha_u);
+        fprintf(output, "Temperature initial condition:\n");
+        fprintf(output, "  Shape: %s\n", parameters.T0_shape);
+        fprintf(output, "  T_source: %lf\n", parameters.T_source);
+        fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
+            parameters.T0_x_start, parameters.T0_x_end, 
+            parameters.T0_y_start, parameters.T0_y_end, 
+            parameters.T0_z_start, parameters.T0_z_end);
+        fprintf(output, "  Center: [%lf, %lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
+            parameters.T0_x_center, parameters.T0_y_center, parameters.T0_z_center,
+            parameters.T0_length, parameters.T0_width, parameters.T0_height);
+        if (parameters.t_source > 0)
+            fprintf(output, "  Source time: %lf\n", parameters.t_source);  
+        // fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
+        //     parameters.T0_x_start, parameters.T0_x_end, parameters.T0_x_center, parameters.T0_length);
+        // fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
+        //     parameters.T0_y_start, parameters.T0_y_end, parameters.T0_y_center, parameters.T0_width);
+        // fprintf(output, "  T0_z_start: %lf, T0_z_end: %lf, T0_z_center: %lf, T0_height: %lf\n",
+        //     parameters.T0_z_start, parameters.T0_z_end, parameters.T0_z_center, parameters.T0_height);
+        fprintf(output, "Fuel initial condition:\n");
+        fprintf(output, "  Fuel height: %lf\n", parameters.Y_h);
+        fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf]\n", 
+            parameters.Y0_x_start, parameters.Y0_x_end, 
+            parameters.Y0_y_start, parameters.Y0_y_end);
+        fprintf(output, "  Fuel smooth x: %lf, y: %lf\n", parameters.Y0_xa, parameters.Y0_ya);
+        // fprintf(output, "  Fuel relax: %d\n", parameters.fuel_relax);
+    } 
+    // else {
+    //     fprintf(output, "  Loaded from the input path: %s\n", parameters.input_path);
+    // }
     // Topography
     fprintf(output, "Topography:\n");
     fprintf(output, "  Shape: %s\n", parameters.topo_shape);

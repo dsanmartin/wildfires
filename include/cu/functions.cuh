@@ -14,6 +14,7 @@
 
 #include <math.h>
 #include "../c/structures.h"
+#include "logs.cuh"
 #include "utils.cuh"
 
 /**

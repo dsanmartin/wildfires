@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include "../c/structures.h"
 #include "../c/constants.h"
+#include "input.cuh"
 #include "output.cuh"
 #include "functions.cuh"
 #include "logs.cuh"

@@ -46,8 +46,16 @@ int main(int argc, char *argv[]) {
     cudaMalloc(&p_device, size * sizeof(double));
 
     // Initialize u, v, w, T, Y, p
-    log_message(parameters, "Initial conditions...");
-    initial_conditions(u, v, w, T, Y, p, parameters);
+    
+    // If input_path is empty, use initial conditions from parameters
+    if (parameters.input_path[0] == '\0') {
+        log_message(parameters, "Initial conditions...");
+        initial_conditions(u, v, w, T, Y, p, parameters);
+    } else {
+        initial_conditions_input(u, v, w, T, Y, p, parameters);
+        // Log message
+        log_message(parameters, "Initial conditions loaded from files.");
+    }
 
     // Create y_0 using T and Y
     log_message(parameters, "Creating y_0...");

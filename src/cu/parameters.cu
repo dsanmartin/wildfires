@@ -69,6 +69,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.w_dead_nodes = 0.0; // Default value for dead nodes velocity in z direction
     parameters.T_dead_nodes = 288.15; // Default value for dead nodes temperature in K
     parameters.Y_dead_nodes = 0.0; // Default value for dead nodes fuel fraction
+    parameters.input_path[0] = '\0'; // Initialize input path to empty string
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -353,6 +354,10 @@ Parameters read_parameters_file(const char *file_path) {
         // Find z_transition parameter
         if (strncmp(line, "z_transition =", 14) == 0) {
             sscanf(line + 15, "%lf", &(parameters.z_transition));
+        }
+        // Find input path
+        if (strncmp(line, "input_path =", 12) == 0) {
+            sscanf(line + 13, "%s", parameters.input_path);
         }
     }
     // Initialize x, y, z, t

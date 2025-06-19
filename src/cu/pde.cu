@@ -180,7 +180,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double w_ijk, w_ip1jk, w_im1jk, w_ijp1k, w_ijm1k, w_ijkp1, w_ijkm1;
     double w_ip2jk, w_im2jk, w_ijp2k, w_ijm2k, w_ijkp2, w_ijkm2, w_ijkp3, w_ijkm3;
     double T_ijk, T_ip1jk, T_im1jk, T_ijp1k, T_ijm1k, T_ijkp1, T_ijkm1;
-    double T_ijkp2, T_ijkm2, T_ijkp3, T_ijkm3;
+    double T_im2jk, T_ip2jk, T_ijm2k, T_ijp2k, T_ijkp2, T_ijkm2, T_ijkp3, T_ijkm3;
     double rho_ijk;
     double Y_ijk;
     // Upwind scheme terms
@@ -188,11 +188,13 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double u_ip, u_im, u_jp, u_jm, u_kp, u_km;
     double v_ip, v_im, v_jp, v_jm, v_kp, v_km;
     double w_ip, w_im, w_jp, w_jm, w_kp, w_km;
+    double T_ip, T_im, T_jp, T_jm, T_kp, T_km;
     // First partial derivatives
     double ux, uy, uz, vx, vy, vz, wx, wy, wz, Tx, Ty, Tz; // For central difference
     // Second partial derivatives
     double uxx, uyy, uzz, vxx, vyy, vzz, wxx, wyy, wzz, Txx, Tyy, Tzz;
     double uux, vuy, wuz, uvx, vvy, wvz, uwx, vwy, wwz;
+    double uTx, vTy, wTz; 
     double lap_u, lap_v, lap_w, lap_T;
     double u_RHS, v_RHS, w_RHS, T_RHS, Y_RHS, q, T_RHS_tmp;
     double mod_U, nu;
@@ -245,10 +247,12 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_im2jk = R_old[u_index + IDX(im2, j, k, Nx, Ny, Nz)];
         v_im2jk = R_old[v_index + IDX(im2, j, k, Nx, Ny, Nz)];
         w_im2jk = R_old[w_index + IDX(im2, j, k, Nx, Ny, Nz)];
+        T_im2jk = R_old[T_index + IDX(im2, j, k, Nx, Ny, Nz)];
         // \phi_{i+2,j,k}
         u_ip2jk = R_old[u_index + IDX(ip2, j, k, Nx, Ny, Nz)];
         v_ip2jk = R_old[v_index + IDX(ip2, j, k, Nx, Ny, Nz)];
         w_ip2jk = R_old[w_index + IDX(ip2, j, k, Nx, Ny, Nz)];
+        T_ip2jk = R_old[T_index + IDX(ip2, j, k, Nx, Ny, Nz)];
         // \phi_{i,j-1,k}
         u_ijm1k = R_old[u_index + IDX(i, jm1, k, Nx, Ny, Nz)];
         v_ijm1k = R_old[v_index + IDX(i, jm1, k, Nx, Ny, Nz)];
@@ -263,10 +267,12 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_ijm2k = R_old[u_index + IDX(i, jm2, k, Nx, Ny, Nz)];
         v_ijm2k = R_old[v_index + IDX(i, jm2, k, Nx, Ny, Nz)];
         w_ijm2k = R_old[w_index + IDX(i, jm2, k, Nx, Ny, Nz)];
+        T_ijm2k = R_old[T_index + IDX(i, jm2, k, Nx, Ny, Nz)];
         // \phi_{i,j+2,k}
         u_ijp2k = R_old[u_index + IDX(i, jp2, k, Nx, Ny, Nz)];
         v_ijp2k = R_old[v_index + IDX(i, jp2, k, Nx, Ny, Nz)];
         w_ijp2k = R_old[w_index + IDX(i, jp2, k, Nx, Ny, Nz)];
+        T_ijp2k = R_old[T_index + IDX(i, jp2, k, Nx, Ny, Nz)];
         // Get dz values
         // \phi_{i,j,k-1}
         u_ijkm1 = 0, v_ijkm1 = 0, w_ijkm1 = 0, T_ijkm1 = 0;
@@ -326,15 +332,19 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_im = (3 * u_ijk - 4 * u_im1jk + u_im2jk) / (2 * dx);
         v_im = (3 * v_ijk - 4 * v_im1jk + v_im2jk) / (2 * dx);
         w_im = (3 * w_ijk - 4 * w_im1jk + w_im2jk) / (2 * dx);
+        T_im = (3 * T_ijk - 4 * T_im1jk + T_im2jk) / (2 * dx);
         u_ip = (-3 * u_ijk + 4 * u_ip1jk - u_ip2jk) / (2 * dx);
         v_ip = (-3 * v_ijk + 4 * v_ip1jk - v_ip2jk) / (2 * dx);
         w_ip = (-3 * w_ijk + 4 * w_ip1jk - w_ip2jk) / (2 * dx);
+        T_ip = (-3 * T_ijk + 4 * T_ip1jk - T_ip2jk) / (2 * dx);
         u_jm = (3 * u_ijk - 4 * u_ijm1k + u_ijm2k) / (2 * dy);
         v_jm = (3 * v_ijk - 4 * v_ijm1k + v_ijm2k) / (2 * dy);
         w_jm = (3 * w_ijk - 4 * w_ijm1k + w_ijm2k) / (2 * dy);
+        T_jm = (3 * T_ijk - 4 * T_ijm1k + T_ijm2k) / (2 * dy);
         u_jp = (-3 * u_ijk + 4 * u_ijp1k - u_ijp2k) / (2 * dy);
         v_jp = (-3 * v_ijk + 4 * v_ijp1k - v_ijp2k) / (2 * dy);
         w_jp = (-3 * w_ijk + 4 * w_ijp1k - w_ijp2k) / (2 * dy);
+        T_jp = (-3 * T_ijk + 4 * T_ijp1k - T_ijp2k) / (2 * dy);
         // Second order forward difference at k=0 and k=1
         if (k <= 1) {
             dz_k = z[k + 1] - z[k];
@@ -353,6 +363,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             w_km = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
                 + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
                 - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            T_km = - (2 * dz_k + dz_kp1) * T_ijk / (dz_k * (dz_k + dz_kp1)) 
+                + (dz_k + dz_kp1) * T_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * T_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         } else {
             dz_km1 = z[k] - z[k - 1];
             dz_km2 = z[k - 1] - z[k - 2];
@@ -370,6 +383,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             w_km = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
                 - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
                 + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            T_km = dz_km1 * T_ijkm2 / (dz_km2 * (dz_km2 + dz_km1))
+                - (dz_km2 + dz_km1) * T_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * T_ijk / (dz_km1 * (dz_km2 + dz_km1));
         }
         // Second order backward difference at k=Nz-2 and k=Nz-1
         if (k >= Nz - 2) {
@@ -389,6 +405,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             w_kp = dz_km1 * w_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) 
                 - (dz_km2 + dz_km1) * w_ijkm1 / (dz_km2 * dz_km1) 
                 + (dz_km2 + 2 * dz_km1) * w_ijk / (dz_km1 * (dz_km2 + dz_km1));
+            T_kp = dz_km1 * T_ijkm2 / (dz_km2 * (dz_km2 + dz_km1))
+                - (dz_km2 + dz_km1) * T_ijkm1 / (dz_km2 * dz_km1) 
+                + (dz_km2 + 2 * dz_km1) * T_ijk / (dz_km1 * (dz_km2 + dz_km1));
         } else {
             dz_k = z[k + 1] - z[k];
             dz_kp1 = z[k + 2] - z[k + 1]; 
@@ -406,6 +425,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             w_kp = - (2 * dz_k + dz_kp1) * w_ijk / (dz_k * (dz_k + dz_kp1)) 
                 + (dz_k + dz_kp1) * w_ijkp1 / (dz_k * dz_kp1) 
                 - dz_k * w_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
+            T_kp = - (2 * dz_k + dz_kp1) * T_ijk / (dz_k * (dz_k + dz_kp1))
+                + (dz_k + dz_kp1) * T_ijkp1 / (dz_k * dz_kp1) 
+                - dz_k * T_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
         }
         /* Compute first partial derivatives */
         // Upwind scheme for velocity
@@ -418,6 +440,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         uwx = u_plu * w_im + u_min * w_ip; // u * dw/dx
         vwy = v_plu * w_jm + v_min * w_jp; // v * dw/dy
         wwz = w_plu * w_km + w_min * w_kp; // w * dw/dz
+        uTx = u_plu * T_im + u_min * T_ip; // u * dT/dx
+        vTy = v_plu * T_jm + v_min * T_jp; // v * dT/dy
+        wTz = w_plu * T_km + w_min * T_kp; // w * dT/dz
         // Central difference for temperature and turbulence velocity
         ux  = (u_ip1jk - u_im1jk) / (2 * dx); // du/dx
         uy  = (u_ijp1k - u_ijm1k) / (2 * dy); // du/dy                
@@ -605,6 +630,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
                 Y_ijk = R_old[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];          
                 Y_RHS = -Y_f * K_T * Y_ijk;
                 R_new[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)] = Y_RHS;
+                // if (isnan(Y_ijk))
+                //     printf("NAN detected in Y_ijk at i=%d, j=%d, k=%d\n", i, j, k);
             } 
             // Gas zone next to the solid zone (k+1) or inside the solid zone but with no solid fuel
             if (Y_ijk > 0.0) {
@@ -637,7 +664,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Temperature RHS with radiation and conduction
         T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
-        T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        // T_RHS = T_RHS_tmp;// - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        T_RHS = T_RHS_tmp - (uTx + vTy + wTz); // Including convection
         // Copy to turbulence array. These calculations will be used in the next step to include the turbulence model
         R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)] = rho_ijk;
         R_turbulence[parameters.turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;
@@ -663,6 +691,14 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
         R_new[w_index + IDX(i, j, k, Nx, Ny, Nz)] = w_RHS;
         R_new[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_RHS;
+        // if (isnan(u_RHS))
+        //     printf("NAN detected in u_RHS at i=%d, j=%d, k=%d\n", i, j, k);
+        // if (isnan(v_RHS))
+        //     printf("NAN detected in v_RHS at i=%d, j=%d, k=%d\n", i, j, k);
+        // if (isnan(w_RHS))
+        //     printf("NAN detected in w_RHS at i=%d, j=%d, k=%d\n", i, j, k);
+        // if (isnan(T_RHS))
+        //     printf("NAN detected in T_RHS at i=%d, j=%d, k=%d\n", i, j, k);
     }
 }
 
