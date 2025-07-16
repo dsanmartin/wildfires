@@ -200,7 +200,8 @@ typedef struct _parameters {
     double hill_length; 
     double hill_width; 
     double hill_height; 
-    double t_source; 
+    double t_source_start;
+    double t_source_end; 
     // IBM dead nodes and cut nodes
     // int n_dead_nodes;
     // int n_cut_nodes;
@@ -228,6 +229,7 @@ typedef struct _parameters {
     double k_nu_grid;
     int k_transition;
     double z_transition;
+    int velocity_correction_fd;
     size_t threads_per_block;
     size_t number_of_blocks;
     FieldIndexes field_indexes;

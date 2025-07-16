@@ -70,6 +70,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.T_dead_nodes = 288.15; // Default value for dead nodes temperature in K
     parameters.Y_dead_nodes = 0.0; // Default value for dead nodes fuel fraction
     parameters.input_path[0] = '\0'; // Initialize input path to empty string
+    parameters.velocity_correction_fd = 0; // Default value for velocity correction finite difference 
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -311,9 +312,12 @@ Parameters read_parameters_file(const char *file_path) {
             sscanf(line + 13, "%lf", &(parameters.hill_height));
         }
         // Time of temperature source
-        if (strncmp(line, "t_source =", 10) == 0) {
-            sscanf(line + 11, "%lf", &(parameters.t_source));
-        }        
+        if (strncmp(line, "t_source_start =", 16) == 0) {
+            sscanf(line + 17, "%lf", &(parameters.t_source_start));
+        }
+        if (strncmp(line, "t_source_end =", 14) == 0) {
+            sscanf(line + 15, "%lf", &(parameters.t_source_end));
+        }
         // Optical path length (\delta) in m
         if (strncmp(line, "delta =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.delta));
@@ -358,6 +362,10 @@ Parameters read_parameters_file(const char *file_path) {
         // Find input path
         if (strncmp(line, "input_path =", 12) == 0) {
             sscanf(line + 13, "%s", parameters.input_path);
+        }
+        // Velocity correction finite difference
+        if (strncmp(line, "velocity_correction_fd =", 24) == 0) {
+            sscanf(line + 25, "%d", &(parameters.velocity_correction_fd));
         }
     }
     // Initialize x, y, z, t

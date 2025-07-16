@@ -70,11 +70,10 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
   * @param R_new Pointer to the array representing the new values.
   * @param p Pointer to the array representing the previous values.
   * @param z Pointer to the array containing the z values.
-  * @param fd_z Second-order finite difference option in the z direction. -1 backward, 0 centered, 1 forward.
   * @param parameters Pointer to the structure containing the parameters.
   */
   __global__
-  void velocity_correction(double *R_new, double *R_old, double *p, double *z, int fd_z, Parameters parameters);
+  void velocity_correction(double *R_new, double *R_old, double *p, double *z, Parameters parameters);
   
 /**
  * @brief Function evaluation for method of lines (MOL) time integration.

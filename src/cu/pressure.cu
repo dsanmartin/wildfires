@@ -515,6 +515,7 @@ void solve_pressure(double *y_np1, double *y_n, double *p, double *z, double *ga
     else
         compute_f_density<<<BLOCKS, THREADS>>>(y_np1, y_n, p, z, Nz_Y, data_in, p_top_in, parameters);
     checkCuda(cudaGetLastError());
+    CHECK(cudaDeviceSynchronize());
     // Plans for FFT2D
     CHECK_CUFFT(cufftPlanMany(&p_plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, howmany)); // FFT2(f_k) for each z slice
     CHECK_CUFFT(cufftPlan2d(&p_top_plan, Nx - 1, Ny - 1, CUFFT_Z2Z)); // FFT2(p_top)
@@ -549,7 +550,7 @@ void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, 
     char solver_log_message[128];
     // Create a temporary array on GPU to store the pressure field
     double *p_tmp;
-    int m;
+    int m = 0; // Iteration counter
     checkCuda(cudaMalloc((void **)&p_tmp, size * sizeof(double)));
     // Allocate memory for the tolerance
     checkCuda(cudaMalloc((void **)&d_tol, sizeof(double)));
@@ -564,6 +565,28 @@ void solve_pressure_iterative(double *y_np1, double *y_n, double *p, double *z, 
             break;
         }        
     }
+    // while (m < parameters.pressure_solver_iter) {
+    //     // Fixed 10 iterations to avoid copy to host at each iteration
+    //     int i = 0; // Iteration counter for the inner loop
+    //     while (i < 5) {
+    //         // Copy the initial pressure field to the temporary array
+    //         checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
+    //         solve_pressure(y_np1, y_n, p, z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters);
+    //         norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
+    //         checkCuda(cudaGetLastError());
+    //         i++;
+    //     }        
+    //     // Copy the initial pressure field to the temporary array
+    //     // checkCuda(cudaMemcpy(p_tmp, p, size * sizeof(double), cudaMemcpyDeviceToDevice));
+    //     // solve_pressure(y_np1, y_n, p, z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters);
+    //     // norm<<<BLOCKS, THREADS>>>(p, p_tmp, d_tol, INFINITY, size);
+    //     // checkCuda(cudaGetLastError());
+    //     checkCuda(cudaMemcpy(&h_tol, d_tol, sizeof(double), cudaMemcpyDeviceToHost));
+    //     if (h_tol <= parameters.pressure_solver_tol) {
+    //         break;
+    //     }  
+    //     m += i; // Update the iteration counter 
+    // }
     if (parameters.pressure_solver_log == 1) {
         sprintf(solver_log_message, "Pressure solver: Error = %e, iterations = %d", h_tol, m);
         log_message(parameters, solver_log_message);

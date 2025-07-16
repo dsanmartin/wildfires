@@ -664,7 +664,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Temperature RHS with radiation and conduction
         T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
-        // T_RHS = T_RHS_tmp;// - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        // T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
         T_RHS = T_RHS_tmp - (uTx + vTy + wTz); // Including convection
         // Copy to turbulence array. These calculations will be used in the next step to include the turbulence model
         R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)] = rho_ijk;
@@ -703,7 +703,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
 }
 
 __global__
-void velocity_correction(double *R_new, double *R_old, double *p, double *z, int fd_z, Parameters parameters) {
+void velocity_correction(double *R_new, double *R_old, double *p, double *z, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -711,6 +711,7 @@ void velocity_correction(double *R_new, double *R_old, double *p, double *z, int
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
     int T_index = parameters.field_indexes.T;
+    int fd_z = parameters.velocity_correction_fd;
     double rho_inf = parameters.rho_inf;
     double T_inf = parameters.T_inf;
     double dx = parameters.dx;

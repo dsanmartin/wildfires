@@ -70,12 +70,13 @@ void transition_domain(double *z, int Nz, double z_min, double z_max, double z_t
     }
 }
 
-void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters) {
+void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, int n, Parameters parameters) {
     // printf("Timestep reports\n");
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
     int Nz_Y_max = parameters.Nz_Y_max;
+    int NT = parameters.NT;
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
     int w_index = parameters.field_indexes.w;
@@ -91,15 +92,22 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
     double max_w = 0.0;
     double abs_u, abs_v, abs_w;
     double u, v, w, T, Y;
+    // Get domain from parameters
+    double *x = parameters.x;
+    double *y = parameters.y;
+    double *z = parameters.z;
+    double *t = parameters.t;
     // double CFL_tmp = 0.0;
     double Y_min_tmp = 0.0, Y_max_tmp = -1e9;
     double T_min_tmp = 1e9, T_max_tmp = -1e9;
+    char message[256];
     // int idx = threadIdx.x + blockIdx.x * blockDim.x;
     // int stride = gridDim.x * blockDim.x;
     // for (int ijk = idx; ijk < size; ijk += stride) {
         // int i = ijk / (Ny * Nz);
         // int j = (ijk % (Ny * Nz)) / Nz;
         // int k = ijk % Nz;
+    // n /= NT; // Adjust n to match the current timestep
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
@@ -114,8 +122,29 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
                     Y_max_tmp = MAX(Y_max_tmp, Y);
                 }
                 // Check if any value is NaN
-                if (isnan(u) || isnan(v) || isnan(w) || isnan(T) || isnan(Y)) {
-                    log_message(parameters, "NaN value found. Exiting...");
+                if (isnan(u)) {
+                    sprintf(message, "NaN value found in u(%f, %f, %f, %f) in node (%d, %d, %d) at timestep %d (%d). Exiting...", x[i], y[j], z[k], t[n], i, j, k, n, n / NT);
+                    log_message(parameters, message);
+                    exit(1);
+                }
+                if (isnan(v)) {
+                    sprintf(message, "NaN value found in v(%f, %f, %f, %f) in node (%d, %d, %d) at timestep %d (%d). Exiting...", x[i], y[j], z[k], t[n], i, j, k, n, n / NT);
+                    log_message(parameters, message);
+                    exit(1);
+                }
+                if (isnan(w)) {
+                    sprintf(message, "NaN value found in w(%f, %f, %f, %f) in node (%d, %d, %d) at timestep %d (%d). Exiting...", x[i], y[j], z[k], t[n], i, j, k, n, n / NT);
+                    log_message(parameters, message);
+                    exit(1);
+                }
+                if (isnan(T)) {
+                    sprintf(message, "NaN value found in T(%f, %f, %f, %f) in node (%d, %d, %d) at timestep %d (%d). Exiting...", x[i], y[j], z[k], t[n], i, j, k, n, n / NT);
+                    log_message(parameters, message);
+                    exit(1);
+                }
+                if (isnan(Y)) {
+                    sprintf(message, "NaN value found in Y(%f, %f, %f, %f) in node (%d, %d, %d) at timestep %d (%d). Exiting...", x[i], y[j], z[k], t[n], i, j, k, n, n / NT);
+                    log_message(parameters, message);
                     exit(1);
                 }
                 abs_u = fabs(u);
@@ -176,7 +205,7 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     double *z = parameters.z;
     // double dx = parameters.dx;
     // double dy = parameters.dy;
-    /* Pressure paramenters */
+    /* Pressure parameters */
     double p_top = parameters.p_top;
     /* IBM parameters */
     int *cut_nodes = parameters.cut_nodes;
@@ -274,30 +303,87 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
 }
 
 __global__
-void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters) {
+void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, double t_n, Parameters paramenters) {
     int Nx = paramenters.Nx;
     int Ny = paramenters.Ny;
     int Nz = paramenters.Nz;
     int T_index = paramenters.field_indexes.T;
-    double T_source = paramenters.T_source;
-    double T0_x_start = paramenters.T0_x_start;
-    double T0_x_end = paramenters.T0_x_end;
-    double T0_y_start = paramenters.T0_y_start;
-    double T0_y_end = paramenters.T0_y_end;
-    double T0_z_start = paramenters.T0_z_start;
-    double T0_z_end = paramenters.T0_z_end;
     int size = Nx * Ny * Nz;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
-    for (int ijk = idx; ijk < size; ijk += stride) {
-        int i = ijk / (Ny * Nz);
-        int j = (ijk % (Ny * Nz)) / Nz;
-        int k = ijk % Nz;
-        if (x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end) {
-            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source;
+    double t_source_start = paramenters.t_source_start;
+    double t_source_end = paramenters.t_source_end;
+    double scale = 1.0;
+    if (t_n <= t_source_start) {
+        scale = t_n / t_source_start;
+    } 
+    if (t_n <= t_source_end) {
+        for (int ijk = idx; ijk < size; ijk += stride) {
+            int i = ijk / (Ny * Nz);
+            int j = (ijk % (Ny * Nz)) / Nz;
+            int k = ijk % Nz;
+            // Check if T_source is higher than the current temperature, replace with T_source
+            if (T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
+                y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = scale * T_source[IDX(i, j, k, Nx, Ny, Nz)];
+            }
         }
     }
 }
+
+// __global__
+// void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters paramenters) {
+//     int Nx = paramenters.Nx;
+//     int Ny = paramenters.Ny;
+//     int Nz = paramenters.Nz;
+//     int T_index = paramenters.field_indexes.T;
+//     int size = Nx * Ny * Nz;
+//     int idx = threadIdx.x + blockIdx.x * blockDim.x;
+//     int stride = gridDim.x * blockDim.x;
+//     // double T0_x_start = paramenters.T0_x_start;
+//     // double T0_x_end = paramenters.T0_x_end;
+//     // double T0_y_start = paramenters.T0_y_start;
+//     // double T0_y_end = paramenters.T0_y_end;
+//     // double T0_z_start = paramenters.T0_z_start;
+//     // double T0_z_end = paramenters.T0_z_end;
+//     for (int ijk = idx; ijk < size; ijk += stride) {
+//         int i = ijk / (Ny * Nz);
+//         int j = (ijk % (Ny * Nz)) / Nz;
+//         int k = ijk % Nz;
+//         // Check if T_source is higher than the current temperature, replace with T_source
+//         if (//T_source[IDX(i, j, k, Nx, Ny, Nz)] < 600 
+//             // x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end && 
+//             T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
+//             // printf("Setting T_source at (%f, %f, %f) from %.12f to %.12f\n", x[i], y[j], z[k], y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)], T_source[IDX(i, j, k, Nx, Ny, Nz)]);
+//             y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source[IDX(i, j, k, Nx, Ny, Nz)];
+//         }
+//     }
+// }
+
+// __global__
+// void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters) {
+//     int Nx = paramenters.Nx;
+//     int Ny = paramenters.Ny;
+//     int Nz = paramenters.Nz;
+//     int T_index = paramenters.field_indexes.T;
+//     double T_source = paramenters.T_source;
+//     double T0_x_start = paramenters.T0_x_start;
+//     double T0_x_end = paramenters.T0_x_end;
+//     double T0_y_start = paramenters.T0_y_start;
+//     double T0_y_end = paramenters.T0_y_end;
+//     double T0_z_start = paramenters.T0_z_start;
+//     double T0_z_end = paramenters.T0_z_end;
+//     int size = Nx * Ny * Nz;
+//     int idx = threadIdx.x + blockIdx.x * blockDim.x;
+//     int stride = gridDim.x * blockDim.x;
+//     for (int ijk = idx; ijk < size; ijk += stride) {
+//         int i = ijk / (Ny * Nz);
+//         int j = (ijk % (Ny * Nz)) / Nz;
+//         int k = ijk % Nz;
+//         if (x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end) {
+//             y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source;
+//         }
+//     }
+// }
 
 __global__
 void norm(double *v1, double *v2, double *result, double p, int size) {

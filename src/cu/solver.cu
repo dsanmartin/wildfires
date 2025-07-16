@@ -59,7 +59,7 @@ void create_y_0(double *u, double *v, double *w, double *T, double *Y, double *y
 void euler(double t_n, double *y_n, double *y_np1, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters) {   
     Phi(t_n, y_n, F, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     euler_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, F, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
 }
 
 void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters) {
@@ -67,10 +67,10 @@ void RK2(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     int k2_index = size;
     Phi(t_n, y_n, k + k1_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k1_index, y_n, dt, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
     Phi(t_n + dt, F, k + k2_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     RK2_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
 }
 
 void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, double dt, int size, Parameters parameters) {
@@ -80,16 +80,16 @@ void RK4(double t_n, double *y_n, double *y_np1, double *k, double *F, double *U
     int k4_index = 3 * size;
     Phi(t_n, y_n, k + k1_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k1_index, y_n, dt * 0.5, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
     Phi(t_n + 0.5 * dt, F, k + k2_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k2_index, y_n, dt * 0.5, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
     Phi(t_n + 0.5 * dt, F, k + k3_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     caxpy<<<BLOCKS, THREADS>>>(F, k + k3_index, y_n, dt, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
     Phi(t_n + dt, F, k + k4_index, U_turbulence, z, z_ibm, Nz_Y, cut_nodes, parameters);
     RK4_step<<<BLOCKS, THREADS>>>(dt, y_n, y_np1, k + k1_index, k + k2_index, k + k3_index, k + k4_index, size);
-    cudaDeviceSynchronize();
+    CHECK(cudaDeviceSynchronize());
 }
 
 void solve_PDE(double *y_n, double *p, Parameters parameters) {
@@ -111,7 +111,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     // Host data
     double *y_np1_host, *p_host;
     // Device data
-    double *d_x, *d_y, *d_z, *y_np1, *F, *k, *R_turbulence, *z_ibm, *kx, *ky, *gamma;
+    double *d_x, *d_y, *d_z, *y_np1, *F, *k, *R_turbulence, *z_ibm, *kx, *ky, *gamma, *d_T_source;
     int *Nz_Y, *cut_nodes;
     // Arrays for pressure problem
     double *a, *b, *c;
@@ -153,6 +153,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&p_top_out, (Nx - 1) * (Ny - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&data_in, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
     CHECK(cudaMalloc((void **)&data_out, (Nx - 1) * (Ny - 1) * (Nz - 1) * sizeof(cufftDoubleComplex)));
+    CHECK(cudaMalloc((void **)&d_T_source, Nx * Ny * Nz * sizeof(double)));
     // Copy host data to device
     CHECK(cudaMemcpy(d_x, parameters.x, Nx * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_y, parameters.y, Ny * sizeof(double), cudaMemcpyHostToDevice));
@@ -162,6 +163,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMemcpy(ky, parameters.ky, (Ny - 1) * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(Nz_Y, parameters.Nz_Y, Nx * Ny * sizeof(int), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(cut_nodes, parameters.cut_nodes, Nx * Ny * sizeof(int), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_T_source, y_n + parameters.field_indexes.T, Nx * Ny * Nz * sizeof(double), cudaMemcpyDeviceToDevice));
     // Fill gamma and coefficients
     gammas_and_coefficients<<<BLOCKS, THREADS>>>(kx, ky, gamma, a, b, c, d_z, parameters);
     checkCuda(cudaGetLastError());
@@ -185,6 +187,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             log_message(parameters, "Time integration method not found.");
             exit(1);
         }  
+        CHECK(cudaDeviceSynchronize());
         // Pressure solver
         if (parameters.variable_density == 0) { // Constant density, direct solver
             // solve_pressure(y_np1, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, parameters);  
@@ -194,20 +197,29 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             solve_pressure_iterative(y_np1, y_n, p, d_z, gamma, a, b, c, d, l, u, y, data_in, data_out, p_top_in, p_top_out, Nz_Y, parameters, &error, &max_iter);
         }
         checkCuda(cudaGetLastError());
+        CHECK(cudaDeviceSynchronize());
         // Chorin's projection method        
-        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, y_n, p, d_z, 0, parameters);
+        velocity_correction<<<BLOCKS, THREADS>>>(y_np1, y_n, p, d_z, parameters);
         checkCuda(cudaGetLastError());
+        CHECK(cudaDeviceSynchronize());
         // Boundary conditions
         boundary_conditions<<<BLOCKS, THREADS>>>(y_np1, d_z, Nz_Y, cut_nodes, parameters);
         checkCuda(cudaGetLastError());
+        CHECK(cudaDeviceSynchronize());
         // Bounds
         bounds<<<BLOCKS, THREADS>>>(y_np1, parameters);
         checkCuda(cudaGetLastError());
-        // Add source when t_n <= t_source
-        if (t[n] <= parameters.t_source) {
-            temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, parameters);
-            checkCuda(cudaGetLastError());
-        }
+        CHECK(cudaDeviceSynchronize());
+        // // Add source when t_n <= t_source
+        // if (t[n] <= parameters.t_source) {
+        //     // temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, parameters);
+        //     temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, parameters);
+        //     checkCuda(cudaGetLastError());
+        //     CHECK(cudaDeviceSynchronize());
+        // }
+        temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, t[n], parameters);
+        checkCuda(cudaGetLastError());
+        CHECK(cudaDeviceSynchronize());
         // End step timer
         // step_end = clock(); 
         gettimeofday(&end_ts, NULL);
@@ -225,7 +237,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             // Copy y_np1 and p to host
             cudaMemcpy(y_np1_host, y_np1, size * sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(p_host, p, Nx * Ny * Nz * sizeof(double), cudaMemcpyDeviceToHost);
-            timestep_reports(y_np1_host, &CFL, &Y_min, &Y_max, &T_min, &T_max, parameters);
+            timestep_reports(y_np1_host, &CFL, &Y_min, &Y_max, &T_min, &T_max, n, parameters);
             log_timestep(parameters, n, t[n], step_time, CFL, T_min, T_max, Y_min, Y_max);
             if (parameters.variable_density == 1) {
                 sprintf(pressure_log_message, "Pressure solver: Error = %e, iterations = %d", error, max_iter);
@@ -233,10 +245,13 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
             }            
             save_data(y_np1_host, p_host, n_save, parameters);
             printf("\n");
+            // Wait for the device to finish
+            CHECK(cudaDeviceSynchronize());
         }
         // Update y_n
         copy<<<BLOCKS, THREADS>>>(y_n, y_np1, size);
         checkCuda(cudaGetLastError());
+        CHECK(cudaDeviceSynchronize());
     }
     // end = clock();
     gettimeofday(&end_solver, NULL);

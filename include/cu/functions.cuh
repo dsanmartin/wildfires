@@ -102,7 +102,7 @@ double source(double T, double Y, double H_R, double A, double T_a, double h, do
  * @param T_max The maximum value for T (temperature).
  * @param parameters The pointer to the Parameters struct.
  */
-void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, Parameters parameters);
+void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, double *T_min, double *T_max, int n, Parameters parameters);
 
 /**
  * @brief Sets the initial conditions for the simulation.
@@ -117,16 +117,18 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
  */
 void initial_conditions(double *u, double *v, double *w, double *T, double *Y, double *p, Parameters parameters);
 
-__global__
-void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters);
-
-__global__
-void norm(double *v1, double *v2, double *result, double p, int size);
-
 void equispaced_domain(double *z, int Nz, double z_min, double dz);
 
 void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double k);
 
 void transition_domain(double *z, int Nz, double z_min, double z_max, double z_t, int k_t);
+
+__global__
+void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, double t_n, Parameters paramenters);
+// void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters paramenters);
+// void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters);
+
+__global__
+void norm(double *v1, double *v2, double *result, double p, int size);
 
 #endif
