@@ -178,11 +178,11 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         // Compute U^*, T^{n+1}, Y^{n+1}
         // Check time integration method
         if (strncmp(parameters.method, "Euler", 5) == 0) {
-            euler(t[n], y_n, y_np1, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
+            euler(t[n - 1], y_n, y_np1, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
         } else if (strncmp(parameters.method, "RK2", 3) == 0) {
-            RK2(t[n], y_n, y_np1, k, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
+            RK2(t[n - 1], y_n, y_np1, k, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
         } else if (strncmp(parameters.method, "RK4", 3) == 0) {
-            RK4(t[n], y_n, y_np1, k, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
+            RK4(t[n - 1], y_n, y_np1, k, F, R_turbulence, d_z, z_ibm, Nz_Y, cut_nodes, dt, size, parameters);
         } else {
             log_message(parameters, "Time integration method not found.");
             exit(1);
@@ -211,13 +211,18 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         checkCuda(cudaGetLastError());
         CHECK(cudaDeviceSynchronize());
         // // Add source when t_n <= t_source
-        // if (t[n] <= parameters.t_source) {
+        if (parameters.t_source_start <= 0 && t[n] <= parameters.t_source_end) {
+            temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, parameters);
+        } else {
+            temperature_source_delay<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, t[n], parameters);
+        }
+        // if (t[n] <= parameters.t_source_end) {
         //     // temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, parameters);
         //     temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, parameters);
         //     checkCuda(cudaGetLastError());
         //     CHECK(cudaDeviceSynchronize());
         // }
-        temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, t[n], parameters);
+        // temperature_source_delay<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, t[n], parameters);
         checkCuda(cudaGetLastError());
         CHECK(cudaDeviceSynchronize());
         // End step timer

@@ -57,8 +57,6 @@ void log_parameters_report(Parameters parameters, int to_file) {
         fprintf(output, "  Center: [%lf, %lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
             parameters.T0_x_center, parameters.T0_y_center, parameters.T0_z_center,
             parameters.T0_length, parameters.T0_width, parameters.T0_height);
-        if (parameters.t_source_end > 0)
-            fprintf(output, "  Source time: [%lf, %lf]\n", parameters.t_source_start, parameters.t_source_end);
         // fprintf(output, "  T0_x_start: %lf, T0_x_end: %lf, T0_x_center: %lf, T0_length: %lf\n", 
         //     parameters.T0_x_start, parameters.T0_x_end, parameters.T0_x_center, parameters.T0_length);
         // fprintf(output, "  T0_y_start: %lf, T0_y_end: %lf, T0_y_center: %lf, T0_width: %lf\n", 
@@ -76,6 +74,12 @@ void log_parameters_report(Parameters parameters, int to_file) {
     // else {
     //     fprintf(output, "  Loaded from the input path: %s\n", parameters.input_path);
     // }
+    // Temperature source
+    if (parameters.t_source_end > 0) {
+        fprintf(output, "Temperature source:\n");
+        fprintf(output, "  T_source: %lf\n", parameters.T_source);
+        fprintf(output, "  Source time: [%lf, %lf]\n", parameters.t_source_start, parameters.t_source_end);
+    }
     // Topography
     fprintf(output, "Topography:\n");
     fprintf(output, "  Shape: %s\n", parameters.topo_shape);

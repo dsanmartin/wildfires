@@ -114,7 +114,7 @@ def read_parameters(dir):
     
 # Read input path
 if len(sys.argv) < 2:
-    print("Usage: python data_paraview.py input_dir [output_dir]")
+    print("Usage: python data_vapor.py input_dir [output_dir]")
     sys.exit(1)
 elif len(sys.argv) < 3:
     input_dir = sys.argv[1]
@@ -130,7 +130,7 @@ if not os.path.exists(vapor_dir):
     
 x_min, x_max = 0.0, 200
 y_min, y_max = 0.0, 200
-z_min, z_max = 0.0, 20
+z_min, z_max = 0.0, 40
 # List all files in the input directory
 #files = os.listdir(input_dir)
 (x, y, z, t), (Nx, Ny, Nz, Nt) = read_parameters(input_dir)

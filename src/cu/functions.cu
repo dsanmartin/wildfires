@@ -303,17 +303,33 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
 }
 
 __global__
-void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, double t_n, Parameters paramenters) {
-    int Nx = paramenters.Nx;
-    int Ny = paramenters.Ny;
-    int Nz = paramenters.Nz;
-    int T_index = paramenters.field_indexes.T;
+void temperature_source_delay(double *x, double *y, double *z, double *y_n, double t_n, Parameters parameters) {
+    int Nx = parameters.Nx;
+    int Ny = parameters.Ny;
+    int Nz = parameters.Nz;
+    int T_index = parameters.field_indexes.T;
     int size = Nx * Ny * Nz;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
-    double t_source_start = paramenters.t_source_start;
-    double t_source_end = paramenters.t_source_end;
+    double t_source_start = parameters.t_source_start;
+    double t_source_end = parameters.t_source_end;
     double scale = 1.0;
+    double T_inf = parameters.T_inf;
+    double T_source = parameters.T_source;
+    double x_0 = parameters.T0_x_center;
+    double y_0 = parameters.T0_y_center;
+    double z_0 = parameters.T0_z_center;
+    double sx = parameters.T0_length;
+    double sy = parameters.T0_width;
+    double sz = parameters.T0_height;
+    // double T0_x_start = parameters.T0_x_start;
+    // double T0_x_end = parameters.T0_x_end;
+    // double T0_y_start = parameters.T0_y_start;
+    // double T0_y_end = parameters.T0_y_end;
+    // double T0_z_start = parameters.T0_z_start;
+    // double T0_z_end = parameters.T0_z_end;
+    double shape;
+    double temperature;
     if (t_n <= t_source_start) {
         scale = t_n / t_source_start;
     } 
@@ -323,41 +339,43 @@ void temperature_source(double *x, double *y, double *z, double *y_n, double *T_
             int j = (ijk % (Ny * Nz)) / Nz;
             int k = ijk % Nz;
             // Check if T_source is higher than the current temperature, replace with T_source
-            if (T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
-                y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = scale * T_source[IDX(i, j, k, Nx, Ny, Nz)];
-            }
+            // if (T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
+            //     y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = scale * T_source[IDX(i, j, k, Nx, Ny, Nz)];
+            // }
+            // if (strcmp(parameters.T0_shape, "gaussian") == 0) {
+            //     temperature = T_inf +  (T_source - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+            // } else if (strcmp(parameters.T0_shape, "parallelepiped") == 0) {
+            //     temperature = T_inf +  (T_source - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
+            // }
+            shape = exp(-pow((x[i] - x_0) / sx, 2.0) - pow((y[j] - y_0) / sy, 2.0) - pow((z[k] - z_0) / sz, 2.0));
+            temperature = T_inf +  (T_source - T_inf) * shape;
+            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = scale * temperature;
         }
     }
 }
 
-// __global__
-// void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters paramenters) {
-//     int Nx = paramenters.Nx;
-//     int Ny = paramenters.Ny;
-//     int Nz = paramenters.Nz;
-//     int T_index = paramenters.field_indexes.T;
-//     int size = Nx * Ny * Nz;
-//     int idx = threadIdx.x + blockIdx.x * blockDim.x;
-//     int stride = gridDim.x * blockDim.x;
-//     // double T0_x_start = paramenters.T0_x_start;
-//     // double T0_x_end = paramenters.T0_x_end;
-//     // double T0_y_start = paramenters.T0_y_start;
-//     // double T0_y_end = paramenters.T0_y_end;
-//     // double T0_z_start = paramenters.T0_z_start;
-//     // double T0_z_end = paramenters.T0_z_end;
-//     for (int ijk = idx; ijk < size; ijk += stride) {
-//         int i = ijk / (Ny * Nz);
-//         int j = (ijk % (Ny * Nz)) / Nz;
-//         int k = ijk % Nz;
-//         // Check if T_source is higher than the current temperature, replace with T_source
-//         if (//T_source[IDX(i, j, k, Nx, Ny, Nz)] < 600 
-//             // x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end && 
-//             T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
-//             // printf("Setting T_source at (%f, %f, %f) from %.12f to %.12f\n", x[i], y[j], z[k], y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)], T_source[IDX(i, j, k, Nx, Ny, Nz)]);
-//             y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source[IDX(i, j, k, Nx, Ny, Nz)];
-//         }
-//     }
-// }
+__global__
+void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters paramenters) {
+    int Nx = paramenters.Nx;
+    int Ny = paramenters.Ny;
+    int Nz = paramenters.Nz;
+    int T_index = paramenters.field_indexes.T;
+    int size = Nx * Ny * Nz;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int ijk = idx; ijk < size; ijk += stride) {
+        int i = ijk / (Ny * Nz);
+        int j = (ijk % (Ny * Nz)) / Nz;
+        int k = ijk % Nz;
+        // Check if T_source is higher than the current temperature, replace with T_source
+        if (//T_source[IDX(i, j, k, Nx, Ny, Nz)] < 600 
+            // x[i] >= T0_x_start && x[i] <= T0_x_end && y[j] >= T0_y_start && y[j] <= T0_y_end && z[k] >= T0_z_start && z[k] <= T0_z_end && 
+            T_source[IDX(i, j, k, Nx, Ny, Nz)] > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)]) {
+            // printf("Setting T_source at (%f, %f, %f) from %.12f to %.12f\n", x[i], y[j], z[k], y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)], T_source[IDX(i, j, k, Nx, Ny, Nz)]);
+            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = T_source[IDX(i, j, k, Nx, Ny, Nz)];
+        }
+    }
+}
 
 // __global__
 // void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters) {

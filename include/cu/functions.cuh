@@ -124,8 +124,10 @@ void non_equispaced_domain(double *z, int Nz, double z_min, double z_max, double
 void transition_domain(double *z, int Nz, double z_min, double z_max, double z_t, int k_t);
 
 __global__
-void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, double t_n, Parameters paramenters);
-// void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters paramenters);
+void temperature_source_delay(double *x, double *y, double *z, double *y_n, double t_n, Parameters parameters);
+
+__global__
+void temperature_source(double *x, double *y, double *z, double *y_n, double *T_source, Parameters parameters);
 // void temperature_source(double *x, double *y, double *z, double *y_n, Parameters paramenters);
 
 __global__
