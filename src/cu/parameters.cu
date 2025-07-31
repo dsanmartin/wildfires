@@ -71,6 +71,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.Y_dead_nodes = 0.0; // Default value for dead nodes fuel fraction
     parameters.input_path[0] = '\0'; // Initialize input path to empty string
     parameters.velocity_correction_fd = 0; // Default value for velocity correction finite difference 
+    parameters.time_step_log = 100; // Default value for time step log
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -366,6 +367,10 @@ Parameters read_parameters_file(const char *file_path) {
         // Velocity correction finite difference
         if (strncmp(line, "velocity_correction_fd =", 24) == 0) {
             sscanf(line + 25, "%d", &(parameters.velocity_correction_fd));
+        }
+        // Time step log
+        if (strncmp(line, "time_step_log =", 15) == 0) {
+            sscanf(line + 16, "%d", &(parameters.time_step_log));
         }
     }
     // Initialize x, y, z, t

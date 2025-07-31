@@ -230,6 +230,7 @@ typedef struct _parameters {
     int k_transition;
     double z_transition;
     int velocity_correction_fd;
+    int time_step_log;
     size_t threads_per_block;
     size_t number_of_blocks;
     FieldIndexes field_indexes;

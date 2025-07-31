@@ -101,6 +101,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int Nz_Y_max = parameters.Nz_Y_max;
     int size = 4 * Nx * Ny * Nz + Nx * Ny * Nz_Y_max;
     int n_save;
+    int time_step_log = parameters.time_step_log;
     int k_size = (strncmp(parameters.method, "RK4", 3) == 0) ? 4 : 2;
     double step_time, solver_time, cum_step_time = 0.0;
     double CFL = 0.0, T_min = 1e9, T_max = -1e9, Y_min = 1e9, Y_max = -1e9;
@@ -233,7 +234,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         step_time = ((end_ts.tv_sec  - start_ts.tv_sec) * 1000000u + end_ts.tv_usec - start_ts.tv_usec) / 1.e6;        
         // Show time step and average time each 100 steps
         cum_step_time += step_time;
-        if (n % 100 == 0) {
+        if (n % time_step_log == 0) {
             printf("Time step: %d, Average time: %lf s\n", n, cum_step_time / n);
         }
         // Save data each NT steps and at the last step

@@ -608,7 +608,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         else
             dz_k = z[k] - z[k - 1];
         // Turbulent viscosity
-        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S; 
+        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S;
         // if (isnan(fw)) {
         //     printf("NAN detected in fw at i=%d, j=%d, k=%d\n", i, j, k);
         //     printf("nu: %f\n", nu);
@@ -621,8 +621,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         H_step = (T_ijk > T_pc) ? 1.0 : 0.0;
         K_T = A * exp(-T_act / T_ijk) * H_step;
         // Convection out of the solid zone and the next gas zone cancels the reaction because T_gas = T_solid = T_ijk and because there is no solid fuel
-        T_gas = T_ijk;
-        T_solid = T_ijk;
+        T_gas = T_inf;
+        T_solid = T_inf;
         // Solid fuel zone and gas zone
         if (k <= Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]) {
             // Solid fuel zone
@@ -633,17 +633,25 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
                 // if (isnan(Y_ijk))
                 //     printf("NAN detected in Y_ijk at i=%d, j=%d, k=%d\n", i, j, k);
             } 
-            // Gas zone next to the solid zone (k+1) or inside the solid zone but with no solid fuel
+            else {
+                T_gas = T_ijkp1; // Gas zone next to the solid zone (k+1)
+            }
+            // Detect solid fuel zone
             if (Y_ijk > 0.0) {
-                T_gas = T_pc + (T_ijk - T_pc);
+                T_solid = T_ijk;
             } else {
                 T_gas = T_ijk;
             }
         }
         // Compute source and force terms
-        h_c = h_c * dz_k * pow((T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
+        h_c = h_c * dz_k * pow(abs(T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
         // q = H_R * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_ijk - T_inf) / (c_p * rho_inf);
         q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
+        // double q_source = H_C * Y_ijk * K_T / c_p ;
+        // double q_sink = h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
+        // q = q_source - q_sink;
+        // if (q > 0)
+        //     printf("q_source: %f, q_sink: %f, q: %f, h_c: %f, \n", q_source, q_sink, q, h_c);
         mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
         // Force terms
         // F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
@@ -661,6 +669,12 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
         v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
         w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
+        // Testing Sutherland's law for viscosity
+        // mu = 1.716e-5 * pow(T_ijk / 273.15, 1.5) * (273.15 + 110.4) / (T_ijk + 110.4); // Sutherland's law
+        // mu_sgs += mu; // Add SGS viscosity to the molecular viscosity
+        // u_RHS = - (uux + vuy + wuz) + F_x;
+        // v_RHS = - (uvx + vvy + wvz) + F_y;
+        // w_RHS = - (uwx + vwy + wwz) + F_z;
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Temperature RHS with radiation and conduction
         T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
