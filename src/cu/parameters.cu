@@ -72,6 +72,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.input_path[0] = '\0'; // Initialize input path to empty string
     parameters.velocity_correction_fd = 0; // Default value for velocity correction finite difference 
     parameters.time_step_log = 100; // Default value for time step log
+    parameters.temperature_convection = 1; // Default value for temperature convection (0: finite difference, 1: upwind)
     // Read file line by line
     while (fgets(line, MAX_LINE_LENGTH, parameters_file) != NULL) {
         if (strncmp(line, "Nx =", 4) == 0) {
@@ -371,6 +372,10 @@ Parameters read_parameters_file(const char *file_path) {
         // Time step log
         if (strncmp(line, "time_step_log =", 15) == 0) {
             sscanf(line + 16, "%d", &(parameters.time_step_log));
+        }
+        // Temperature convection method
+        if (strncmp(line, "temperature_convection =", 24) == 0) {
+            sscanf(line + 25, "%d", &(parameters.temperature_convection));
         }
     }
     // Initialize x, y, z, t

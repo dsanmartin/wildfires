@@ -147,7 +147,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     // double dz = parameters.dz;
     // Model parameters
     double mu = parameters.mu;
-    // double alpha = parameters.alpha;
     double kappa = parameters.kappa;
     double Y_f = parameters.Y_f;
     double H_C = parameters.H_C;
@@ -155,17 +154,16 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double T_act = parameters.T_act;
     double T_pc = parameters.T_pc;
     double h_c = parameters.h_c;
-    // double a_v = parameters.a_v;
     double alpha_s = parameters.alpha_s;
     double sigma_s = parameters.sigma_s;
     double T_inf = parameters.T_inf;
     double c_p = parameters.c_p;
     double rho_inf = parameters.rho_inf;
-    // double Y_D = parameters.Y_D;
     double C_d = parameters.C_d;
     double g = parameters.g;
     double delta = parameters.delta;
     double C_s = parameters.C_s;
+    int temperature_convection = parameters.temperature_convection;
     // Fields indexes
     int u_index = parameters.field_indexes.u;
     int v_index = parameters.field_indexes.v;
@@ -645,7 +643,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         }
         // Compute source and force terms
         h_c = h_c * dz_k * pow(abs(T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
-        // q = H_R * Y_ijk * K_T * H_step / c_p - h_c * alpha_s * sigma_s * (T_ijk - T_inf) / (c_p * rho_inf);
         q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
         // double q_source = H_C * Y_ijk * K_T / c_p ;
         // double q_sink = h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
@@ -654,9 +651,6 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         //     printf("q_source: %f, q_sink: %f, q: %f, h_c: %f, \n", q_source, q_sink, q, h_c);
         mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
         // Force terms
-        // F_x = - Y_D * a_v * Y_ijk * mod_U * u_ijk;
-        // F_y = - Y_D * a_v * Y_ijk * mod_U * v_ijk;
-        // F_z = - g * (T_ijk - T_inf) / (T_ijk + 1e-16) - Y_D * a_v * Y_ijk * mod_U * w_ijk;
         F_x = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * u_ijk;
         F_y = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * v_ijk;
         F_z = g * (rho_ijk - rho_inf) / rho_ijk - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * w_ijk;
@@ -678,8 +672,11 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Temperature RHS with radiation and conduction
         T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
-        // T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
-        T_RHS = T_RHS_tmp - (uTx + vTy + wTz); // Including convection
+        // Including convection
+        if (temperature_convection == 0) // Finite difference
+            T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        else if (temperature_convection == 1) // Upwind
+            T_RHS = T_RHS_tmp - (uTx + vTy + wTz);
         // Copy to turbulence array. These calculations will be used in the next step to include the turbulence model
         R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)] = rho_ijk;
         R_turbulence[parameters.turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;

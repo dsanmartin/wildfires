@@ -231,6 +231,7 @@ typedef struct _parameters {
     double z_transition;
     int velocity_correction_fd;
     int time_step_log;
+    int temperature_convection;
     size_t threads_per_block;
     size_t number_of_blocks;
     FieldIndexes field_indexes;

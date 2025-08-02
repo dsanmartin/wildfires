@@ -1,7 +1,7 @@
 /**
  * @file pressure.c
  * @author Daniel San Martin (dsanmartinreyes@gmail.com)
- * @brief Functions for solving the Poisson equation.
+ * @brief Functions for pressure solver
  * @version 0.1
  * @date 2024-07-21
  * 

@@ -101,6 +101,11 @@ void log_parameters_report(Parameters parameters, int to_file) {
         fprintf(output, "Forward difference.\n");
     else if (parameters.velocity_correction_fd == -1)
         fprintf(output, "Backward difference.\n");
+    fprintf(output, "Temperature convection: ");
+    if (parameters.temperature_convection == 0)
+        fprintf(output, "Finite difference.\n");
+    else if (parameters.temperature_convection == 1)
+        fprintf(output, "Upwind.\n");
     if (to_file)
         fclose(output);
 }
