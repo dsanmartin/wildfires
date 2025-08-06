@@ -182,7 +182,7 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     double sx = parameters.T0_length;
     double sy = parameters.T0_width;
     double sz = parameters.T0_height;
-    double T_source = parameters.T_source;
+    double T_0 = parameters.T_0;
     double T_inf = parameters.T_inf;
     double T0_x_start = parameters.T0_x_start;
     double T0_x_end = parameters.T0_x_end;
@@ -222,11 +222,11 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                 v[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 w[IDX(i, j, k, Nx, Ny, Nz)] = 0.0;
                 if (strcmp(parameters.T0_shape, "gaussian") == 0) {
-                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_0 - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
                 } else if (strcmp(parameters.T0_shape, "parallelepiped") == 0) {
-                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
+                    T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_0 - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
                 }
-                // T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_source - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
+                // T[IDX(i, j, k, Nx, Ny, Nz)] = T_inf +  (T_0 - T_inf) * gaussian(x[i], y[j], z[k], x_0, y_0, z_0, sx, sy, sz);
                 if (k == Nz - 1) {
                     p[IDX(i, j, k, Nx, Ny, Nz)] = p_top;
                 } else {
@@ -348,8 +348,9 @@ void temperature_source_delay(double *x, double *y, double *z, double *y_n, doub
             //     temperature = T_inf +  (T_source - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
             // }
             shape = exp(-pow((x[i] - x_0) / sx, 2.0) - pow((y[j] - y_0) / sy, 2.0) - pow((z[k] - z_0) / sz, 2.0));
-            temperature = T_inf +  (T_source - T_inf) * shape;
-            y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = scale * temperature;
+            temperature = scale * (T_inf +  (T_source - T_inf) * shape);
+            if (temperature > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)])
+                y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = temperature;
         }
     }
 }

@@ -47,6 +47,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.A = 1e9; // Pre-exponential factor in 1/s (typical value for wood combustion)
     parameters.T_act = 18040.8533; // Activation temperature in K (typical value for wood combustion)
     parameters.T_pc = 523.0; // Temperature phase-change in K (typical value for wood combustion)
+    parameters.T_0 = 1000.0; // Initial temperature in K (default value)
     parameters.h_c = 1.42; // Convective heat transfer coefficient in W/(m^2*K) (typical value for air)
     parameters.c_p = 1007.0; // Heat capacity in J/(kg*K) (typical value for air at 15 °C)
     parameters.kappa = 0.02476; // Thermal conductivity in W/(m*K) (typical value for air at 15 °C)
@@ -135,6 +136,9 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "T_inf =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.T_inf));
         } 
+        if (strncmp(line, "T_0 =", 5) == 0) {
+            sscanf(line + 6, "%lf", &(parameters.T_0));
+        }
         if (strncmp(line, "T_source =", 10) == 0) {
             sscanf(line + 11, "%lf", &(parameters.T_source));
         }

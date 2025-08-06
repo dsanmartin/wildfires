@@ -49,7 +49,7 @@ void log_parameters_report(Parameters parameters, int to_file) {
             fprintf(output, "  u_r: %lf, z_r: %lf, alpha_u: %lf\n", parameters.u_r, parameters.z_r, parameters.alpha_u);
         fprintf(output, "Temperature initial condition:\n");
         fprintf(output, "  Shape: %s\n", parameters.T0_shape);
-        fprintf(output, "  T_source: %lf\n", parameters.T_source);
+        fprintf(output, "  T_0: %lf\n", parameters.T_0);
         fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
             parameters.T0_x_start, parameters.T0_x_end, 
             parameters.T0_y_start, parameters.T0_y_end, 

@@ -109,6 +109,8 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     int max_iter;
     double *t = parameters.t;
     double dt = parameters.dt;
+    double t_source_start = parameters.t_source_start;
+    double t_source_end = parameters.t_source_end;
     // Host data
     double *y_np1_host, *p_host;
     // Device data
@@ -211,11 +213,13 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
         bounds<<<BLOCKS, THREADS>>>(y_np1, parameters);
         checkCuda(cudaGetLastError());
         CHECK(cudaDeviceSynchronize());
-        // // Add source when t_n <= t_source
-        if (parameters.t_source_start <= 0 && t[n] <= parameters.t_source_end) {
-            temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, parameters);
-        } else {
-            temperature_source_delay<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, t[n], parameters);
+        // Temperature source
+        if (t[n] <= t_source_end) {
+            if (t_source_start <= 0) {
+                temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, d_T_source, parameters);
+            } else {
+                temperature_source_delay<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, t[n], parameters);
+            }
         }
         // if (t[n] <= parameters.t_source_end) {
         //     // temperature_source<<<BLOCKS, THREADS>>>(d_x, d_y, d_z, y_np1, parameters);

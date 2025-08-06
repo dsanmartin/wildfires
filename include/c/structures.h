@@ -156,6 +156,7 @@ typedef struct _parameters {
     double h_c;
     double Y_D;
     double Y_f;
+    double T_0;
     double T_source;
     double Y_h;
     int k_Y_h;
