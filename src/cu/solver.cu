@@ -137,7 +137,7 @@ void solve_PDE(double *y_n, double *p, Parameters parameters) {
     CHECK(cudaMalloc((void **)&F, size * sizeof(double)));
     CHECK(cudaMalloc((void **)&k, k_size * size * sizeof(double)));
     // CHECK(cudaMalloc((void **)&R_turbulence, 25 * Nx * Ny * Nz * sizeof(double)));
-    CHECK(cudaMalloc((void **)&R_turbulence, 18 * Nx * Ny * Nz * sizeof(double)));
+    CHECK(cudaMalloc((void **)&R_turbulence, (18 * Nx * Ny * Nz + Nx * Ny) * sizeof(double)));
     CHECK(cudaMalloc((void **)&z_ibm, Nx * Ny * Nz * sizeof(double)));
     CHECK(cudaMalloc((void **)&Nz_Y, Nx * Ny * sizeof(int)));
     CHECK(cudaMalloc((void **)&cut_nodes, Nx * Ny * sizeof(int)));

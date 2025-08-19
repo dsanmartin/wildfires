@@ -109,7 +109,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
         // int k = ijk % Nz;
     // n /= NT; // Adjust n to match the current timestep
     for (int i = 0; i < Nx; i++) {
-        for (int j = 0; j < Ny; j++) {
+        for (int j = 0; j < Ny; j++) { 
             for (int k = 0; k < Nz; k++) {
                 u = y_n[u_index + IDX(i, j, k, Nx, Ny, Nz)];
                 v = y_n[v_index + IDX(i, j, k, Nx, Ny, Nz)];

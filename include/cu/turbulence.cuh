@@ -29,6 +29,6 @@
  * @param parameters Pointer to the Parameters struct containing the necessary parameters.
  */
 __global__
-void turbulence(double *R_turbulence, double *R_new, double *z, Parameters parameters);
+void turbulence(double *R_turbulence, double *R_new, double *z, double *z_ibm, Parameters parameters);
 
 #endif

@@ -12,7 +12,7 @@
 #include "../../include/cu/turbulence.cuh"
 
 __global__ 
-void turbulence(double *R_turbulence, double *R_new, double *z, Parameters parameters) {
+void turbulence(double *R_turbulence, double *R_new, double *z, double *z_ibm, Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
     int Nz = parameters.Nz;
@@ -23,6 +23,8 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
     // double Delta = pow(dx * dy * dz, 1.0 / 3.0);
     // double Delta;
     // double C_s = parameters.C_s;
+    double mu = parameters.mu;
+    double nu;
     double Pr = parameters.Pr;
     double Tx, Ty, Tz, Txx, Tyy, Tzz;
     double rho;
@@ -39,6 +41,8 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
     double sgs_x, sgs_y, sgs_z, sgs_q;
     double dz_km2, dz_km1, dz_k, dz_kp1;
     double div_U_x, div_U_y, div_U_z;
+    double u_tau_wall_ij0, u_tau_wall_ip1j0, u_tau_wall_im1j0, u_tau_wall_ijp10, u_tau_wall_ijm10;
+    double fw_ijk, fw_im1jk, fw_ip1jk, fw_ijm1k, fw_ijp1k, fw_ijkm1, fw_ijkp1, fw_ijkm2, fw_ijkp2;
     int im1, ip1, jm1, jp1;
     // Loop over nodes
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -90,21 +94,42 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
         div_U_im1jk = R_turbulence[parameters.turbulence_indexes.div_U + IDX(im1, j, k, Nx, Ny, Nz)];
         div_U_ijp1k = R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, jp1, k, Nx, Ny, Nz)];
         div_U_ijm1k = R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, jm1, k, Nx, Ny, Nz)];
+        u_tau_wall_ij0 = R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(i, j, 0, Nx, Ny, 1)];
+        u_tau_wall_ip1j0 = R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(ip1, j, 0, Nx, Ny, 1)];
+        u_tau_wall_im1j0 = R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(im1, j, 0, Nx, Ny, 1)];
+        u_tau_wall_ijp10 = R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(i, jp1, 0, Nx, Ny, 1)];
+        u_tau_wall_ijm10 = R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(i, jm1, 0, Nx, Ny, 1)];
         mu_sgs_ijkm1 = 0.0, S_31_ijkm1 = 0.0, S_32_ijkm1 = 0.0, S_33_ijkm1 = 0.0, div_U_ijkm1 = 0.0;
         mu_sgs_ijkp1 = 0.0, S_31_ijkp1 = 0.0, S_32_ijkp1 = 0.0, S_33_ijkp1 = 0.0, div_U_ijkp1 = 0.0;
+        nu = mu / rho;
+        fw_ijk = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau_wall_ij0 / A_VD / nu);
+        fw_ip1jk = 1 - exp(-z_ibm[IDX(ip1, j, k, Nx, Ny, Nz)] * u_tau_wall_ip1j0 / A_VD / nu);
+        fw_im1jk = 1 - exp(-z_ibm[IDX(im1, j, k, Nx, Ny, Nz)] * u_tau_wall_im1j0 / A_VD / nu);
+        fw_ijp1k = 1 - exp(-z_ibm[IDX(i, jp1, k, Nx, Ny, Nz)] * u_tau_wall_ijp10 / A_VD / nu);
+        fw_ijm1k = 1 - exp(-z_ibm[IDX(i, jm1, k, Nx, Ny, Nz)] * u_tau_wall_ijm10 / A_VD / nu);
+        // I need to scale mu_sgs by fw^2
+        mu_sgs_ijk *= fw_ijk * fw_ijk;
+        mu_sgs_im1jk *= fw_im1jk * fw_im1jk;
+        mu_sgs_ip1jk *= fw_ip1jk * fw_ip1jk;
+        mu_sgs_ijm1k *= fw_ijm1k * fw_ijm1k;
+        mu_sgs_ijp1k *= fw_ijp1k * fw_ijp1k;
         if (k > 0) {
+            fw_ijkm1 = 1 - exp(-z_ibm[IDX(i, j, k - 1, Nx, Ny, Nz)] * u_tau_wall_ij0 / A_VD / nu);
             mu_sgs_ijkm1 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k - 1, Nx, Ny, Nz)];
             S_31_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k - 1, Nx, Ny, Nz)];
             S_32_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k - 1, Nx, Ny, Nz)];
             S_33_ijkm1 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k - 1, Nx, Ny, Nz)];
             div_U_ijkm1 = R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k - 1, Nx, Ny, Nz)];
+            mu_sgs_ijkm1 *= fw_ijkm1 * fw_ijkm1;
         } 
         if (k < Nz - 1) {
+            fw_ijkp1 = 1 - exp(-z_ibm[IDX(i, j, k + 1, Nx, Ny, Nz)] * u_tau_wall_ij0 / A_VD / nu);
             mu_sgs_ijkp1 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k + 1, Nx, Ny, Nz)];
             S_31_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k + 1, Nx, Ny, Nz)];
             S_32_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k + 1, Nx, Ny, Nz)];
             S_33_ijkp1 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k + 1, Nx, Ny, Nz)];
             div_U_ijkp1 = R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k + 1, Nx, Ny, Nz)];
+            mu_sgs_ijkp1 *= fw_ijkp1 * fw_ijkp1;
         } 
         // Compute grad(mu_sgs)
         mu_sgs_x = (mu_sgs_ip1jk - mu_sgs_im1jk) / (2 * dx);
@@ -121,11 +146,13 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
         div_U_y = (div_U_ijp1k - div_U_ijm1k) / (2.0 * dy);
         if (k == 0) { // Second-order forward difference    
             dz_k = z[k + 1] - z[k];
-            dz_kp1 = z[k + 2] - z[k + 1];  
+            dz_kp1 = z[k + 2] - z[k + 1];
+            fw_ijkp2 = 1 - exp(-z_ibm[IDX(i, j, k + 2, Nx, Ny, Nz)] * u_tau_wall_ij0 / A_VD / nu);
             mu_sgs_ijkp2 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k + 2, Nx, Ny, Nz)];
             S_31_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k + 2, Nx, Ny, Nz)];
             S_32_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k + 2, Nx, Ny, Nz)];
             S_33_ijkp2 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k + 2, Nx, Ny, Nz)];
+            mu_sgs_ijkp2 *= fw_ijkp2 * fw_ijkp2;
             // Non-equispaced grid
             mu_sgs_z = - (2 * dz_k + dz_kp1) * mu_sgs_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * mu_sgs_ijkp1 / (dz_k * dz_kp1) - dz_k * mu_sgs_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
             S_31_z = - (2 * dz_k + dz_kp1) * S_31_ijk / (dz_k * (dz_k + dz_kp1)) + (dz_k + dz_kp1) * S_31_ijkp1 / (dz_k * dz_kp1) - dz_k * S_31_ijkp2 / (dz_kp1 * (dz_k + dz_kp1));
@@ -135,10 +162,12 @@ void turbulence(double *R_turbulence, double *R_new, double *z, Parameters param
         } else if (k == Nz - 1) { // Second-order backward difference
             dz_km1 = z[k] - z[k - 1];
             dz_km2 = z[k - 1] - z[k - 2];
+            fw_ijkm2 = 1 - exp(-z_ibm[IDX(i, j, k - 2, Nx, Ny, Nz)] * u_tau_wall_ij0 / A_VD / nu);
             mu_sgs_ijkm2 = R_turbulence[parameters.turbulence_indexes.mu_sgs + IDX(i, j, k - 2, Nx, Ny, Nz)];
             S_31_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k - 2, Nx, Ny, Nz)];
             S_32_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k - 2, Nx, Ny, Nz)];
             S_33_ijkm2 = R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k - 2, Nx, Ny, Nz)];
+            mu_sgs_ijkm2 *= fw_ijkm2 * fw_ijkm2;
             // Non-equispaced grid
             mu_sgs_z = dz_km1 * mu_sgs_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * mu_sgs_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * mu_sgs_ijk / (dz_km1 * (dz_km2 + dz_km1));
             S_31_z = dz_km1 * S_31_ijkm2 / (dz_km2 * (dz_km2 + dz_km1)) - (dz_km2 + dz_km1) * S_31_ijkm1 / (dz_km2 * dz_km1) + (dz_km2 + 2 * dz_km1) * S_31_ijk / (dz_km1 * (dz_km2 + dz_km1));

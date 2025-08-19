@@ -482,6 +482,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.turbulence_indexes.S_32 = 15 * size;
     parameters.turbulence_indexes.S_33 = 16 * size;
     parameters.turbulence_indexes.div_U = 17 * size;
+    parameters.turbulence_indexes.u_tau_wall = 18 * size;
     // parameters.turbulence_indexes.ux = 0;
     // parameters.turbulence_indexes.uy = size;
     // parameters.turbulence_indexes.uz = 2 * size;

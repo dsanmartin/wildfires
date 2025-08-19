@@ -78,6 +78,7 @@ typedef struct _turbulence_indexes {
     int S_32;
     int S_33;
     int div_U;
+    int u_tau_wall;
     // int fwx;
     // int fwy;
     // int fwz;

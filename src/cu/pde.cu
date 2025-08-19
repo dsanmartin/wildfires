@@ -199,10 +199,13 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double F_x, F_y, F_z;
     double H_step, K_T;
     double dz_km3, dz_km2, dz_km1, dz_k, dz_kp1, dz_kp2;
-    double u_tau, tau_w, fw;
+    // double u_tau;
+    double tau_w;//, fw;
     double S_11, S_12, S_13, S_21, S_22, S_23, S_31, S_32, S_33;
     double mod_S, mu_sgs;
     double T_gas, T_solid;
+    double u_tau_wall; // Friction velocity at the wall
+    // double z_dist, z0;
     int i, j, k;
     int im1, ip1, jm1, jp1;
     int im2, ip2, jm2, jp2;
@@ -579,11 +582,42 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         if (z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / nu > 5.0) {
             u_tau = 0.0;
         } */
-        tau_w = 0.0;
-        if (k == 0)
-            tau_w = sqrt((mu * 0.5 * (uz + wx)) * (mu * 0.5 * (uz + wx)) + (mu * 0.5 * (vz + wy)) * (mu * 0.5 * (vz + wy)));
-        u_tau = sqrt(pow(tau_w / rho_ijk, 2.0)); 
-        fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau / 26 / nu);
+        // tau_w = 0.0;
+        // if (k == 0)
+            // tau_w = sqrt((mu * 0.5 * (uz + wx)) * (mu * 0.5 * (uz + wx)) + (mu * 0.5 * (vz + wy)) * (mu * 0.5 * (vz + wy)));
+        // tau_w = sqrt(pow(mu * (uz + wx*0), 2.0) + pow(mu * (vz + wy*0), 2.0));
+        // u_tau_wall = sqrt(tau_w / rho_ijk); 
+        // fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau_wall / A_VD / nu);
+        // Law of the wall: estimate friction velocity at the wall (k == 0)
+        // if (k == 0) {
+        //     // Shear stress at the wall (tau_w)
+        //     tau_w = sqrt(
+        //         pow(mu * 0.5 * (uz + wx), 2.0) +
+        //         pow(mu * 0.5 * (vz + wy), 2.0)
+        //     );
+        //     // Friction velocity
+        //     u_tau_wall = tau_w / rho_ijk;
+        //     // Optionally, use the log-law to estimate u_tau_wall if you have mean velocity
+        //     // double U_wall = sqrt(u_ijk * u_ijk + v_ijk * v_ijk); // mean velocity at wall
+        //     // z_plus = z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau_wall / nu;
+        //     // U_wall = (u_tau_wall / KAPPA) * log(z_plus) + B_LW;
+        //     // u_tau_wall = (U_wall - B_LW) * KAPPA / z_plus;
+        //     // (You can invert this to solve for u_tau_wall if needed)
+        // } else {
+        //     // For points away from the wall, use previous value or interpolate
+        //     u_tau_wall = 1e-6;
+        //     // Interpolate friction velocity from previous layer (k-1), or use a smooth ramp
+        //     // For example, use exponential decay from wall value:
+        //     // z_dist = z_ibm[IDX(i, j, k, Nx, Ny, Nz)];
+        //     // z0 = z_ibm[IDX(i, j, 0, Nx, Ny, Nz)];
+        //     // u_tau_wall = u_tau_wall * exp(- (z_dist - z0) / (A_VD * nu));
+        //     // Alternatively, use a weighted average between wall and local value:
+        //     // double local_tau = sqrt(pow(mu * 0.5 * (uz + wx), 2.0) + pow(mu * 0.5 * (vz + wy), 2.0)) / rho_ijk;
+        //     // double alpha = exp(-z_dist / (A_VD * nu));
+        //     // u_tau_wall = alpha * u_tau_wall + (1.0 - alpha) * local_tau;
+        // }
+        // // Van Driest wall damping function
+        // fw = 1.0 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau_wall / (A_VD * nu));
         // Modified strain rate tensor S'
         S_11 = 2 * ux / 3 - (vy + wz) / 3;
         S_22 = 2 * vy / 3 - (ux + wz) / 3;
@@ -606,7 +640,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         else
             dz_k = z[k] - z[k - 1];
         // Turbulent viscosity
-        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S;
+        // mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S;
+        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0), 2.0) * mod_S;
         // if (isnan(fw)) {
         //     printf("NAN detected in fw at i=%d, j=%d, k=%d\n", i, j, k);
         //     printf("nu: %f\n", nu);
@@ -697,6 +732,12 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)] = S_33;
         // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
         R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * (ux + vy + wz);
+        if (k == 0) {
+            tau_w = sqrt(pow(mu * (uz + wx*0), 2.0) + pow(mu * (vz + wy*0), 2.0));
+            u_tau_wall = sqrt(tau_w / rho_ijk);
+            // fw = 1 - exp(-z_ibm[IDX(i, j, k, Nx, Ny, Nz)] * u_tau_wall / A_VD / nu);
+            R_turbulence[parameters.turbulence_indexes.u_tau_wall + IDX(i, j, k, Nx, Ny, 1)] = u_tau_wall;
+        }
         // Save RHS into R_new
         R_new[u_index + IDX(i, j, k, Nx, Ny, Nz)] = u_RHS;
         R_new[v_index + IDX(i, j, k, Nx, Ny, Nz)] = v_RHS;
@@ -837,7 +878,7 @@ void velocity_correction(double *R_new, double *R_old, double *p, double *z, Par
 void Phi(double t, double *R_old, double *R_new, double *R_turbulence, double *z, double *z_ibm, int *Nz_Y, int *cut_nodes, Parameters parameters) {
     RHS<<<BLOCKS, THREADS>>>(t, R_old, R_new, R_turbulence, z, z_ibm, Nz_Y, parameters);
     checkCuda(cudaGetLastError());
-    turbulence<<<BLOCKS, THREADS>>>(R_turbulence, R_new, z, parameters);
+    turbulence<<<BLOCKS, THREADS>>>(R_turbulence, R_new, z, z_ibm, parameters);
     checkCuda(cudaGetLastError());
     boundary_conditions<<<BLOCKS, THREADS>>>(R_new, z, Nz_Y, cut_nodes, parameters);
     checkCuda(cudaGetLastError());    
