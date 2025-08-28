@@ -50,7 +50,7 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.T_0 = 1000.0; // Initial temperature in K (default value)
     parameters.h_c = 1.42; // Convective heat transfer coefficient in W/(m^2*K) (typical value for air)
     parameters.c_p = 1007.0; // Heat capacity in J/(kg*K) (typical value for air at 15 °C)
-    parameters.kappa = 0.02476; // Thermal conductivity in W/(m*K) (typical value for air at 15 °C)
+    parameters.k = 0.02476; // Thermal conductivity in W/(m*K) (typical value for air at 15 °C)
     parameters.delta = 0.1; // Optical path length in m (default value for FDS)
     parameters.rho_inf = 1.225; // Reference density in kg/m^3 (typical value for air at 15 °C)
     parameters.g = -9.807; // Acceleration due to gravity in m/s^2 (typical value for Earth)
@@ -324,13 +324,17 @@ Parameters read_parameters_file(const char *file_path) {
         if (strncmp(line, "t_source_end =", 14) == 0) {
             sscanf(line + 15, "%lf", &(parameters.t_source_end));
         }
+        // T Source shape
+        if (strncmp(line, "T_source_shape =", 16) == 0) {
+            sscanf(line + 17, "%s", parameters.T_source_shape);
+        }
         // Optical path length (\delta) in m
         if (strncmp(line, "delta =", 7) == 0) {
             sscanf(line + 8, "%lf", &(parameters.delta));
         } 
-        // Thermal conductivity (\kappa) in W/(m*K)
-        if (strncmp(line, "kappa =", 6) == 0) {
-            sscanf(line + 7, "%lf", &(parameters.kappa));
+        // Thermal conductivity (k) in W/(m*K)
+        if (strncmp(line, "k =", 3) == 0) {
+            sscanf(line + 4, "%lf", &(parameters.k));
         } 
         // Variable or constant density
         if (strncmp(line, "variable_density =", 17) == 0) {
@@ -380,6 +384,33 @@ Parameters read_parameters_file(const char *file_path) {
         // Temperature convection method
         if (strncmp(line, "temperature_convection =", 24) == 0) {
             sscanf(line + 25, "%d", &(parameters.temperature_convection));
+        }
+        // Temperature source region parameters
+        if (strncmp(line, "TS_x_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.TS_x_start));
+        }
+        if (strncmp(line, "TS_x_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.TS_x_end));
+        }
+        if (strncmp(line, "TS_y_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.TS_y_start));
+        }
+        if (strncmp(line, "TS_y_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.TS_y_end));
+        }
+        if (strncmp(line, "TS_z_start =", 12) == 0) {
+            sscanf(line + 13, "%lf", &(parameters.TS_z_start));
+        }
+        if (strncmp(line, "TS_z_end =", 10) == 0) {
+            sscanf(line + 11, "%lf", &(parameters.TS_z_end));
+        }
+        // Load Sutherland's law viscosity
+        if (strncmp(line, "sutherland_viscosity =", 22) == 0) {
+            sscanf(line + 23, "%d", &(parameters.sutherland_viscosity));
+        }
+        // Load Sutherland's law conductivity
+        if (strncmp(line, "sutherland_conductivity =", 25) == 0) {
+            sscanf(line + 26, "%d", &(parameters.sutherland_conductivity));
         }
     }
     // Initialize x, y, z, t
@@ -447,6 +478,13 @@ Parameters read_parameters_file(const char *file_path) {
     parameters.T0_length = parameters.T0_x_end - parameters.T0_x_start;
     parameters.T0_width = parameters.T0_y_end - parameters.T0_y_start;
     parameters.T0_height = parameters.T0_z_end - parameters.T0_z_start;
+    // Compute centers and dimensions for temperature source region
+    parameters.TS_x_center = (parameters.TS_x_start + parameters.TS_x_end) / 2.0;
+    parameters.TS_y_center = (parameters.TS_y_start + parameters.TS_y_end) / 2.0;
+    parameters.TS_z_center = 0.0;
+    parameters.TS_length = parameters.TS_x_end - parameters.TS_x_start;
+    parameters.TS_width = parameters.TS_y_end - parameters.TS_y_start;
+    parameters.TS_height = parameters.TS_z_end - parameters.TS_z_start;
     // IBM topography
     if (strcmp(parameters.topo_shape, "hill") == 0)
         simple_hill(&parameters);

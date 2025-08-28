@@ -6,6 +6,15 @@
 
 #include "../../include/cu/functions.cuh"
 
+// Device function for string comparison (since strcmp is not available in device code)
+__device__ int device_strcmp(const char *str1, const char *str2) {
+    while (*str1 && (*str1 == *str2)) {
+        str1++;
+        str2++;
+    }
+    return (unsigned char)*str1 - (unsigned char)*str2;
+}
+
 double power_law(double z, double u_r, double z_r, double alpha_u) {
     return u_r * pow(z / z_r, alpha_u);
 }
@@ -100,6 +109,10 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
     // double CFL_tmp = 0.0;
     double Y_min_tmp = 0.0, Y_max_tmp = -1e9;
     double T_min_tmp = 1e9, T_max_tmp = -1e9;
+    double Y0_x_start = parameters.Y0_x_start;
+    double Y0_x_end = parameters.Y0_x_end;
+    double Y0_y_start = parameters.Y0_y_start;
+    double Y0_y_end = parameters.Y0_y_end;
     char message[256];
     // int idx = threadIdx.x + blockIdx.x * blockDim.x;
     // int stride = gridDim.x * blockDim.x;
@@ -109,7 +122,7 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
         // int k = ijk % Nz;
     // n /= NT; // Adjust n to match the current timestep
     for (int i = 0; i < Nx; i++) {
-        for (int j = 0; j < Ny; j++) { 
+        for (int j = 0; j < Ny; j++) {
             for (int k = 0; k < Nz; k++) {
                 u = y_n[u_index + IDX(i, j, k, Nx, Ny, Nz)];
                 v = y_n[v_index + IDX(i, j, k, Nx, Ny, Nz)];
@@ -118,8 +131,11 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
                 Y = 0;
                 if (k < Nz_Y_max) {
                     Y = y_n[Y_index + IDX(i, j, k, Nx, Ny, Nz_Y_max)];
-                    Y_min_tmp = MIN(Y_min_tmp, Y);
-                    Y_max_tmp = MAX(Y_max_tmp, Y);
+                    // Only in fuel zone
+                    if (Y0_x_start <= x[i] && x[i] <= Y0_x_end && Y0_y_start <= y[j] && y[j] <= Y0_y_end) {
+                        Y_min_tmp = MIN(Y_min_tmp, Y);
+                        Y_max_tmp = MAX(Y_max_tmp, Y);
+                    }
                 }
                 // Check if any value is NaN
                 if (isnan(u)) {
@@ -153,8 +169,11 @@ void timestep_reports(double *y_n, double *CFL, double *Y_min, double *Y_max, do
                 max_u = MAX(max_u, abs_u);
                 max_v = MAX(max_v, abs_v);
                 max_w = MAX(max_w, abs_w);
-                T_min_tmp = MIN(T_min_tmp, T);
-                T_max_tmp = MAX(T_max_tmp, T);
+                // Only in fuel zone
+                if (Y0_x_start <= x[i] && x[i] <= Y0_x_end && Y0_y_start <= y[j] && y[j] <= Y0_y_end) {
+                    T_min_tmp = MIN(T_min_tmp, T);
+                    T_max_tmp = MAX(T_max_tmp, T);
+                }
             }
         }
     }
@@ -316,18 +335,18 @@ void temperature_source_delay(double *x, double *y, double *z, double *y_n, doub
     double scale = 1.0;
     double T_inf = parameters.T_inf;
     double T_source = parameters.T_source;
-    double x_0 = parameters.T0_x_center;
-    double y_0 = parameters.T0_y_center;
-    double z_0 = parameters.T0_z_center;
-    double sx = parameters.T0_length;
-    double sy = parameters.T0_width;
-    double sz = parameters.T0_height;
-    // double T0_x_start = parameters.T0_x_start;
-    // double T0_x_end = parameters.T0_x_end;
-    // double T0_y_start = parameters.T0_y_start;
-    // double T0_y_end = parameters.T0_y_end;
-    // double T0_z_start = parameters.T0_z_start;
-    // double T0_z_end = parameters.T0_z_end;
+    double x_0 = parameters.TS_x_center;
+    double y_0 = parameters.TS_y_center;
+    double z_0 = parameters.TS_z_center;
+    double sx = parameters.TS_length;
+    double sy = parameters.TS_width;
+    double sz = parameters.TS_height;
+    double TS_x_start = parameters.TS_x_start;
+    double TS_x_end = parameters.TS_x_end;
+    double TS_y_start = parameters.TS_y_start;
+    double TS_y_end = parameters.TS_y_end;
+    double TS_z_start = parameters.TS_z_start;
+    double TS_z_end = parameters.TS_z_end;
     double shape;
     double temperature;
     if (t_n <= t_source_start) {
@@ -347,7 +366,11 @@ void temperature_source_delay(double *x, double *y, double *z, double *y_n, doub
             // } else if (strcmp(parameters.T0_shape, "parallelepiped") == 0) {
             //     temperature = T_inf +  (T_source - T_inf) * parallelepiped(x[i], y[j], z[k], T0_x_start, T0_x_end, T0_y_start, T0_y_end, T0_z_start, T0_z_end);
             // }
-            shape = exp(-pow((x[i] - x_0) / sx, 2.0) - pow((y[j] - y_0) / sy, 2.0) - pow((z[k] - z_0) / sz, 2.0));
+            if (device_strcmp(parameters.T_source_shape, "gaussian") == 0) {
+                shape = exp(-pow((x[i] - x_0) / sx, 2.0) - pow((y[j] - y_0) / sy, 2.0) - pow((z[k] - z_0) / sz, 2.0));
+            } else if (device_strcmp(parameters.T_source_shape, "parallelepiped") == 0) {
+                shape = (x[i] >= TS_x_start && x[i] <= TS_x_end && y[j] >= TS_y_start && y[j] <= TS_y_end && z[k] >= TS_z_start && z[k] <= TS_z_end) ? 1.0 : 0.0;
+            }
             temperature = scale * (T_inf +  (T_source - T_inf) * shape);
             if (temperature > y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)])
                 y_n[T_index + IDX(i, j, k, Nx, Ny, Nz)] = temperature;

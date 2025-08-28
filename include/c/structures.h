@@ -138,7 +138,6 @@ typedef struct _parameters {
     double rho_inf;    
     double mu;
     double k;
-    double kappa;
     double alpha;
     double delta;
     double nu;
@@ -202,8 +201,21 @@ typedef struct _parameters {
     double hill_length; 
     double hill_width; 
     double hill_height; 
+    char T_source_shape[32];
     double t_source_start;
     double t_source_end; 
+    double TS_x_start;
+    double TS_x_end;
+    double TS_x_center;
+    double TS_length;
+    double TS_y_start;
+    double TS_y_end;
+    double TS_y_center;
+    double TS_width;
+    double TS_z_start;
+    double TS_z_end;
+    double TS_z_center;
+    double TS_height;
     // IBM dead nodes and cut nodes
     // int n_dead_nodes;
     // int n_cut_nodes;
@@ -234,6 +246,8 @@ typedef struct _parameters {
     int velocity_correction_fd;
     int time_step_log;
     int temperature_convection;
+    int sutherland_viscosity;
+    int sutherland_conductivity;
     size_t threads_per_block;
     size_t number_of_blocks;
     FieldIndexes field_indexes;

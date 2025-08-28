@@ -118,7 +118,7 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz
     double dt = parameters.dt;
     double T_inf = parameters.T_inf;
     double rho_inf = parameters.rho_inf;
-    double kappa = parameters.kappa;
+    double kT = parameters.k;
     double delta = parameters.delta;
     double c_p = parameters.c_p;
     double alpha_s = parameters.alpha_s;
@@ -128,6 +128,7 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz
     double A = parameters.A;
     double T_act = parameters.T_act;
     double H_C = parameters.H_C;
+    int sutherland_conductivity = parameters.sutherland_conductivity;
     double u_ijk, u_ip1jk, u_im1jk, u_iphjk, u_imhjk;
     double v_ijk, v_ijp1k, v_ijm1k, v_ijphk, v_ijmhk;
     double w_ijk, w_ijkp1, w_ijkm1, w_ijkp2, w_ijkm2;//, w_ijkph, w_ijkmh;
@@ -138,6 +139,7 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz
     double ux, vy, wz, f, Tx, Ty, Tz, Txx, Tyy, Tzz, lap_T, div_U_temp, q;
     double rhox, rhoy, rhoz, px, py, pz;
     double dz_km3, dz_km2, dz_km1, dz_k, dz_kp1, dz_kp2;
+    double dk = 0;
     // Loop over nodes to compute f
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = gridDim.x * blockDim.x;
@@ -303,10 +305,15 @@ void compute_f_density(double *y_np1, double *y_n, double *p, double *z, int *Nz
                 T_gas = T_ijk;
             }
         }
+        if (sutherland_conductivity == 1) {
+            kT = 0.0241 * pow(T_ijk / 273.15, 1.5) * (273.15 + 194) / (T_ijk + 194); // Thermal conductivity
+            dk = 0.0241 * (1.5 * pow(T_ijk / 273.15, 0.5) * (273.15 + 194) / (T_ijk + 194) - pow(T_ijk / 273.15, 1.5) * (273.15 + 194) / ((T_ijk + 194) * (T_ijk + 194)));
+        }
         // Compute source and force terms
         h_c = h_c * dz_k * pow((T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
         q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
-        div_U_temp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (c_p * T_inf * rho_inf) + q / T_ijk;
+        // div_U_temp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (c_p * T_inf * rho_inf) + q / T_ijk;
+        div_U_temp = (dk + 12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kT + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (T_inf * rho_inf * c_p) + q / T_ijk;
         if (i < Nx - 1 && j < Ny - 1 && k < Nz - 1) {
             // Compute rho / dt * div(U) and store it for many DFT (contiguous z slices)            
             f = rho_ijk * (ux + vy + wz - div_U_temp) / dt + (rhox * px + rhoy * py + rhoz * pz) / rho_ijk;

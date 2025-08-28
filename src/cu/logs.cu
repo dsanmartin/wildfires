@@ -30,9 +30,13 @@ void log_parameters_report(Parameters parameters, int to_file) {
     fprintf(output, "  Time samples: %d\n", parameters.NT);
     fprintf(output, "Time integration: %s\n", parameters.method);
     fprintf(output, "Fluid parameters:\n");
-    fprintf(output, "  mu: %e, kappa: %e, c_p: %lf\n", parameters.mu, parameters.kappa, parameters.c_p);
+    fprintf(output, "  mu: %e, k: %e, c_p: %lf\n", parameters.mu, parameters.k, parameters.c_p);
     fprintf(output, "  rho_inf: %lf, T_inf: %lf,  g: %lf\n", parameters.rho_inf, parameters.T_inf, parameters.g);
     fprintf(output, "  C_s: %lf, Pr: %lf\n", parameters.C_s, parameters.Pr);
+    if (parameters.sutherland_viscosity == 1)
+        fprintf(output, "  Sutherland's law for viscosity activated.\n");
+    if (parameters.sutherland_conductivity == 1)
+        fprintf(output, "  Sutherland's law for conductivity activated.\n");
     fprintf(output, "Fuel parameters:\n");
     fprintf(output, "  h_c: %lf, alpha_s: %lf, sigma_s: %lf, delta: %lf\n", parameters.h_c, parameters.alpha_s, parameters.sigma_s, parameters.delta);    
     fprintf(output, "  H_C: %e, A: %e, T_pc: %lf, T_act: %lf\n", parameters.H_C, parameters.A, parameters.T_pc, parameters.T_act);
@@ -77,8 +81,16 @@ void log_parameters_report(Parameters parameters, int to_file) {
     // Temperature source
     if (parameters.t_source_end > 0) {
         fprintf(output, "Temperature source:\n");
+        fprintf(output, "  Shape: %s\n", parameters.T_source_shape);
         fprintf(output, "  T_source: %lf\n", parameters.T_source);
         fprintf(output, "  Source time: [%lf, %lf]\n", parameters.t_source_start, parameters.t_source_end);
+        fprintf(output, "  x: [%lf, %lf], y: [%lf, %lf], z: [%lf, %lf]\n", 
+            parameters.TS_x_start, parameters.TS_x_end, 
+            parameters.TS_y_start, parameters.TS_y_end, 
+            parameters.TS_z_start, parameters.TS_z_end);
+        fprintf(output, "  Center: [%lf, %lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
+            parameters.TS_x_center, parameters.TS_y_center, parameters.TS_z_center,
+            parameters.TS_length, parameters.TS_width, parameters.TS_height);
     }
     // Topography
     fprintf(output, "Topography:\n");

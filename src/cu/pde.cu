@@ -147,7 +147,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     // double dz = parameters.dz;
     // Model parameters
     double mu = parameters.mu;
-    double kappa = parameters.kappa;
+    double kT = parameters.k;
     double Y_f = parameters.Y_f;
     double H_C = parameters.H_C;
     double A = parameters.A;
@@ -170,6 +170,9 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     int w_index = parameters.field_indexes.w;
     int T_index = parameters.field_indexes.T;
     int Y_index = parameters.field_indexes.Y;
+    // Sutherland's law
+    int sutherland_viscosity = parameters.sutherland_viscosity;
+    int sutherland_conductivity = parameters.sutherland_conductivity;
     // Fields nodes
     double u_ijk, u_ip1jk, u_im1jk, u_ijp1k, u_ijm1k, u_ijkp1, u_ijkm1;
     double u_ip2jk, u_im2jk, u_ijp2k, u_ijm2k, u_ijkp2, u_ijkm2, u_ijkp3, u_ijkm3;
@@ -205,6 +208,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double mod_S, mu_sgs;
     double T_gas, T_solid;
     double u_tau_wall; // Friction velocity at the wall
+    double dk = 0;
     // double z_dist, z0;
     int i, j, k;
     int im1, ip1, jm1, jp1;
@@ -570,7 +574,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             Tzz = 2 * T_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * T_ijk / (dz_km1 * dz_k) + 2 * T_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2T/dz^2
         }
         /* Turbulence components */
-        nu = mu / rho_ijk;
+        // nu = mu / rho_ijk;
         // Damping function
         // tau_w = 0.0;
         // if (k == 0) {
@@ -676,6 +680,14 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
                 T_gas = T_ijk;
             }
         }
+        // Testing Sutherland's law
+        if (sutherland_viscosity == 1)
+            mu = 1.716e-5 * pow(T_ijk / 273.15, 1.5) * (273.15 + 110.4) / (T_ijk + 110.4); // Viscosity
+        if (sutherland_conductivity == 1) {
+            kT = 0.0241 * pow(T_ijk / 273.15, 1.5) * (273.15 + 194) / (T_ijk + 194); // Thermal conductivity
+            dk = 0.0241 * (1.5 * pow(T_ijk / 273.15, 0.5) * (273.15 + 194) / (T_ijk + 194) - pow(T_ijk / 273.15, 1.5) * (273.15 + 194) / ((T_ijk + 194) * (T_ijk + 194)));
+        }
+        nu = mu / rho_ijk; // Molecular viscosity
         // Compute source and force terms
         h_c = h_c * dz_k * pow(abs(T_gas - T_solid) / dz_k, 1.0 / 4.0); // Old FDS heat transfer coefficient
         q = H_C * Y_ijk * K_T / c_p - h_c * alpha_s * sigma_s * (T_gas - T_solid) / (c_p * T_inf * rho_inf / T_gas);
@@ -698,15 +710,13 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
         v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
         w_RHS = nu * lap_w - (uwx + vwy + wwz) + F_z;
-        // Testing Sutherland's law for viscosity
-        // mu = 1.716e-5 * pow(T_ijk / 273.15, 1.5) * (273.15 + 110.4) / (T_ijk + 110.4); // Sutherland's law
         // mu_sgs += mu; // Add SGS viscosity to the molecular viscosity
         // u_RHS = - (uux + vuy + wuz) + F_x;
         // v_RHS = - (uvx + vvy + wvz) + F_y;
         // w_RHS = - (uwx + vwy + wwz) + F_z;
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
         // Temperature RHS with radiation and conduction
-        T_RHS_tmp = (12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kappa + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
+        T_RHS_tmp = (dk + 12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kT + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
         // Including convection
         if (temperature_convection == 0) // Finite difference
             T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
@@ -730,8 +740,8 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k, Nx, Ny, Nz)] = S_31;
         R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k, Nx, Ny, Nz)] = S_32;
         R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)] = S_33;
-        // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
-        R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * (ux + vy + wz);
+        R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
+        // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * (ux + vy + wz);
         if (k == 0) {
             tau_w = sqrt(pow(mu * (uz + wx*0), 2.0) + pow(mu * (vz + wy*0), 2.0));
             u_tau_wall = sqrt(tau_w / rho_ijk);
