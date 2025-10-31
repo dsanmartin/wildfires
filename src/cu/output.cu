@@ -83,17 +83,17 @@ void save_domain(Parameters parameters) {
 void save_topography(Parameters parameters) {
     int Nx = parameters.Nx;
     int Ny = parameters.Ny;
-    // int *Nz_Y = parameters->Nz_Y;
+    int *Nz_Y = parameters.Nz_Y;
     double *topography = parameters.topography;    
     char filename_topography[FILENAME_SIZE];
-    // char filename_Y_mask[FILENAME_SIZE];
-    FILE *output_topography;//, *output_Y_mask;
+    char filename_Nz_Y[FILENAME_SIZE];
+    FILE *output_topography, *output_Nz_Y;
     sprintf(filename_topography, "%stopography.bin", parameters.save_path);
-    // sprintf(filename_Y_mask, "%sY_mask.bin", parameters->save_path);
+    sprintf(filename_Nz_Y, "%sNz_Y.bin", parameters.save_path);
     output_topography = fopen(filename_topography, "wb");
-    // output_Y_mask = fopen(filename_Y_mask, "wb");
+    output_Nz_Y = fopen(filename_Nz_Y, "wb");
     fwrite(topography, sizeof(double), Nx * Ny, output_topography);
-    // fwrite(Nz_Y, sizeof(int), Nx * Ny, output_Y_mask);
+    fwrite(Nz_Y, sizeof(int), Nx * Ny, output_Nz_Y);
     fclose(output_topography);
-    // fclose(output_Y_mask);
+    fclose(output_Nz_Y);
 }

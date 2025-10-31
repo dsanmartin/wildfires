@@ -233,6 +233,7 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
     double w_dead_nodes = parameters.w_dead_nodes;
     double T_dead_nodes = parameters.T_dead_nodes;
     double Y_dead_nodes = parameters.Y_dead_nodes;
+    double *topography = parameters.topography;
     /* Fill arrays */
     for (int i = 0; i < Nx; i++) {
         for (int j = 0; j < Ny; j++) {
@@ -258,8 +259,8 @@ void initial_conditions(double *u, double *v, double *w, double *T, double *Y, d
                     z_bottom = Y_h * (y[j] - Y0_y_start + ya) / ya;
                     z_top = Y_h * (Y0_y_end + ya - y[j]) / ya;
                     z_left = Y_h * (x[i] - Y0_x_start + xa) / xa;
-                    z_right = Y_h * (Y0_x_end + xa - x[i]) / xa;
-                    if ((Y0_x_start <= x[i] && x[i] <= Y0_x_end) && (Y0_y_start <= y[j] && y[j] <= Y0_y_end) && (0 <= z[k] && z[k] <= Y_h))
+                    z_right = Y_h * (Y0_x_end + xa - x[i]) / xa;             
+                    if ((Y0_x_start <= x[i] && x[i] <= Y0_x_end) && (Y0_y_start <= y[j] && y[j] <= Y0_y_end) && (0 <= z[k] && z[k] <= (topography[IDX(i, j, 0, Nx, Ny, 1)] + Y_h)))
                         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0;
                     else if ((Y0_y_start - ya <= y[j] && y[j] < Y0_y_start) && (Y0_x_start - xa <= x[i] && x[i] <= Y0_x_end + xa) && (0 <= z[k] && z[k] <= z_bottom))
                         Y[IDX(i, j, k, Nx, Ny, Nz_Y_max)] = 1.0; //z_bottom / Y_h;

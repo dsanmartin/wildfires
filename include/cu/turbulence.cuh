@@ -31,4 +31,7 @@
 __global__
 void turbulence(double *R_turbulence, double *R_new, double *z, double *z_ibm, Parameters parameters);
 
+// __global__
+// void turbulence_2(double *R_turbulence, double *R_new, double *z, double *z_ibm, Parameters parameters);
+
 #endif

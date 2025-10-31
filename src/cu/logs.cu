@@ -98,6 +98,8 @@ void log_parameters_report(Parameters parameters, int to_file) {
     if (strcmp(parameters.topo_shape, "hill") == 0) {
         fprintf(output, "  Hill center: [%lf, %lf], Length: %lf, Width: %lf, Height: %lf\n", 
             parameters.hill_center_x, parameters.hill_center_y, parameters.hill_length, parameters.hill_width, parameters.hill_height);
+        fprintf(output, "  Dead nodes:  u = %lf, v = %lf, w = %lf, T = %lf, Y = %lf\n", 
+            parameters.u_dead_nodes, parameters.v_dead_nodes, parameters.w_dead_nodes, parameters.T_dead_nodes, parameters.Y_dead_nodes);
     }
     fprintf(output, "Bounds:\n");
     fprintf(output, "  Temperature: [%lf, %lf]\n", parameters.T_min, parameters.T_max);

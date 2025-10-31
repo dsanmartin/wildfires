@@ -209,6 +209,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
     double T_gas, T_solid;
     double u_tau_wall; // Friction velocity at the wall
     double dk = 0;
+    // double div_U;
     // double z_dist, z0;
     int i, j, k;
     int im1, ip1, jm1, jp1;
@@ -573,6 +574,11 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             wzz = 2 * w_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * w_ijk / (dz_km1 * dz_k) + 2 * w_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2w/dz^2
             Tzz = 2 * T_ijkm1 / (dz_km1 * (dz_km1 + dz_k)) - 2 * T_ijk / (dz_km1 * dz_k) + 2 * T_ijkp1 / (dz_k * (dz_km1 + dz_k)); // d^2T/dz^2
         }
+        // Compute Laplacian terms
+        lap_u = uxx + uyy + uzz;
+        lap_v = vxx + vyy + vzz;
+        lap_w = wxx + wyy + wzz;
+        lap_T = Txx + Tyy + Tzz;
         /* Turbulence components */
         // nu = mu / rho_ijk;
         // Damping function
@@ -645,7 +651,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
             dz_k = z[k] - z[k - 1];
         // Turbulent viscosity
         // mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0) * fw, 2.0) * mod_S;
-        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0), 2.0) * mod_S;
+        // mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0), 2.0) * mod_S;
         // if (isnan(fw)) {
         //     printf("NAN detected in fw at i=%d, j=%d, k=%d\n", i, j, k);
         //     printf("nu: %f\n", nu);
@@ -696,16 +702,18 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // q = q_source - q_sink;
         // if (q > 0)
         //     printf("q_source: %f, q_sink: %f, q: %f, h_c: %f, \n", q_source, q_sink, q, h_c);
-        mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
+        // Temperature RHS with radiation and conduction
+        T_RHS_tmp = (dk + 12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kT + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
+        // Including convection
+        if (temperature_convection == 0) // Finite difference
+            T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
+        else if (temperature_convection == 1) // Upwind
+            T_RHS = T_RHS_tmp - (uTx + vTy + wTz);
         // Force terms
+        mod_U = sqrt(u_ijk * u_ijk + v_ijk * v_ijk + w_ijk * w_ijk);
         F_x = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * u_ijk;
         F_y = - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * v_ijk;
-        F_z = g * (rho_ijk - rho_inf) / rho_ijk - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * w_ijk;
-        // Compute Laplacian terms
-        lap_u = uxx + uyy + uzz;
-        lap_v = vxx + vyy + vzz;
-        lap_w = wxx + wyy + wzz;
-        lap_T = Txx + Tyy + Tzz;
+        F_z = g * (rho_ijk - rho_inf) / rho_ijk - 0.5 * C_d * alpha_s * sigma_s * Y_ijk * mod_U * w_ijk;        
         // Compute RHS        
         u_RHS = nu * lap_u - (uux + vuy + wuz) + F_x;
         v_RHS = nu * lap_v - (uvx + vvy + wvz) + F_y;
@@ -715,13 +723,26 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         // v_RHS = - (uvx + vvy + wvz) + F_y;
         // w_RHS = - (uwx + vwy + wwz) + F_z;
         // T_RHS = alpha * lap_T - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz) + S;
-        // Temperature RHS with radiation and conduction
-        T_RHS_tmp = (dk + 12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + (kT + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T) / (rho_ijk * c_p) + q;
-        // Including convection
-        if (temperature_convection == 0) // Finite difference
-            T_RHS = T_RHS_tmp - (u_ijk * Tx + v_ijk * Ty + w_ijk * Tz);
-        else if (temperature_convection == 1) // Upwind
-            T_RHS = T_RHS_tmp - (uTx + vTy + wTz);
+        // div_U = ux + vy + wz;
+        // div_U = (
+        //     dk + 12 * SIGMA * delta * pow(T_ijk, 2) * (Tx * Tx + Ty * Ty + Tz * Tz) + 
+        //     (kT + 4 * SIGMA * delta * pow(T_ijk, 3)) * lap_T
+        // ) / (rho_ijk * c_p * T_ijk) + q / T_ijk;
+        // S_11 = 2 * ux - 2 * div_U / 3;
+        // S_22 = 2 * vy - 2 * div_U / 3;
+        // S_33 = 2 * wz - 2 * div_U / 3;
+        // S_12 = (uy + vx);
+        // S_13 = (uz + wx);
+        // S_23 = (wy + vz);
+        // S_21 = S_12;
+        // S_31 = S_13;
+        // S_32 = S_23;
+        // // |S| = |2 S_ij S_ij|
+        // mod_S = sqrt(
+        //     2.0 * (ux * ux + vy * vy + wz * wz) 
+        //     + (uz + wx) * (uz + wx) + (vx + uy) * (vx + uy) + (wy + vz) * (wy + vz) 
+        // );
+        mu_sgs = rho_ijk * pow(C_s * pow(dx * dy * dz_k, 1.0 / 3.0), 2.0) * mod_S;
         // Copy to turbulence array. These calculations will be used in the next step to include the turbulence model
         R_turbulence[parameters.turbulence_indexes.rho + IDX(i, j, k, Nx, Ny, Nz)] = rho_ijk;
         R_turbulence[parameters.turbulence_indexes.Tx  + IDX(i, j, k, Nx, Ny, Nz)] = Tx;
@@ -740,6 +761,7 @@ void RHS(double t, double *R_old, double *R_new, double *R_turbulence, double *z
         R_turbulence[parameters.turbulence_indexes.S_31 + IDX(i, j, k, Nx, Ny, Nz)] = S_31;
         R_turbulence[parameters.turbulence_indexes.S_32 + IDX(i, j, k, Nx, Ny, Nz)] = S_32;
         R_turbulence[parameters.turbulence_indexes.S_33 + IDX(i, j, k, Nx, Ny, Nz)] = S_33;
+        // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = mu;
         R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * T_RHS_tmp / T_ijk;
         // R_turbulence[parameters.turbulence_indexes.div_U + IDX(i, j, k, Nx, Ny, Nz)] = nu * (ux + vy + wz);
         if (k == 0) {

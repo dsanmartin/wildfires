@@ -81,7 +81,7 @@ void ibm_parameters(Parameters *parameters) {
                     parameters->cut_nodes[IDX(i, j, 0, Nx, Ny, 1)] = k;
                 }         
                 // Distance from the z coordinate to the topography. Negative does not matter
-                parameters->z_ibm[IDX(i, j, k, Nx, Ny, Nz)] = z[k] - topo;       
+                parameters->z_ibm[IDX(i, j, k, Nx, Ny, Nz)] = MAX(z[k] - topo, 0.0);
                 // Compute Nz for Y variable to avoid storing a lot of zeros
                 if (z[k] <= topo + Y_h) { // If the node is inside the hill + fuel height
                     parameters->Nz_Y[IDX(i, j, 0, Nx, Ny, 1)] = k + 1; // Store the index of the last node plus one to include the last node
@@ -91,7 +91,7 @@ void ibm_parameters(Parameters *parameters) {
             Nz_Y_max = MAX(Nz_Y_max, parameters->Nz_Y[IDX(i, j, 0, Nx, Ny, 1)]); // Find the maximum number of nodes for Y variable  
         }
     }
-    parameters->Nz_Y_max = Nz_Y_max;
+    parameters->Nz_Y_max = Nz_Y_max;    
 }
 
 /*
