@@ -14,12 +14,15 @@ $$
 \nabla\cdot\mathbf{u} & = \dfrac{1}{\rho c_p T}\left(\nabla\cdot(\kappa\nabla T) + q\right), 
 \end{split}
 $$
+
 with,
+
 $$
 K(T) = A\,H\left(T-T_{\text{pc}}\right)\exp\left(-\dfrac{T_{\text{act}}}{T}\right), \quad
 \kappa(T) = k + 4\sigma\delta T^3, \quad
 \rho (T) =\dfrac{\rho_\infty T_{\infty}}{T}, 
 $$
+
 $$
 \begin{split}
     \mathbf{f}(\mathbf{u}, T, Y) &= (\rho(T)-\rho_{\infty})\mathbf{g} 
@@ -28,7 +31,6 @@ $$
     \boldsymbol{\tau} 
         &= \mu \left(2\,\mathbf{S} - \frac{2}{3} (\nabla \cdot \mathbf{u}) \mathbf{I} \right), \quad
         \mathbf{S}  = \dfrac{1}{2}\left(\nabla \mathbf{u} + (\nabla \mathbf{u})^\top\right).
-
 \end{split}
 $$
 
